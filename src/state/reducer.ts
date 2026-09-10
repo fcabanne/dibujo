@@ -18,6 +18,7 @@ export type Action =
   | { type: 'artwork/resize'; side: 'w' | 'h'; value: number }
   | { type: 'artwork/replace'; src: string; aspect: number }
   | { type: 'artwork/rotate' }
+  | { type: 'artwork/restore'; src: string }
   | { type: 'state/replace'; state: AppState }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -95,6 +96,13 @@ export function reducer(state: AppState, action: Action): AppState {
         },
       }
     }
+
+    case 'artwork/restore':
+      // Llega cuando termina de leerse la obra guardada, un instante después de
+      // abrir. Si en ese ratito ya cargaste otra, no la pisa.
+      return state.artwork.src === DEFAULT_STATE.artwork.src
+        ? { ...state, artwork: { ...state.artwork, src: action.src } }
+        : state
 
     case 'artwork/rotate': {
       const next = ((state.artwork.rotation + 90) % 360) as Rotation
