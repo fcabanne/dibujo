@@ -10,7 +10,7 @@ lado.
 
 ## Usarlo
 
-Online, la última versión: **[abrir la app](https://facucabanne.github.io/cuadros/)**
+Online, la última versión: **[abrir la app](https://fcabanne.github.io/dibujo/)**
 
 También se puede bajar como un único archivo `.html` y abrirlo con doble clic, sin
 internet y sin instalar nada.
