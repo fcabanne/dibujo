@@ -1,0 +1,39 @@
+# Dependencias y builds: se regeneran con npm install y npm run build:app.
+node_modules
+dist
+cuadros.html
+
+# --------------------------------------------------------------------------
+# Obra propia. El repo es público: cualquier imagen que se comitee acá queda a
+# la vista para siempre, y sacarla del historial de git después es un dolor.
+#
+# La app no necesita que pongas dibujos en esta carpeta: cuando cargás una
+# imagen se queda en tu navegador y nunca pasa por el repo. Estas reglas son
+# la red por si algún día arrastrás un archivo acá sin pensarlo.
+# --------------------------------------------------------------------------
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.tif
+*.tiff
+*.bmp
+*.heic
+*.psd
+*.ai
+*.pdf
+/obras/
+/dibujos/
+
+# Proyectos guardados de la app: son tuyos, no del repo.
+*.cuadro
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Config local de Claude Code: es de esta máquina, no del proyecto.
+.claude/settings.local.json
