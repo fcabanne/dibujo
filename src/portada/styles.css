@@ -1,0 +1,129 @@
+@import '../shared/tokens.css';
+
+/* ------------------------------------------------------------------
+   Portada: el bifurcador hacia las herramientas. Nada más que eso, con
+   sitio reservado para la galería y la bio cuando lleguen.
+   ------------------------------------------------------------------ */
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+  /* Un pozo de luz tenue, como el de la pared del probador de marcos. */
+  background:
+    radial-gradient(ellipse at 50% 34%, rgba(255, 244, 224, 0.09), transparent 62%),
+    var(--fondo);
+}
+
+.portada {
+  width: 100%;
+  max-width: 880px;
+}
+
+.portada header {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.portada h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.portada header p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--hud-dim);
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  border: 1px solid var(--hud-border);
+  background: var(--hud-bg);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-hud);
+  transition:
+    transform 220ms var(--ease),
+    border-color 220ms var(--ease);
+}
+
+a.tool:hover {
+  transform: translateY(-4px);
+  border-color: rgba(230, 176, 117, 0.5);
+}
+
+.tool-art {
+  display: block;
+  background: linear-gradient(160deg, #23242a, #15161a);
+  border-bottom: 1px solid var(--hud-border);
+}
+
+.tool-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.tool-body {
+  display: block;
+  padding: 18px 20px 22px;
+}
+
+.tool-body strong {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tool-body em {
+  display: block;
+  margin-top: 7px;
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hud-dim);
+}
+
+.badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 176, 117, 0.35);
+  background: rgba(230, 176, 117, 0.12);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Deshabilitada: se ve, se entiende qué va a hacer, pero no se puede entrar. */
+.tool.is-wip {
+  cursor: default;
+}
+
+.tool.is-wip .tool-art,
+.tool.is-wip .tool-body strong,
+.tool.is-wip .tool-body em {
+  opacity: 0.45;
+}
+
+.tool.is-wip .badge {
+  opacity: 1;
+}

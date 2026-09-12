@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { clamp, LIMITS } from '../../domain/geometry'
-import { loadArtworkFile } from '../../domain/imageFile'
+import { loadArtworkFile } from '../../../shared/imageFile'
 import type { Action } from '../../state/reducer'
 import type { AppState } from '../../types'
 import { LinkIcon, RotateIcon, UnlinkIcon, UploadIcon } from './icons'

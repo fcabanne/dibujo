@@ -2,6 +2,7 @@
 node_modules
 dist
 cuadros.html
+tsconfig.tsbuildinfo
 
 # --------------------------------------------------------------------------
 # Obra propia. El repo es público: cualquier imagen que se comitee acá queda a

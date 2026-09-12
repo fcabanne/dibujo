@@ -9,7 +9,7 @@ import {
   WALL_PATTERNS,
   WALL_PRESETS,
 } from '../domain/palettes'
-import { loadArtworkFile } from '../domain/imageFile'
+import { loadArtworkFile } from '../../shared/imageFile'
 import { anchorsFor, draggableTarget } from '../interaction/zones'
 import type { Action } from '../state/reducer'
 import type { AppState, GlassType, Layout } from '../types'

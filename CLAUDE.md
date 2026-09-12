@@ -20,11 +20,26 @@ Los identificadores del código van en inglés.
 **Cada herramienta compila a un único .html autocontenido**, para poder abrirla con
 doble clic o mandarla por mail. Lo hace `vite-plugin-singlefile`.
 
+## Estructura
+
+```
+index.html      portada, el bifurcador hacia las herramientas
+marco/          probador de enmarcado
+src/
+  portada/      estilos de la portada
+  shared/       lo que usan todas las herramientas
+  marco/        el probador de enmarcado
+```
+
+**Para sumar una herramienta:** crear `<nombre>/index.html`, su carpeta en `src/`, y
+agregarla a la lista de `scripts/build.mjs` y a la portada.
+
 ## Comandos
 
 ```bash
 npm run dev          # servidor local en http://localhost:5173
-npm run build:app    # genera cuadros.html, la app en un solo archivo
+npm run build        # compila el sitio entero a dist/
+npm run build:app    # además deja cuadros.html suelto, para mandar por mail
 npm run deploy       # compila y publica en GitHub Pages
 ```
 
@@ -38,10 +53,10 @@ vacía y la cachea. El navegador tira `does not provide an export named 'X'` con
 archivo perfecto en disco, y no se arregla recargando: hay que reiniciar el server.
 Para sobrescribir: escribir a `.tmp` y `mv` encima, o usar la herramienta Edit.
 
-**`scripts/deploy.mjs` corta con error si el build deja subcarpetas.** Es a propósito:
-arma el commit con las herramientas de bajo nivel de git y solo sabe publicar
-archivos sueltos. Cuando el repo pase a varias páginas hay que hacerlo recursivo.
-Preferimos que reviente a que publique un sitio incompleto en silencio.
+**Cada página se compila por separado** (`scripts/build.mjs`). No es capricho: el
+plugin que incrusta todo en un solo `.html` activa `inlineDynamicImports`, y rollup
+rechaza esa opción cuando hay más de una entrada. De a una, cada página conserva la
+propiedad que importa —ser un archivo autocontenido— y el sitio sale en una corrida.
 
 **Verificar en el navegador es engañoso cuando la pestaña no está pintando.** Las
 transiciones CSS quedan congeladas a mitad de camino y `requestAnimationFrame` se
@@ -53,30 +68,30 @@ cuadros con capturas de pantalla.
 
 Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 
-- `src/domain/imageFile.ts` — carga un archivo de imagen, lo reescala a 2000 px y lo
+- `src/shared/imageFile.ts` — carga un archivo de imagen, lo reescala a 2000 px y lo
   normaliza a data URI. El reescalado no es cosmético: sin él una foto de cámara no
   entra en el almacenamiento del navegador.
-- `src/state/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
+- `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio.
-- `src/state/persistence.ts` — autoguardado de la configuración en localStorage.
+- `src/marco/state/persistence.ts` — autoguardado de la configuración en localStorage.
   Liviano a propósito: unos pocos KB que nunca fallan por cuota.
-- `src/components/Canvas.tsx` — lienzo con su loop de render, manejo de densidad de
+- `src/marco/components/Canvas.tsx` — lienzo con su loop de render, manejo de densidad de
   pantalla y drag & drop de imágenes.
-- `src/styles/global.css` — el chrome de vidrio oscuro. Que todas las herramientas
-  se sientan de la misma familia.
+- `src/shared/tokens.css` — los tokens de diseño: vidrio oscuro, acento cálido. Que todas
+  las herramientas se sientan de la misma familia.
 
 ## Cómo está armado el probador de enmarcado
 
-- `src/domain/` — la geometría **en centímetros** y las medidas que se le dictan al
+- `src/marco/domain/` — la geometría **en centímetros** y las medidas que se le dictan al
   enmarcador. Es la única fuente de verdad dimensional: el render multiplica por una
   escala recién al final, así que lo que se ve y lo que se encarga no pueden
   desincronizarse.
-- `src/render/` — las capas de la escena, de la pared hacia el espectador. La luz
+- `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
-- `src/interaction/` — qué parte del cuadro está bajo el puntero.
-- `src/components/` — el lienzo y la capa de controles que se apoya encima.
+- `src/marco/interaction/` — qué parte del cuadro está bajo el puntero.
+- `src/marco/components/` — el lienzo y la capa de controles que se apoya encima.
 
 **La UI no tiene barra ni paneles.** Los controles se apoyan sobre la parte que
 editan y desaparecen solos. Los anchos se arrastran directamente sobre el cuadro.

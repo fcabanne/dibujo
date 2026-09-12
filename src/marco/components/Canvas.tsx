@@ -7,7 +7,7 @@ import {
   snap,
   type SceneRects,
 } from '../domain/geometry'
-import { loadArtworkFile } from '../domain/imageFile'
+import { loadArtworkFile } from '../../shared/imageFile'
 import { draggableTarget, grabDistance, hitZone, type Zone } from '../interaction/zones'
 import { useImage } from '../hooks/useImage'
 import { luminance } from '../render/light'

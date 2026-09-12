@@ -1,5 +1,5 @@
 /**
- * Guarda la obra cargada en IndexedDB, aparte de la configuración.
+ * Guarda la imagen que cargó el usuario, aparte de la configuración.
  *
  * Antes iba todo junto en localStorage, en una sola escritura. Una foto de cámara
  * pesa megas y revienta la cuota, y como la escritura es una sola, al fallar no se
@@ -11,9 +11,11 @@
  * acá y la configuración queda liviana y a salvo en localStorage.
  */
 
-const DB_NAME = 'cuadros'
-const STORE = 'artwork'
-const KEY = 'current'
+const DB_NAME = 'dibujo'
+const STORE = 'imagenes'
+
+/** Cada herramienta guarda bajo su propia clave: comparten base de datos, no imagen. */
+export type ToolId = 'marco' | 'grilla'
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -27,38 +29,38 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-/** Lo último que se escribió, para no reescribir megas en cada cambio de marco. */
-let lastWritten: string | null = null
+/** Lo último escrito por herramienta, para no reescribir megas en cada cambio. */
+const lastWritten = new Map<ToolId, string>()
 
-export async function saveArtwork(src: string): Promise<void> {
-  if (src === lastWritten) return
+export async function saveArtwork(tool: ToolId, src: string): Promise<void> {
+  if (lastWritten.get(tool) === src) return
   try {
     const db = await openDb()
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite')
-      tx.objectStore(STORE).put(src, KEY)
+      tx.objectStore(STORE).put(src, tool)
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
     })
-    lastWritten = src
+    lastWritten.set(tool, src)
     db.close()
   } catch {
     // Sin IndexedDB (modo privado, file://) la app anda igual: lo único que se
-    // pierde es que recuerde la obra, no la configuración.
+    // pierde es que recuerde la imagen, no la configuración.
   }
 }
 
-export async function loadArtwork(): Promise<string | null> {
+export async function loadArtwork(tool: ToolId): Promise<string | null> {
   try {
     const db = await openDb()
     const src = await new Promise<string | null>((resolve, reject) => {
       const tx = db.transaction(STORE, 'readonly')
-      const request = tx.objectStore(STORE).get(KEY)
+      const request = tx.objectStore(STORE).get(tool)
       request.onsuccess = () => resolve((request.result as string) ?? null)
       request.onerror = () => reject(request.error)
     })
     db.close()
-    if (src) lastWritten = src
+    if (src) lastWritten.set(tool, src)
     return src
   } catch {
     return null

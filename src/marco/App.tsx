@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Canvas, type SceneSnapshot } from './components/Canvas'
 import { Overlay, type Category } from './components/Overlay'
 import { computeLayout } from './domain/geometry'
-import { loadArtwork } from './state/imageStore'
+import { loadArtwork } from '../shared/imageStore'
 import { loadSession, saveSession } from './state/persistence'
 import { reducer, type Action } from './state/reducer'
 import type { Layout } from './types'
@@ -38,7 +38,7 @@ export function App() {
   // enseguida con el placeholder y la imagen guardada entra un instante después.
   useEffect(() => {
     let cancelled = false
-    void loadArtwork().then((src) => {
+    void loadArtwork('marco').then((src) => {
       if (!cancelled && src) dispatch({ type: 'artwork/restore', src })
     })
     return () => {

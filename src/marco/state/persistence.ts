@@ -1,6 +1,6 @@
 import type { AppState } from '../types'
 import { DEFAULT_STATE } from './defaults'
-import { saveArtwork } from './imageStore'
+import { saveArtwork } from '../../shared/imageStore'
 
 const KEY = 'cuadros:session:v1'
 
@@ -44,5 +44,5 @@ export function saveSession(state: AppState): void {
   }
 
   // Aparte y sin esperar: que la imagen no entre no puede arrastrar a la config.
-  void saveArtwork(src)
+  void saveArtwork('marco', src)
 }
