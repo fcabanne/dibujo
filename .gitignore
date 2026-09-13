@@ -2,6 +2,7 @@
 node_modules
 dist
 cuadros.html
+referencia.html
 tsconfig.tsbuildinfo
 
 # --------------------------------------------------------------------------

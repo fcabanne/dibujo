@@ -12,7 +12,7 @@ import { build } from 'vite'
  *
  * Para sumar una herramienta: crear su `<nombre>/index.html` y agregarla acá.
  */
-const PAGES = ['index.html', 'marco/index.html']
+const PAGES = ['index.html', 'marco/index.html', 'referencia/index.html']
 
 const root = process.cwd()
 

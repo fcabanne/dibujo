@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && node scripts/build.mjs",
     "preview": "vite preview",
-    "build:app": "node scripts/build.mjs && node -e \"require('fs').copyFileSync('dist/marco/index.html','cuadros.html')\"",
+    "build:app": "node scripts/build.mjs && node -e \"const f=require('fs');f.copyFileSync('dist/marco/index.html','cuadros.html');f.copyFileSync('dist/referencia/index.html','referencia.html')\"",
     "deploy": "npm run build:app && node scripts/deploy.mjs"
   },
   "dependencies": {
