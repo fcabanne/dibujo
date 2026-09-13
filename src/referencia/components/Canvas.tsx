@@ -8,6 +8,8 @@ interface Props {
   reference: Reference | null
   state: AppState
   onFile: (file: File) => void
+  /** Pantalla angosta: arriba flota una barra y la foto no puede meterse debajo. */
+  compact: boolean
   /** Se avisa una vez si la máquina no puede correr los efectos. */
   onEffectsSupport: (supported: boolean) => void
 }
@@ -15,6 +17,8 @@ interface Props {
 const ZOOM = { min: 0.4, max: 8 }
 /** Aire alrededor de la foto, para que la grilla no muera contra el borde de la ventana. */
 const PAD = 32
+/** Lo que hay que dejar libre arriba cuando la barra flotante está puesta. */
+const TOP_BAR = 64
 
 interface View {
   zoom: number
@@ -22,7 +26,7 @@ interface View {
   y: number
 }
 
-export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
+export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const effectsRef = useRef<EffectsRenderer | null>(null)
@@ -31,12 +35,16 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   /** Lo último que se dibujó, para poder anclar el zoom al puntero. */
   const placedRef = useRef({ x: 0, y: 0, w: 0, h: 0 })
   const frameRef = useRef(0)
-  const panRef = useRef<{ x: number; y: number } | null>(null)
+  /** Los dedos apoyados. Uno mueve la foto; dos la acercan. */
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const pinchRef = useRef<{ spread: number; middle: { x: number; y: number } } | null>(null)
 
   const stateRef = useRef(state)
   const refRef = useRef(reference)
+  const compactRef = useRef(compact)
   stateRef.current = state
   refRef.current = reference
+  compactRef.current = compact
 
   const [zoomed, setZoomed] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -73,12 +81,16 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
 
     const aspect = aspectOf(current)
     const view = viewRef.current
-    const base = fitRect(aspect, { w: box.width - PAD * 2, h: box.height - PAD * 2 })
+    // En pantalla angosta la barra de arriba flota sobre el lienzo, así que la foto
+    // se encuadra en lo que queda por debajo y no en el alto completo.
+    const top = compactRef.current ? TOP_BAR : PAD
+    const availH = box.height - top - PAD
+    const base = fitRect(aspect, { w: box.width - PAD * 2, h: availH })
     const w = base.w * view.zoom
     const h = base.h * view.zoom
     const rect = {
       x: (box.width - w) / 2 + view.x,
-      y: (box.height - h) / 2 + view.y,
+      y: top + (availH - h) / 2 + view.y,
       w,
       h,
     }
@@ -151,56 +163,95 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     schedule()
   }, [schedule])
 
-  // Rueda: la foto se acerca hacia donde está el puntero, no hacia el centro. Con
-  // una grilla de treinta y dos divisiones es la diferencia entre mirar un detalle y
-  // buscarlo.
+  /**
+   * Acercar dejando quieto el punto que se está mirando. Vale para la rueda y para
+   * el pellizco: en los dos casos hay un lugar de la pantalla que no se tiene que
+   * mover, el puntero o el medio de los dos dedos. Acercar hacia el centro de la
+   * ventana en vez de hacia ahí obliga a reencuadrar después de cada gesto.
+   */
+  const zoomAt = useCallback((cx: number, cy: number, factor: number) => {
+    const wrap = wrapRef.current
+    const rect = placedRef.current
+    if (!wrap || !rect.w) return
+
+    const box = wrap.getBoundingClientRect()
+    const u = (cx - rect.x) / rect.w
+    const v = (cy - rect.y) / rect.h
+
+    const view = viewRef.current
+    const zoom = Math.min(ZOOM.max, Math.max(ZOOM.min, view.zoom * factor))
+    const w = (rect.w / view.zoom) * zoom
+    const h = (rect.h / view.zoom) * zoom
+
+    view.zoom = zoom
+    view.x = cx - u * w - (box.width - w) / 2
+    view.y = cy - v * h - (box.height - h) / 2
+
+    setZoomed(Math.abs(zoom - 1) > 0.01)
+  }, [])
+
   const onWheel = useCallback(
     (e: React.WheelEvent) => {
-      const wrap = wrapRef.current
-      const rect = placedRef.current
-      if (!wrap || !rect.w) return
-
-      const box = wrap.getBoundingClientRect()
-      const cx = e.clientX - box.left
-      const cy = e.clientY - box.top
-      const u = (cx - rect.x) / rect.w
-      const v = (cy - rect.y) / rect.h
-
-      const view = viewRef.current
-      const zoom = Math.min(ZOOM.max, Math.max(ZOOM.min, view.zoom * Math.exp(-e.deltaY * 0.0012)))
-      const w = (rect.w / view.zoom) * zoom
-      const h = (rect.h / view.zoom) * zoom
-
-      view.zoom = zoom
-      view.x = cx - u * w - (box.width - w) / 2
-      view.y = cy - v * h - (box.height - h) / 2
-
-      setZoomed(Math.abs(zoom - 1) > 0.01)
+      const box = wrapRef.current?.getBoundingClientRect()
+      if (!box) return
+      zoomAt(e.clientX - box.left, e.clientY - box.top, Math.exp(-e.deltaY * 0.0012))
       schedule()
     },
-    [schedule],
+    [schedule, zoomAt],
   )
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    panRef.current = { x: e.clientX, y: e.clientY }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    pinchRef.current = null
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      // Un toque muy corto puede dejar de existir antes de que lleguemos a capturarlo.
+      // Sin captura el gesto anda igual mientras el dedo no salga del lienzo.
+    }
   }, [])
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      const pan = panRef.current
-      if (!pan) return
-      viewRef.current.x += e.clientX - pan.x
-      viewRef.current.y += e.clientY - pan.y
-      panRef.current = { x: e.clientX, y: e.clientY }
-      setZoomed(true)
+      const pointers = pointersRef.current
+      const previous = pointers.get(e.pointerId)
+      if (!previous) return
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      const box = wrapRef.current?.getBoundingClientRect()
+      if (!box) return
+      const view = viewRef.current
+
+      if (pointers.size >= 2) {
+        // Dos dedos: la distancia entre ellos manda el zoom y su punto medio el
+        // desplazamiento. Se miden de nuevo en cada movimiento en vez de contra el
+        // inicio del gesto, así levantar y volver a apoyar un dedo no pega un salto.
+        const [a, b] = [...pointers.values()]
+        const spread = Math.hypot(a.x - b.x, a.y - b.y)
+        const middle = { x: (a.x + b.x) / 2 - box.left, y: (a.y + b.y) / 2 - box.top }
+        const last = pinchRef.current
+
+        if (last && last.spread > 0) {
+          view.x += middle.x - last.middle.x
+          view.y += middle.y - last.middle.y
+          zoomAt(middle.x, middle.y, spread / last.spread)
+        }
+        pinchRef.current = { spread, middle }
+      } else {
+        view.x += e.clientX - previous.x
+        view.y += e.clientY - previous.y
+        setZoomed(true)
+      }
+
       schedule()
     },
-    [schedule],
+    [schedule, zoomAt],
   )
 
-  const onPointerUp = useCallback(() => {
-    panRef.current = null
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    pointersRef.current.delete(e.pointerId)
+    // Que el dedo que queda no arrastre con el salto de haber sido parte del pellizco.
+    pinchRef.current = null
   }, [])
 
   return (

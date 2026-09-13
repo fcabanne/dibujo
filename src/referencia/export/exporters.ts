@@ -154,6 +154,34 @@ async function write(page: Page, name: string, format: AppState['export']['forma
   }
 }
 
+export type Delivery = 'compartido' | 'descargado' | 'cancelado'
+
+/**
+ * Entregar el archivo por donde el dispositivo sepa entregarlo.
+ *
+ * En un celular la descarga de siempre es poco confiable: Safari muchas veces abre
+ * el archivo en una pestaña en vez de guardarlo, y quedás sin saber dónde fue a
+ * parar. La hoja de compartir del sistema sí sabe — te deja elegir Fotos, Archivos o
+ * mandarlo. Donde no existe, la descarga común sigue siendo lo correcto.
+ */
+export async function deliver(output: Output): Promise<Delivery> {
+  const file = new File([output.blob], output.filename, { type: output.blob.type })
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] })
+      return 'compartido'
+    } catch (error) {
+      // Cerrar la hoja de compartir no es un error: es una respuesta.
+      if (error instanceof Error && error.name === 'AbortError') return 'cancelado'
+      // Cualquier otra cosa, al camino de siempre.
+    }
+  }
+
+  download(output)
+  return 'descargado'
+}
+
 export function download({ blob, filename }: Output): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -179,7 +207,19 @@ function context(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 function toBlob(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo generar el archivo'))),
+      (blob) =>
+        blob
+          ? resolve(blob)
+          : // La única razón realista por la que el navegador devuelve nada es que no
+            // le alcanzó la memoria para un lienzo de este tamaño. Pasa en celulares
+            // con fotos grandes, y decirlo así es lo único accionable: bajar la
+            // calidad por nuestra cuenta sería romper la promesa del export.
+            reject(
+              new Error(
+                'Este dispositivo se quedó sin memoria para un archivo de ese tamaño. ' +
+                  'Probá con una hoja más chica.',
+              ),
+            ),
       mime,
       quality,
     )

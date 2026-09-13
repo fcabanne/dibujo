@@ -12,6 +12,9 @@ html,
 body,
 #root {
   height: 100%;
+  /* En un celular el 100% incluye la barra del navegador que aparece y desaparece,
+     así que la app quedaría más alta que lo que se ve. `dvh` mide lo visible. */
+  height: 100dvh;
 }
 
 body {
@@ -31,6 +34,9 @@ body {
   flex: 1;
   min-width: 0;
   cursor: grab;
+  /* Los gestos sobre la foto son nuestros. Sin esto, arrastrar para mover la foto
+     scrollea la página y pellizcar hace zoom del navegador entero. */
+  touch-action: none;
   background:
     radial-gradient(120% 90% at 32% 8%, rgba(230, 176, 117, 0.07), transparent 60%),
     var(--fondo);
@@ -240,12 +246,15 @@ body {
   height: 14px;
 }
 
+/* Centrados con `top: 50%` y no clavados arriba: así el riel sigue en el medio
+   cuando el área de toque crece para el dedo. */
 .slider .track::before {
   position: absolute;
-  top: 6px;
+  top: 50%;
   right: 0;
   left: 0;
   height: 3px;
+  margin-top: -1.5px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.13);
   content: '';
@@ -253,9 +262,10 @@ body {
 
 .slider .fill {
   position: absolute;
-  top: 6px;
+  top: 50%;
   left: 0;
   height: 3px;
+  margin-top: -1.5px;
   border-radius: 2px;
   background: var(--accent);
   pointer-events: none;
@@ -697,4 +707,251 @@ button.wide:disabled {
   font-size: 10.5px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------
+   Pantalla angosta
+   ------------------------------------------------------------------
+
+   El escritorio queda intacto: todo lo de acá abajo vive en media queries.
+   Y son dos preguntas distintas, no una:
+
+   - el **ancho** decide el acomodo. Que el panel y la foto no entren juntos
+     pasa igual en una ventana angosta de escritorio, sin ningún dedo cerca.
+   - el **puntero** decide la interacción. Si no hay con qué pasar por encima,
+     lo que se revelaba al pasar por encima tiene que estar siempre visible, y
+     lo que se toca tiene que ser más grande.
+
+   Mezclarlas es lo que hace que una notebook táctil, o una ventana achicada,
+   reciban la interfaz equivocada.
+   ------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .app.is-compact {
+    flex-direction: column;
+  }
+
+  /* La foto se lleva todo lo que sobra, y se achica sola cuando sube un panel:
+     el lienzo la vuelve a encuadrar porque está mirando su propio tamaño. */
+  .app.is-compact .stage {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .app.is-compact .note {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+  }
+}
+
+/* La barra de arriba flota sobre la foto: volver y descargar, nada más. */
+.topbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: linear-gradient(to bottom, rgba(10, 10, 12, 0.8), transparent);
+  /* La barra no roba el gesto: arrastrar sobre el degradado mueve la foto. */
+  pointer-events: none;
+}
+
+.topbar > * {
+  pointer-events: auto;
+}
+
+.topbar strong {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.topbar .back,
+.topbar .icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(20, 20, 24, 0.6);
+  color: var(--hud-text);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.topbar .back svg,
+.topbar .icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.topbar .icon:disabled {
+  opacity: 0.4;
+}
+
+/* Los controles, abajo: pestañas siempre visibles y el panel que sube al tocarlas. */
+.controls {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(14, 14, 17, 0.97);
+  backdrop-filter: blur(16px);
+}
+
+.tab-panel {
+  max-height: 38vh;
+  padding: 16px 16px 8px;
+  overflow-y: auto;
+  animation: rise 0.22s var(--ease);
+}
+
+.tab-panel > * + * {
+  margin-top: 13px;
+}
+
+.tabbar {
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabbar button {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  /* 56 px de alto: por debajo de eso el dedo empieza a errarle al de al lado. */
+  min-height: 56px;
+  padding: 10px 4px;
+  border: 0;
+  background: none;
+  color: var(--hud-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color 0.16s var(--ease);
+}
+
+.tabbar button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tabbar button.is-on {
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------
+   Cuando el que toca es un dedo
+   ------------------------------------------------------------------ */
+
+@media (hover: none) {
+  /* Nada puede aparecer al pasar por encima si no hay con qué pasar por encima.
+     El velo se queda puesto: degradado abajo para que se lean el nombre y el
+     botón, y la foto visible arriba. */
+  .thumb-over {
+    place-items: end start;
+    background: linear-gradient(
+      to top,
+      rgba(8, 8, 10, 0.85),
+      rgba(8, 8, 10, 0.2) 45%,
+      transparent 72%
+    );
+    opacity: 1;
+  }
+
+  .thumb-over button {
+    position: absolute;
+    right: 10px;
+    bottom: 9px;
+    padding: 10px 15px;
+  }
+
+  .thumb-meta {
+    right: 46%;
+  }
+}
+
+@media (pointer: coarse) {
+  .segmented button,
+  .papers button,
+  .presets button {
+    padding: 11px 13px;
+    font-size: 12.5px;
+  }
+
+  .chip {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .chip.is-custom span {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* El riel sigue midiendo 3 px; lo que crece es dónde se puede agarrar. */
+  .slider .track {
+    height: 30px;
+  }
+
+  .slider input[type='range']::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .slider input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .slider .row {
+    margin-bottom: 2px;
+    font-size: 13px;
+  }
+
+  .toggle {
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .toggle .switch {
+    width: 44px;
+    height: 26px;
+  }
+
+  .toggle .switch::after {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggle input:checked ~ .switch::after {
+    transform: translateX(18px);
+  }
+
+  .numbers input {
+    padding: 12px 34px 12px 12px;
+    font-size: 14px;
+  }
+
+  .sheet-actions button {
+    padding: 13px 12px;
+    font-size: 13.5px;
+  }
+
+  button.wide {
+    padding: 13px 12px;
+    font-size: 13.5px;
+  }
 }

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { openReferenceFile, type Reference } from '../shared/referenceImage'
 import { loadOriginal, saveOriginal } from '../shared/imageStore'
 import { Canvas } from './components/Canvas'
+import { useCompact } from './hooks/useCompact'
 import { DownloadDialog } from './components/DownloadDialog'
 import { Panel } from './components/Panel'
-import { download, exportFile } from './export/exporters'
+import { deliver, exportFile } from './export/exporters'
 import { placeholderReference } from './state/placeholder'
 import { loadSession, saveSession } from './state/persistence'
 import { reducer } from './state/reducer'
@@ -16,6 +17,7 @@ export function App() {
   const [dialog, setDialog] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [effectsSupported, setEffectsSupported] = useState(true)
+  const compact = useCompact()
   const noteTimer = useRef(0)
 
   // Estable: el diálogo se suscribe a `close` con ella, y una función nueva por
@@ -77,9 +79,11 @@ export function App() {
     setBusy(true)
     try {
       const output = await exportFile(reference, state)
-      download(output)
+      const how = await deliver(output)
       setDialog(false)
-      notify(`Listo: ${output.filename}`)
+      if (how !== 'cancelado') {
+        notify(how === 'compartido' ? 'Compartido' : `Listo: ${output.filename}`)
+      }
     } catch (error) {
       notify(error instanceof Error ? error.message : 'No se pudo descargar')
     } finally {
@@ -88,12 +92,13 @@ export function App() {
   }, [busy, notify, reference, state])
 
   return (
-    <div className="app">
+    <div className={'app' + (compact ? ' is-compact' : '')}>
       <Canvas
         reference={reference}
         state={state}
         onFile={(file) => void handleFile(file)}
         onEffectsSupport={setEffectsSupported}
+        compact={compact}
       />
 
       <Panel
@@ -103,6 +108,7 @@ export function App() {
         onFile={(file) => void handleFile(file)}
         onDownload={() => setDialog(true)}
         effectsSupported={effectsSupported}
+        compact={compact}
       />
 
       <DownloadDialog

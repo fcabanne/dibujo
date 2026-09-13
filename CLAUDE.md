@@ -208,6 +208,40 @@ sueltas eran honestas pero pedían entender qué es una curva y qué es un sobel
 lo que se elige es cómo mirar la referencia. El blanco y negro queda afuera del modo
 —y arriba, en la UI— porque es independiente y sobrevive al cambio.
 
+### Pantalla angosta
+
+Referencia fue la primera en resolverlo, así que lo que salió de acá vale para las
+que vengan.
+
+**El escritorio no se toca.** Todo lo de celular vive en media queries y en una rama
+del render; no hay una segunda versión de nada. Los controles están escritos **una
+sola vez** (el arreglo `sections` de `Panel.tsx`) y se acomodan de dos formas: columna
+al costado, o barra de pestañas abajo al estilo de Lightroom. Si aparece un control
+nuevo, aparece en los dos lados solo.
+
+**Son dos preguntas distintas, no una.** El **ancho** (`useCompact`, 720 px) decide el
+acomodo: que el panel y la foto no entren juntos pasa igual en una ventana angosta de
+escritorio, sin ningún dedo cerca. El **puntero** (`(hover: none)`, `(pointer:
+coarse)` en el CSS) decide la interacción. Mezclarlas es lo que hace que una notebook
+táctil reciba la interfaz equivocada.
+
+**Nada puede aparecer al pasar por encima.** Se coló una vez y costó caro: la
+miniatura de la foto revelaba "Cambiar foto" con el hover, y en un celular ese botón
+quedaba en opacidad 0 — la única forma de cargar una foto propia, inalcanzable.
+
+**Los gestos son nuestros.** `touch-action: none` sobre el lienzo, si no arrastrar
+scrollea la página y pellizcar hace zoom del navegador. Un dedo mueve, dos acercan, y
+las dos cosas usan el mismo `zoomAt`: siempre hay un punto que no se tiene que mover
+—el puntero, o el medio de los dedos—, porque acercar hacia el centro de la ventana
+obliga a reencuadrar después de cada gesto.
+
+**Guardar se pide por la hoja de compartir** (`deliver` en `exporters.ts`). La
+descarga común es poco confiable en Safari de celular: abre el archivo en una pestaña
+en vez de guardarlo. Donde no hay `navigator.share`, cae en la descarga de siempre.
+
+**La calidad del export no baja en celular.** Si no entra en memoria se avisa y se
+sugiere una hoja más chica; bajarla en silencio sería romper la promesa del export.
+
 **Acá sí hay panel**, al revés que en el enmarcado. No es incoherencia: son muchas
 perillas que se tocan en la misma sesión buscando un punto, y eso se encuentra
 probando de corrido, no abriendo y cerrando abanicos.
