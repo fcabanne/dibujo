@@ -15,7 +15,7 @@ const DB_NAME = 'dibujo'
 const STORE = 'imagenes'
 
 /** Cada herramienta guarda bajo su propia clave: comparten base de datos, no imagen. */
-export type ToolId = 'marco' | 'referencia'
+export type ToolId = 'marco' | 'referencia' | 'mesa'
 
 /**
  * Cómo se llamaba antes una herramienta. Existe para que renombrarla no le borre en

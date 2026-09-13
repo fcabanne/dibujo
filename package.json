@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:celu": "vite --mode celu --host",
     "build": "tsc -b && node scripts/build.mjs",
     "preview": "vite preview",
     "build:app": "node scripts/build.mjs && node -e \"const f=require('fs');f.copyFileSync('dist/marco/index.html','cuadros.html');f.copyFileSync('dist/referencia/index.html','referencia.html')\"",
@@ -17,6 +18,7 @@
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",

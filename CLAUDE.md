@@ -1,13 +1,15 @@
 # dibujo
 
-Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay dos
-—**Cuadros**, el probador de enmarcado, y **Referencia**, el preparador de la foto de
-referencia— y la idea es que crezca a más. Todas viven en este repo y se publican
+Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay tres
+—**Cuadros**, el probador de enmarcado; **Referencia**, el preparador de la foto de
+referencia; y **Mesa de luz**, para calcar del celular— y la idea es que crezca a más. Todas viven en este repo y se publican
 juntas en GitHub Pages.
 
-**Los nombres son de oficio, no de software.** Una palabra, concreta, la cosa y no la
-técnica: Cuadros, no "Simulador de molduras". Si una herramienta nueva no entra en
-esa forma, el problema es el nombre.
+**Los nombres son de oficio, no de software.** La cosa y no la técnica, y lo más
+corta que se pueda: Cuadros, no "Simulador de molduras". Que sea una sola palabra es
+lo común, no la regla — "mesa de luz" son tres y es exactamente el objeto que un
+dibujante nombraría. Lo que no entra es el nombre de software; si una herramienta
+nueva no se puede nombrar así, el problema es el nombre.
 
 Es un proyecto casero: sin backend, sin cuentas, sin tests. La vara es que ande bien
 y se sienta lindo de usar, no que sea infraestructura seria.
@@ -22,7 +24,10 @@ que está escrita en el README y no se rompe.
 Los identificadores del código van en inglés.
 
 **Cada herramienta compila a un único .html autocontenido**, para poder abrirla con
-doble clic o mandarla por mail. Lo hace `vite-plugin-singlefile`.
+doble clic o mandarla por mail. Lo hace `vite-plugin-singlefile`. La mesa de luz es la
+excepción, y no por descuido: los navegadores no prestan la cámara fuera de un
+contexto seguro, así que abierta como `file://` no tendría con qué funcionar. Por eso
+`build:app` no la copia.
 
 ## Estructura
 
@@ -30,20 +35,24 @@ doble clic o mandarla por mail. Lo hace `vite-plugin-singlefile`.
 index.html      portada, el bifurcador hacia las herramientas
 marco/          probador de enmarcado
 referencia/     preparador de la foto de referencia
+mesa/           la mesa de luz
 src/
   portada/      estilos de la portada
   shared/       lo que usan todas las herramientas
   marco/        el probador de enmarcado
   referencia/   el preparador de la foto de referencia
+  mesa/         la mesa de luz
 ```
 
 **Para sumar una herramienta:** crear `<nombre>/index.html`, su carpeta en `src/`, y
-agregarla a la lista de `scripts/build.mjs` y a la portada.
+agregarla a la lista de `scripts/build.mjs`, a la portada y al `ToolId` de
+`src/shared/imageStore.ts`.
 
 ## Comandos
 
 ```bash
 npm run dev          # servidor local en http://localhost:5173
+npm run dev:celu     # además en https y abierto a la red local, para probar en el celular
 npm run build        # compila el sitio entero a dist/
 npm run build:app    # además deja cuadros.html y referencia.html sueltos, para mandar por mail
 npm run deploy       # compila y publica en GitHub Pages
@@ -63,6 +72,13 @@ Para sobrescribir: escribir a `.tmp` y `mv` encima, o usar la herramienta Edit.
 plugin que incrusta todo en un solo `.html` activa `inlineDynamicImports`, y rollup
 rechaza esa opción cuando hay más de una entrada. De a una, cada página conserva la
 propiedad que importa —ser un archivo autocontenido— y el sitio sale en una corrida.
+
+**La cámara solo existe en contexto seguro.** `getUserMedia` no atiende fuera de
+https o localhost, y no avisa distinto de cuando no hay cámara. Dos consecuencias que
+sorprenden: la mesa de luz abierta como archivo suelto (`file://`) nunca va a ver
+nada, y probarla en el celular contra `http://192.168.x.x:5173` tampoco funciona —
+para eso está `npm run dev:celu`, que levanta el server en https con un certificado
+inventado. El celular pide confirmar una vez y entra.
 
 **Verificar en el navegador es engañoso cuando la pestaña no está pintando.** Las
 transiciones CSS quedan congeladas a mitad de camino y `requestAnimationFrame` se
@@ -195,3 +211,39 @@ lo que se elige es cómo mirar la referencia. El blanco y negro queda afuera del
 **Acá sí hay panel**, al revés que en el enmarcado. No es incoherencia: son muchas
 perillas que se tocan en la misma sesión buscando un punto, y eso se encuentra
 probando de corrido, no abriendo y cerrando abanicos.
+
+## Cómo está armada la mesa de luz
+
+El celular en un trípode mirando el papel, la cámara ocupando la pantalla y la foto
+encima, translúcida. Se dibuja mirando la pantalla: lo que se ve es el lápiz real
+avanzando sobre la foto.
+
+Es la más chica de las tres y no tiene dominio ni render propios — no hay nada que
+calcular, solo un `<video>` y un `<img>` apilados. Todo el diseño está en lo que
+**no** hay.
+
+**Son dos controles y ninguna instrucción.** Cargar la foto y cuánto se ve. El
+permiso de cámara lo pide el navegador con su propio cartel, y no se antepone ninguna
+pantalla nuestra explicándolo: agregarla sería pedir permiso para pedir permiso.
+
+**La foto va fija, encajada con un 5% de margen.** No se arrastra ni se escala. El
+encuadre fino se hace moviendo el teléfono, que para eso está el trípode, y cualquier
+gesto de ajuste sobre la pantalla compite con la mano que dibuja. El margen es de
+seguridad: pegada al borde, la foto cae justo donde la lente deforma.
+
+**Los controles se van solos** (`useIdle`) y vuelven con un toque en cualquier lado.
+Abajo de esa pantalla hay una hoja de papel: todo lo que quede dibujado encima es
+papel que no se ve. Mientras están escondidos no reciben toques — el primero
+despierta la interfaz y no mueve nada, que es lo que uno quiere cuando toca a ciegas.
+
+**La pantalla se mantiene prendida** (`useWakeLock`). Dibujar es justamente no tocar
+el teléfono; sin esto se apaga a los treinta segundos y hay que soltar el lápiz. El
+sistema suelta el permiso al pasar a segundo plano y no lo devuelve, así que se
+vuelve a pedir cada vez que la pestaña reaparece.
+
+**Al volver de otra app el video queda pausado**, con el último cuadro congelado en
+pantalla. Parece que anda hasta que se mueve el papel y no pasa nada, así que
+`useCamera` lo vuelve a arrancar cuando la pestaña se hace visible.
+
+La foto se guarda como las demás, en IndexedDB bajo su propia clave (`'mesa'`), y la
+opacidad —un número— en localStorage.
