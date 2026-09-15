@@ -39,3 +39,6 @@ Thumbs.db
 
 # Config local de Claude Code: es de esta máquina, no del proyecto.
 .claude/settings.local.json
+
+# Skills de terceros instaladas con `npx skills add`: no son de este proyecto.
+.claude/skills/

@@ -111,12 +111,14 @@ export function Toggle({
 }) {
   return (
     <label className="toggle">
-      <span>
+      {/* La casilla va primero y el nombre después, como en el diseño: se lee
+          "está marcado — qué cosa", que es el orden en que se mira una lista. */}
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="box" aria-hidden="true" />
+      <span className="etiqueta">
         {label}
         {hint && <em>{hint}</em>}
       </span>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="switch" aria-hidden="true" />
     </label>
   )
 }

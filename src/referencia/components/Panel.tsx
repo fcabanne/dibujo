@@ -390,12 +390,14 @@ export function Panel({
                 type="button"
                 className={section.id === openTab ? 'is-on' : ''}
                 aria-pressed={section.id === openTab}
+                title={section.label}
+                aria-label={section.label}
                 // Tocar la pestaña abierta la cierra: es la forma más rápida de
                 // volver a ver la foto entera sin buscar una cruz.
                 onClick={() => setOpenTab(section.id === openTab ? null : section.id)}
               >
                 {section.icon}
-                <span>{section.label}</span>
+                <span className="sr">{section.label}</span>
               </button>
             ))}
           </nav>
