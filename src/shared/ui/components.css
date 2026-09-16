@@ -1,0 +1,219 @@
+/* ------------------------------------------------------------------
+   Los componentes del sistema.
+
+   Cada medida sale del componente de Figma que se nombra arriba de cada
+   bloque. Lo que Figma no dibuja son los **estados**: no hay hover, ni
+   foco, ni deshabilitado en el archivo. Los resuelvo sin inventar ningún
+   color — con opacidad y con el acento que ya existe— y quedan marcados
+   como derivados. Cuando los dibujes, se reemplazan acá.
+   ------------------------------------------------------------------ */
+
+/* --- Button — Figma 18:136 (Loud | Quiet | Transparent) ------------ */
+
+.ds-button {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-min);
+  height: var(--ds-control-min);
+  padding: 0 var(--ds-space-5);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  font: var(--ds-text-label);
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.16s var(--ds-ease);
+}
+
+.ds-button svg {
+  flex: none;
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+}
+
+.ds-button--loud {
+  background: var(--ds-accent-dark);
+  color: var(--ds-accent-light);
+}
+
+.ds-button--quiet {
+  background: var(--ds-accent-light);
+  color: var(--ds-accent-dark);
+}
+
+.ds-button--transparent {
+  color: var(--ds-accent-dark);
+}
+
+/* Derivados: el archivo no dibuja estos estados. */
+.ds-button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.ds-button:active:not(:disabled) {
+  opacity: 0.76;
+}
+
+.ds-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- IconButton — Figma 4:650 (Selected Off | On) ------------------ */
+
+.ds-icon-button {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  min-height: var(--ds-control-min);
+  padding: var(--ds-space-3) var(--ds-space-1);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  color: var(--ds-accent-dark);
+  cursor: pointer;
+  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease),
+    opacity 0.16s var(--ds-ease);
+}
+
+.ds-icon-button svg {
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+}
+
+.ds-icon-button.is-selected {
+  background: var(--ds-accent-dark);
+  color: var(--ds-accent-light);
+}
+
+/* Derivados. */
+.ds-icon-button:hover:not(:disabled):not(.is-selected) {
+  background: var(--ds-accent-light);
+}
+
+.ds-icon-button:disabled {
+  color: var(--ds-icon-idle);
+  cursor: default;
+}
+
+/* --- Checkbox — Figma 4:1270 -------------------------------------- */
+
+.ds-checkbox {
+  position: relative;
+}
+
+/* El input sigue existiendo y sigue recibiendo el foco: lo que se esconde
+   es su dibujo, no él. */
+.ds-checkbox input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.ds-checkbox label {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+  justify-content: space-between;
+  /* El área tocable es la fila entera, no el cuadradito de 24. */
+  min-height: var(--ds-control-min);
+  cursor: pointer;
+}
+
+.ds-checkbox-text {
+  font: var(--ds-text-control);
+  color: var(--ds-black);
+}
+
+.ds-checkbox-text em {
+  display: block;
+  margin-top: 2px;
+  font: var(--ds-text-meta);
+  font-style: normal;
+  color: var(--ds-accent-dark);
+}
+
+/* 32 de área, 24 de caja adentro: las dos medidas son del componente. */
+.ds-checkbox-box {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.ds-checkbox-box::before {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ds-muted);
+  border-radius: var(--ds-radius-check);
+  content: '';
+  transition: border-color 0.16s var(--ds-ease);
+}
+
+/* La marca: un cuadrado de 14 centrado, no un tilde. */
+.ds-checkbox-box::after {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ds-radius-tick);
+  background: var(--ds-accent-dark);
+  content: '';
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.16s var(--ds-ease), transform 0.16s var(--ds-spring);
+}
+
+.ds-checkbox input:checked ~ label .ds-checkbox-box::before {
+  border-color: var(--ds-accent-dark);
+}
+
+.ds-checkbox input:checked ~ label .ds-checkbox-box::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ds-checkbox.is-disabled label {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- el link del sistema ------------------------------------------ */
+
+.ds-link {
+  font: var(--ds-text-link);
+  color: var(--ds-accent-dark);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ds-link:hover {
+  text-decoration: underline;
+}
+
+/* --- foco -----------------------------------------------------------
+   Derivado y deliberado: sin esto no se puede usar nada con el teclado.
+   Usa el acento que ya existe, no un color nuevo. */
+
+.ds-button:focus-visible,
+.ds-icon-button:focus-visible,
+.ds-link:focus-visible,
+.ds-checkbox input:focus-visible ~ label .ds-checkbox-box {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
+}
