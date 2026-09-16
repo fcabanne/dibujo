@@ -108,6 +108,13 @@ body {
   text-align: center;
 }
 
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+}
+
 .welcome-text {
   display: flex;
   flex-direction: column;

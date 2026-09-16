@@ -1,5 +1,6 @@
 import { copy } from '../../shared/copy'
 import { Button, UploadIcon } from '../../shared/ui'
+import { LanguageLink } from './LanguageLink'
 
 interface Props {
   onUpload: () => void
@@ -33,9 +34,16 @@ export function Welcome({ onUpload }: Props) {
         </a>
       </div>
 
-      <Button variant="loud" icon={<UploadIcon />} onClick={onUpload}>
-        {copy.welcome.upload}
-      </Button>
+      <div className="welcome-actions">
+        <Button variant="loud" icon={<UploadIcon />} onClick={onUpload}>
+          {copy.welcome.upload}
+        </Button>
+
+        {/* Acá abajo porque es donde cae quien abre la herramienta por primera
+            vez — y si se abrió en el idioma equivocado, es lo primero que va a
+            querer cambiar. */}
+        <LanguageLink />
+      </div>
     </div>
   )
 }

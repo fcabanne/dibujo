@@ -195,6 +195,11 @@
 /* --- el link del sistema ------------------------------------------ */
 
 .ds-link {
+  /* Puede ser un <a> o un <button> — cambiar de idioma es una acción, no un
+     destino. Estos tres reinicios son para que el botón no traiga su caja. */
+  padding: 0;
+  border: 0;
+  background: none;
   font: var(--ds-text-link);
   color: var(--ds-accent-dark);
   text-decoration: none;

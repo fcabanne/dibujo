@@ -22,29 +22,46 @@ const STORAGE_KEY = 'dibujo:idioma'
  * Qué idioma mostrar, en orden: lo que diga la URL (`?lang=en`), lo que se
  * eligió antes, el idioma del sistema, y castellano.
  *
- * El `?lang=` de la URL existe para poder revisar una traducción sin tocar
- * nada ni cambiar la configuración del navegador.
+ * **El `?lang=` no se guarda.** Es una mirada, no una decisión: sirve para
+ * revisar una traducción sin cambiar la configuración de nadie, y al sacarlo
+ * de la URL todo vuelve a como estaba. Guardarlo fue un error — alcanzaba con
+ * mandar un link de prueba para dejarle el idioma cambiado a alguien, sin
+ * forma de volver. Lo único que se guarda es lo que se elige a propósito, con
+ * `setLanguage`.
  */
 function resolveLanguage(): string {
   const requested = new URLSearchParams(window.location.search).get('lang')
-  if (requested && requested in LOCALES) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, requested)
-    } catch {
-      // Modo privado: se usa igual, solo que no se recuerda.
-    }
-    return requested
-  }
+  if (requested && requested in LOCALES) return requested
 
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (saved && saved in LOCALES) return saved
   } catch {
-    // Ídem.
+    // Modo privado: se usa igual, solo que no se recuerda.
   }
 
   const system = window.navigator.language?.slice(0, 2)
   return system && system in LOCALES ? system : 'es'
+}
+
+/**
+ * Cambiar de idioma a propósito. Recarga, porque los textos se resuelven una
+ * sola vez al arrancar; recargar para cambiar de idioma es lo normal y cuesta
+ * menos que hacer que cada texto de la app sea reactivo.
+ *
+ * Se va con el `?lang=` sacado de la URL: si quedara puesto, le ganaría a lo
+ * que se acaba de elegir.
+ */
+export function setLanguage(code: string): void {
+  if (!(code in LOCALES)) return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, code)
+  } catch {
+    // Sin dónde guardarlo, el cambio vale para esta visita.
+  }
+  const url = new URL(window.location.href)
+  url.searchParams.delete('lang')
+  window.location.replace(url.toString())
 }
 
 export const language = resolveLanguage()

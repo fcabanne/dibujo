@@ -16,6 +16,7 @@ import {
 import { GRID_LIMITS } from '../domain/grid'
 import { PAPER_PRESETS, sheetName } from '../domain/paper'
 import { ColorRow, Hint, Section, Segmented, Slider } from './controls'
+import { LanguageLink } from './LanguageLink'
 import type { Action } from '../state/reducer'
 import type { AppState, EffectsMode, PaperId } from '../types'
 
@@ -131,6 +132,11 @@ export function Panel({
               <CloseIcon />
             </IconButton>
           </div>
+
+          {/* También acá: con una foto cargada ya no se ve la pantalla de
+              inicio, y quedarse sin forma de volver al idioma propio sería el
+              mismo problema una pantalla más adelante. */}
+          <LanguageLink />
         </>
       ),
     },

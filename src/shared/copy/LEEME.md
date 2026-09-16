@@ -42,8 +42,16 @@ Agregale `?lang=en` a la dirección:
 http://localhost:5173/referencia/?lang=en
 ```
 
-Queda elegido hasta que se ponga otro. Sin `?lang=`, el orden es: lo que se eligió
-antes → el idioma del sistema → castellano.
+**El `?lang=` no se guarda**: es una mirada, no una decisión. Al sacarlo de la
+dirección todo vuelve a como estaba, así que mandarle este link a alguien no le deja
+el idioma cambiado.
+
+Para cambiarlo de verdad está el selector abajo del botón de subir foto, y también en
+la pestaña Foto. Dice el nombre del **otro** idioma, no el actual: si la app se abrió
+en uno que no entendés, lo que tenés que poder leer es a dónde vas.
+
+Sin `?lang=` ni nada elegido, el orden es: lo que se eligió antes → el idioma del
+sistema → castellano.
 
 ## Cómo sumar un idioma
 
