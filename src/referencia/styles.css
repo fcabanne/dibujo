@@ -1,24 +1,31 @@
-@import '../shared/tokens.css';
-
 /* ------------------------------------------------------------------
-   La grilla tiene muchas perillas y todas se tocan en la misma sesión,
-   así que van en una columna a la vista y no escondidas en abanicos: lo
-   que se busca acá es el punto justo, y eso se encuentra probando de
-   corrido. El vidrio oscuro y el acento cálido son los mismos que en el
-   probador de enmarcado.
+   Referencia.
+
+   Todo el color y toda la tipografía salen de los tokens del sistema de
+   diseño (`shared/ui/tokens.css`), que a su vez salen del archivo de
+   Figma. Acá no hay ni un hexadecimal ni un tamaño de letra suelto: si
+   algo tiene que cambiar de color, cambia allá y cambia en todos lados.
+
+   El tema es uno solo, en celular y en escritorio. Lo que cambia con el
+   ancho es el **acomodo** —columna al costado o pestañas abajo—, no la
+   identidad. Y lo que cambia con el puntero son los tamaños de lo que se
+   toca. Son dos preguntas distintas y viven en dos media queries
+   distintas, al final del archivo.
    ------------------------------------------------------------------ */
 
 html,
 body,
 #root {
   height: 100%;
-  /* En un celular el 100% incluye la barra del navegador que aparece y desaparece,
-     así que la app quedaría más alta que lo que se ve. `dvh` mide lo visible. */
+  /* En un celular el 100% incluye la barra del navegador que aparece y
+     desaparece, así que la app quedaría más alta que lo que se ve. */
   height: 100dvh;
 }
 
 body {
+  margin: 0;
   overflow: hidden;
+  background: var(--ds-background);
 }
 
 .app {
@@ -33,13 +40,11 @@ body {
   position: relative;
   flex: 1;
   min-width: 0;
+  background: var(--ds-background);
   cursor: grab;
-  /* Los gestos sobre la foto son nuestros. Sin esto, arrastrar para mover la foto
-     scrollea la página y pellizcar hace zoom del navegador entero. */
+  /* Los gestos sobre la foto son nuestros. Sin esto, arrastrar para mover la
+     foto scrollea la página y pellizcar hace zoom del navegador entero. */
   touch-action: none;
-  background:
-    radial-gradient(120% 90% at 32% 8%, rgba(230, 176, 117, 0.07), transparent 60%),
-    var(--fondo);
 }
 
 .stage:active {
@@ -56,34 +61,27 @@ body {
   position: absolute;
   bottom: 18px;
   left: 50%;
-  transform: translateX(-50%);
-  padding: 7px 16px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: var(--hud-bg);
-  backdrop-filter: blur(12px);
-  color: var(--hud-text);
-  font-size: 12px;
+  padding: var(--ds-space-2) var(--ds-space-5);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-light);
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-meta);
   cursor: pointer;
-  box-shadow: var(--shadow-hud);
-  animation: rise 0.28s var(--spring);
-}
-
-.stage .fit:hover {
-  border-color: var(--accent);
+  transform: translateX(-50%);
+  animation: ds-rise-centered 0.28s var(--ds-spring);
 }
 
 .stage .drop {
   position: absolute;
-  inset: 14px;
   display: grid;
+  inset: 14px;
   place-items: center;
-  border: 2px dashed var(--accent);
-  border-radius: 14px;
-  background: rgba(12, 12, 14, 0.55);
-  backdrop-filter: blur(3px);
-  font-size: 14px;
-  letter-spacing: 0.01em;
+  border: 2px dashed var(--ds-accent-dark);
+  border-radius: var(--ds-radius-group);
+  background: rgb(246 244 255 / 0.82);
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-control);
   pointer-events: none;
 }
 
@@ -91,84 +89,95 @@ body {
   cursor: copy;
 }
 
-.note {
+/* --- la pantalla de inicio ---------------------------------------- */
+
+.empty-stage {
+  display: grid;
+  place-items: center;
+  cursor: default;
+  touch-action: auto;
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  align-items: center;
+  width: 290px;
+  max-width: calc(100% - var(--ds-space-6));
+  text-align: center;
+}
+
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: 100%;
+}
+
+.welcome-text h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.welcome-text p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+}
+
+/* --- la barra de arriba ------------------------------------------- */
+
+.topbar {
   position: absolute;
-  bottom: 22px;
-  left: 22px;
-  padding: 10px 16px;
-  border: 1px solid var(--hud-border);
-  border-radius: 10px;
-  background: var(--hud-bg-solid);
-  backdrop-filter: blur(12px);
-  font-size: 13px;
-  box-shadow: var(--shadow-hud);
-  animation: rise 0.3s var(--spring);
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  gap: var(--ds-space-3);
+  align-items: center;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  padding-top: calc(var(--ds-space-3) + env(safe-area-inset-top));
+  /* La barra no roba el gesto: arrastrar sobre el aire mueve la foto. */
+  pointer-events: none;
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+.topbar > * {
+  pointer-events: auto;
 }
 
-.stage .fit {
-  animation-name: riseCentered;
+.topbar strong {
+  flex: 1;
+  font: var(--ds-text-label);
+  color: var(--ds-accent-dark);
 }
 
-@keyframes riseCentered {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 8px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-/* --- el panel ----------------------------------------------------- */
+/* --- la columna de escritorio ------------------------------------- */
 
 .panel {
   display: flex;
   flex: none;
   flex-direction: column;
   width: 316px;
-  border-left: 1px solid var(--hud-border);
-  background: rgba(17, 17, 20, 0.96);
+  border-left: 1px solid var(--ds-accent-light);
+  background: var(--ds-background);
 }
 
 .panel header {
   display: flex;
+  gap: var(--ds-space-2);
   align-items: center;
-  gap: 10px;
-  padding: 16px 18px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-accent-light);
 }
 
 .panel header h1 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.panel .back {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--hud-border);
-  border-radius: 8px;
-  color: var(--hud-dim);
-  font-size: 14px;
-  text-decoration: none;
-  transition: color 0.18s var(--ease), border-color 0.18s var(--ease);
-}
-
-.panel .back:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  font: var(--ds-text-label);
+  color: var(--ds-accent-dark);
 }
 
 .panel .scroll {
@@ -177,22 +186,25 @@ body {
      crecería más alto que la ventana y la página entera se volvería scrolleable. */
   min-height: 0;
   overflow-y: auto;
-  padding: 0 18px 28px;
+  padding: 0 var(--ds-space-5) var(--ds-space-6);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--ds-muted) transparent;
 }
 
 /* Pegado abajo y fuera del scroll: la acción que cierra el trabajo no se busca. */
 .panel .footer {
   flex: none;
-  padding: 14px 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(13, 13, 16, 0.6);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-top: 1px solid var(--ds-accent-light);
+}
+
+.panel .footer .ds-button {
+  width: 100%;
 }
 
 .section {
-  padding: 16px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: var(--ds-space-5) 0;
+  border-bottom: 1px solid var(--ds-accent-light);
 }
 
 .section:last-child {
@@ -200,42 +212,139 @@ body {
 }
 
 .section h2 {
-  margin: 0 0 12px;
-  color: var(--hud-dim);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  margin: 0 0 var(--ds-space-4);
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.section > * + * {
-  margin-top: 11px;
+.section > * + *,
+.tab-panel > * + * {
+  margin-top: var(--ds-space-4);
 }
 
-/* --- controles ---------------------------------------------------- */
+/* --- los controles de abajo, en pantalla angosta ------------------- */
+
+.controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--ds-space-2);
+  padding-bottom: calc(var(--ds-space-2) + env(safe-area-inset-bottom));
+  background: var(--ds-background);
+  backdrop-filter: blur(16px);
+}
+
+.tab-panel {
+  width: 100%;
+  max-height: 38vh;
+  padding: var(--ds-space-2) var(--ds-space-2) var(--ds-space-5);
+  overflow-y: auto;
+  animation: ds-rise 0.22s var(--ds-ease);
+}
+
+/* La píldora del diseño: contenedor claro, y el elegido en violeta adentro. */
+.tabbar {
+  display: flex;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-accent-light);
+}
+
+/* --- la foto en su pestaña ---------------------------------------- */
+
+.thumb {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--ds-radius-control);
+  /* A cuadros: sin él, una foto con transparencia se confunde con el fondo. */
+  background-color: var(--ds-accent-light);
+  background-image: linear-gradient(45deg, rgb(255 255 255 / 0.6) 25%, transparent 25%),
+    linear-gradient(-45deg, rgb(255 255 255 / 0.6) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgb(255 255 255 / 0.6) 75%),
+    linear-gradient(-45deg, transparent 75%, rgb(255 255 255 / 0.6) 75%);
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-size: 12px 12px;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Entera y sin recortar: la proporción de la foto es información. */
+  object-fit: contain;
+}
+
+.photo-meta {
+  margin: 0;
+  overflow: hidden;
+}
+
+.photo-meta strong {
+  display: block;
+  overflow: hidden;
+  font: var(--ds-text-control);
+  color: var(--ds-black);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-meta em {
+  display: block;
+  margin-top: 2px;
+  font: var(--ds-text-meta);
+  font-style: normal;
+  color: var(--ds-accent-dark);
+}
+
+.photo-actions {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+}
+
+.photo-actions .ds-button {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- slider ---------------------------------------------------------
+   No está dibujado en Figma. Usa el riel claro y el relleno violeta, que
+   son los dos colores que el sistema ya tiene para "fondo de un control"
+   y "control activo". */
 
 .slider {
   display: block;
 }
 
 .slider.is-off {
-  opacity: 0.4;
+  opacity: 0.45;
   pointer-events: none;
 }
 
 .slider .row {
   display: flex;
+  gap: var(--ds-space-3);
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 7px;
-  font-size: 12.5px;
+  margin-bottom: var(--ds-space-2);
+}
+
+.slider .row > span:first-child {
+  font: var(--ds-text-control);
+  color: var(--ds-black);
 }
 
 .slider .row em {
-  color: var(--hud-dim);
-  font-size: 11.5px;
+  font: var(--ds-text-meta);
   font-style: normal;
+  color: var(--ds-accent-dark);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -243,7 +352,7 @@ body {
 .slider .track {
   position: relative;
   display: block;
-  height: 14px;
+  height: 24px;
 }
 
 /* Centrados con `top: 50%` y no clavados arriba: así el riel sigue en el medio
@@ -253,10 +362,10 @@ body {
   top: 50%;
   right: 0;
   left: 0;
-  height: 3px;
-  margin-top: -1.5px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.13);
+  height: 4px;
+  margin-top: -2px;
+  border-radius: var(--ds-radius-tick);
+  background: var(--ds-accent-light);
   content: '';
 }
 
@@ -264,10 +373,10 @@ body {
   position: absolute;
   top: 50%;
   left: 0;
-  height: 3px;
-  margin-top: -1.5px;
-  border-radius: 2px;
-  background: var(--accent);
+  height: 4px;
+  margin-top: -2px;
+  border-radius: var(--ds-radius-tick);
+  background: var(--ds-accent-dark);
   pointer-events: none;
 }
 
@@ -282,28 +391,37 @@ body {
 }
 
 .slider input[type='range']::-webkit-slider-thumb {
-  width: 13px;
-  height: 13px;
+  width: 18px;
+  height: 18px;
   border: 0;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  background: var(--ds-accent-dark);
   appearance: none;
 }
 
 .slider input[type='range']::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
+  width: 18px;
+  height: 18px;
   border: 0;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  background: var(--ds-accent-dark);
 }
+
+.slider input[type='range']:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
+}
+
+/* --- grupos de botones ----------------------------------------------
+   Tampoco están en Figma. Repiten el patrón de la barra de pestañas, que
+   es el único agrupador que el archivo sí define. */
 
 .field-label {
   display: block;
-  margin-bottom: 7px;
-  font-size: 12.5px;
+  margin-bottom: var(--ds-space-2);
+  font: var(--ds-text-control);
+  color: var(--ds-black);
 }
 
 .segmented,
@@ -311,131 +429,93 @@ body {
 .presets {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-accent-light);
 }
 
 .segmented button,
 .papers button,
 .presets button {
   flex: 1 1 auto;
-  padding: 7px 9px;
-  border: 1px solid var(--hud-border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--hud-dim);
-  font-size: 11.5px;
+  min-height: 36px;
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-meta);
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.16s var(--ease), border-color 0.16s var(--ease),
-    background 0.16s var(--ease);
-}
-
-.segmented button:hover,
-.papers button:hover,
-.presets button:hover {
-  color: var(--hud-text);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.segmented button.is-on,
-.papers button.is-on,
-.presets button.is-on {
-  border-color: var(--accent);
-  background: rgba(230, 176, 117, 0.14);
-  color: var(--accent);
+  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease);
 }
 
 .papers button {
   flex: 0 1 auto;
 }
 
-/* Casilla a la izquierda y nombre a la derecha, como en el diseño. La
-   casilla reemplaza al interruptor: un interruptor dice "prendido" y una
-   casilla dice "elegido", y acá lo que se hace es elegir qué se dibuja. */
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 12.5px;
+.segmented button.is-on,
+.papers button.is-on,
+.presets button.is-on {
+  background: var(--ds-accent-dark);
+  color: var(--ds-accent-light);
 }
 
-.toggle .box {
-  position: relative;
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--hud-border);
-  border-radius: 6px;
-  transition: border-color 0.16s var(--ease);
+.segmented button:focus-visible,
+.papers button:focus-visible,
+.presets button:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
 }
 
-.toggle input:checked ~ .box {
-  border-color: var(--accent);
-}
-
-.toggle input:checked ~ .box::after {
-  width: 14px;
-  height: 14px;
-  border-radius: 2px;
-  background: var(--accent);
-  content: '';
-}
-
-.toggle .etiqueta em {
-  display: block;
-  margin-top: 2px;
-  color: var(--hud-dim);
-  font-size: 11px;
-  font-style: normal;
-}
-
-.toggle input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
+/* --- chips de color ------------------------------------------------- */
 
 .colors {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ds-space-2);
 }
 
 .chip {
   position: relative;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 7px;
+  border: 2px solid var(--ds-muted);
+  border-radius: var(--ds-radius-check);
   cursor: pointer;
-  transition: transform 0.16s var(--spring), box-shadow 0.16s var(--ease);
-}
-
-.chip:hover {
-  transform: translateY(-1px);
+  transition: box-shadow 0.16s var(--ds-ease);
 }
 
 .chip.is-on {
-  box-shadow: 0 0 0 2px var(--fondo), 0 0 0 3.5px var(--accent);
+  border-color: var(--ds-accent-dark);
+  box-shadow: 0 0 0 2px var(--ds-background), 0 0 0 4px var(--ds-accent-dark);
 }
 
+/* Los únicos colores crudos de este archivo, y a propósito: esto es la rueda del
+   cuentagotas. Un espectro no se puede armar con la paleta de la marca — son
+   contenido, no tema. Lo mismo vale para los colores de grilla de `controls.tsx`. */
 .chip.is-custom {
   display: grid;
-  place-items: center;
   overflow: hidden;
-  background:
-    conic-gradient(from 0deg, #ff3b30, #ffd60a, #34c759, #00e5ff, #5e5ce6, #ff2d95, #ff3b30);
+  place-items: center;
+  background: conic-gradient(
+    from 0deg,
+    #ff3b30,
+    #ffd60a,
+    #34c759,
+    #00e5ff,
+    #5e5ce6,
+    #ff2d95,
+    #ff3b30
+  );
 }
 
 .chip.is-custom span {
-  width: 14px;
-  height: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--ds-radius-tick);
 }
 
 .chip.is-custom input {
@@ -445,18 +525,26 @@ body {
   cursor: pointer;
 }
 
+.chip:focus-visible,
+.chip.is-custom:focus-within {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+}
+
+/* --- campos numéricos ------------------------------------------------ */
+
 .numbers {
   display: flex;
+  gap: var(--ds-space-2);
   align-items: center;
-  gap: 8px;
 }
 
-.numbers span {
-  color: var(--hud-dim);
-  font-size: 12px;
+.numbers > span:not(.unit) {
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
 }
 
-/* La unidad va adentro del campo: escribís 30 y ya dice 30 cm, sin un rótulo aparte. */
+/* La unidad va adentro del campo: escribís 30 y ya dice 30 cm. */
 .unit {
   position: relative;
   flex: 1;
@@ -466,9 +554,9 @@ body {
 .unit::after {
   position: absolute;
   top: 50%;
-  right: 9px;
-  color: var(--hud-dim);
-  font-size: 11px;
+  right: var(--ds-space-3);
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
   content: 'cm';
   pointer-events: none;
   transform: translateY(-50%);
@@ -477,11 +565,12 @@ body {
 .numbers input {
   width: 100%;
   min-width: 0;
-  padding: 7px 30px 7px 9px;
-  border: 1px solid var(--hud-border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 12.5px;
+  padding: var(--ds-space-3) 34px var(--ds-space-3) var(--ds-space-4);
+  border: 2px solid var(--ds-muted);
+  border-radius: var(--ds-radius-check);
+  background: none;
+  color: var(--ds-black);
+  font: var(--ds-text-control);
   font-variant-numeric: tabular-nums;
   appearance: textfield;
 }
@@ -494,667 +583,161 @@ body {
 }
 
 .numbers input:focus {
-  border-color: var(--accent);
+  border-color: var(--ds-accent-dark);
   outline: none;
 }
 
-button.wide {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--hud-border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--hud-text);
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
-}
-
-button.wide:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-button.wide.primary {
-  border-color: transparent;
-  background: var(--accent);
-  color: #221708;
-  font-weight: 600;
-}
-
-button.wide.primary:hover:not(:disabled) {
-  background: #f0c08a;
-}
-
-button.wide:disabled {
-  cursor: default;
-  opacity: 0.42;
-}
+/* --- textos sueltos --------------------------------------------------- */
 
 .hint {
-  margin: 9px 0 0;
-  color: var(--hud-dim);
-  font-size: 11px;
+  margin: var(--ds-space-2) 0 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-black);
   line-height: 1.5;
 }
 
-/* --- el diálogo de descarga --------------------------------------- */
+.note {
+  position: absolute;
+  bottom: 22px;
+  left: 22px;
+  z-index: 3;
+  padding: var(--ds-space-3) var(--ds-space-5);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  color: var(--ds-accent-light);
+  font: var(--ds-text-meta);
+  animation: ds-rise 0.3s var(--ds-spring);
+}
+
+/* --- el diálogo de descarga ------------------------------------------- */
 
 .sheet {
   width: min(360px, calc(100vw - 32px));
   padding: 0;
-  border: 1px solid var(--hud-border);
-  border-radius: 14px;
-  background: var(--hud-bg-solid);
-  color: var(--hud-text);
-  box-shadow: var(--shadow-hud);
-  backdrop-filter: blur(18px);
+  border: 0;
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  color: var(--ds-black);
 }
 
 .sheet::backdrop {
-  background: rgba(6, 6, 8, 0.6);
+  background: rgb(16 16 16 / 0.42);
 }
 
 .sheet[open] {
-  animation: pop 0.24s var(--spring);
+  animation: ds-pop 0.24s var(--ds-spring);
 }
 
-@keyframes pop {
+.sheet-body {
+  padding: var(--ds-space-5);
+}
+
+.sheet-body h2 {
+  margin: 0 0 var(--ds-space-5);
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.sheet-body > .field + .field {
+  margin-top: var(--ds-space-4);
+}
+
+.sheet-actions {
+  display: flex;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-6);
+}
+
+.sheet-actions .ds-button {
+  flex: 1;
+}
+
+/* --- movimiento -------------------------------------------------------- */
+
+@keyframes ds-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes ds-rise-centered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes ds-pop {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.97);
   }
 }
 
-.sheet-body {
-  padding: 20px;
-}
-
-.sheet-body h2 {
-  margin: 0 0 18px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.sheet-body > .field + .field {
-  margin-top: 14px;
-}
-
-.sheet-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 22px;
-}
-
-.sheet-actions button {
-  flex: 1;
-  padding: 9px 12px;
-  border: 1px solid var(--hud-border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--hud-text);
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
-}
-
-.sheet-actions button:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-.sheet-actions button.primary {
-  flex: 1.4;
-  border-color: transparent;
-  background: var(--accent);
-  color: #221708;
-  font-weight: 600;
-}
-
-.sheet-actions button.primary:hover:not(:disabled) {
-  background: #f0c08a;
-}
-
-.sheet-actions button:disabled {
-  cursor: default;
-  opacity: 0.45;
-}
-
-/* --- la miniatura de la foto -------------------------------------- */
-
-.thumb {
-  position: relative;
-  height: 132px;
-  overflow: hidden;
-  border: 1px solid var(--hud-border);
-  border-radius: 10px;
-  /* A cuadros: sin él, una foto con transparencia se confunde con el panel. */
-  background-color: #17171a;
-  background-image:
-    linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%);
-  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
-  background-size: 12px 12px;
-}
-
-.thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  /* Entera y sin recortar: la proporción de la foto es información. */
-  object-fit: contain;
-}
-
-.thumb-over {
-  position: absolute;
-  display: grid;
-  inset: 0;
-  place-items: center;
-  background: rgba(8, 8, 10, 0.62);
-  opacity: 0;
-  transition: opacity 0.18s var(--ease);
-}
-
-.thumb:hover .thumb-over,
-.thumb-over:focus-within {
-  opacity: 1;
-}
-
-.thumb-over button {
-  padding: 8px 16px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: var(--hud-bg-solid);
-  color: var(--hud-text);
-  font-size: 12px;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: border-color 0.16s var(--ease);
-}
-
-.thumb-over button:hover {
-  border-color: var(--accent);
-}
-
-.thumb-meta {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  left: 10px;
-  overflow: hidden;
-}
-
-.thumb-meta strong {
-  display: block;
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.thumb-meta em {
-  display: block;
-  margin-top: 1px;
-  color: var(--hud-dim);
-  font-size: 10.5px;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ------------------------------------------------------------------
-   Pantalla angosta
-   ------------------------------------------------------------------
+   Acomodo: lo decide el ancho.
 
-   El escritorio queda intacto: todo lo de acá abajo vive en media queries.
-   Y son dos preguntas distintas, no una:
-
-   - el **ancho** decide el acomodo. Que el panel y la foto no entren juntos
-     pasa igual en una ventana angosta de escritorio, sin ningún dedo cerca.
-   - el **puntero** decide la interacción. Si no hay con qué pasar por encima,
-     lo que se revelaba al pasar por encima tiene que estar siempre visible, y
-     lo que se toca tiene que ser más grande.
-
-   Mezclarlas es lo que hace que una notebook táctil, o una ventana achicada,
-   reciban la interfaz equivocada.
+   Que el panel y la foto no entren juntos pasa igual en una ventana
+   angosta de escritorio, sin ningún dedo cerca.
    ------------------------------------------------------------------ */
 
-@media (max-width: 720px) {
-  .app.is-compact {
-    flex-direction: column;
-  }
-
-  /* La foto se lleva todo lo que sobra, y se achica sola cuando sube un panel:
-     el lienzo la vuelve a encuadrar porque está mirando su propio tamaño. */
-  .app.is-compact .stage {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .app.is-compact .note {
-    right: 16px;
-    bottom: 16px;
-    left: 16px;
-  }
-}
-
-/* La barra de arriba flota sobre la foto: volver y descargar, nada más. */
-.topbar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  padding-top: calc(10px + env(safe-area-inset-top));
-  background: linear-gradient(to bottom, rgba(10, 10, 12, 0.8), transparent);
-  /* La barra no roba el gesto: arrastrar sobre el degradado mueve la foto. */
-  pointer-events: none;
-}
-
-.topbar > * {
-  pointer-events: auto;
-}
-
-.topbar strong {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.topbar .back,
-.topbar .icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(20, 20, 24, 0.6);
-  color: var(--hud-text);
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-}
-
-.topbar .back svg,
-.topbar .icon svg {
-  width: 21px;
-  height: 21px;
-}
-
-.topbar .icon:disabled {
-  opacity: 0.4;
-}
-
-/* Los controles, abajo: pestañas siempre visibles y el panel que sube al tocarlas. */
-.controls {
-  position: relative;
-  z-index: 2;
-  flex: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(14, 14, 17, 0.97);
-  backdrop-filter: blur(16px);
-}
-
-.tab-panel {
-  max-height: 38vh;
-  padding: 16px 16px 8px;
-  overflow-y: auto;
-  animation: rise 0.22s var(--ease);
-}
-
-.tab-panel > * + * {
-  margin-top: 13px;
-}
-
-.tabbar {
-  display: flex;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.tabbar button {
-  display: flex;
-  flex: 1;
+.app.is-compact {
   flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  /* 56 px de alto: por debajo de eso el dedo empieza a errarle al de al lado. */
-  min-height: 56px;
-  padding: 10px 4px;
-  border: 0;
-  background: none;
-  color: var(--hud-dim);
-  font-size: 10.5px;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition: color 0.16s var(--ease);
 }
 
-.tabbar button svg {
-  width: 22px;
-  height: 22px;
+.app.is-compact .stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
-.tabbar button.is-on {
-  color: var(--accent);
+.app.is-compact .note {
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
 }
 
 /* ------------------------------------------------------------------
-   Cuando el que toca es un dedo
+   Interacción: la decide el puntero.
+
+   Si el que toca es un dedo, lo que se toca tiene que ser más grande.
    ------------------------------------------------------------------ */
-
-@media (hover: none) {
-  /* Nada puede aparecer al pasar por encima si no hay con qué pasar por encima.
-     El velo se queda puesto: degradado abajo para que se lean el nombre y el
-     botón, y la foto visible arriba. */
-  .thumb-over {
-    place-items: end start;
-    background: linear-gradient(
-      to top,
-      rgba(8, 8, 10, 0.85),
-      rgba(8, 8, 10, 0.2) 45%,
-      transparent 72%
-    );
-    opacity: 1;
-  }
-
-  .thumb-over button {
-    position: absolute;
-    right: 10px;
-    bottom: 9px;
-    padding: 10px 15px;
-  }
-
-  .thumb-meta {
-    right: 46%;
-  }
-}
 
 @media (pointer: coarse) {
   .segmented button,
   .papers button,
   .presets button {
-    padding: 11px 13px;
-    font-size: 12.5px;
+    min-height: 44px;
+    padding: var(--ds-space-3) var(--ds-space-4);
   }
 
   .chip {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
   }
 
-  .chip.is-custom span {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* El riel sigue midiendo 3 px; lo que crece es dónde se puede agarrar. */
+  /* El riel sigue midiendo 4 px; lo que crece es dónde se puede agarrar. */
   .slider .track {
-    height: 30px;
+    height: 32px;
   }
 
   .slider input[type='range']::-webkit-slider-thumb {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   .slider input[type='range']::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-  }
-
-  .slider .row {
-    margin-bottom: 2px;
-    font-size: 13px;
-  }
-
-  .toggle {
-    min-height: 48px;
-    font-size: 13px;
+    width: 22px;
+    height: 22px;
   }
 
   .numbers input {
-    padding: 12px 34px 12px 12px;
-    font-size: 14px;
-  }
-
-  .sheet-actions button {
-    padding: 13px 12px;
-    font-size: 13.5px;
-  }
-
-  button.wide {
-    padding: 13px 12px;
-    font-size: 13.5px;
-  }
-}
-
-/* ------------------------------------------------------------------
-   El tema claro del diseño, acotado al celular.
-
-   Los frames que lo definen son de 390×860, así que vive donde vive todo
-   lo de celular —en la media query— y el escritorio no se toca. Los
-   valores salen del archivo de Figma, ninguno está puesto a ojo.
-
-   Los controles que no aparecían en esos frames (los sliders, los chips
-   de color, los grupos de botones) no se rediseñan acá: se les da vuelta
-   los mismos tokens que ya usaban, así heredan la familia violeta y
-   siguen legibles sobre el fondo claro sin que nadie invente un color.
-   ------------------------------------------------------------------ */
-
-@font-face {
-  font-family: 'Roboto Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('./fonts/roboto-mono-600.woff2') format('woff2');
-}
-
-/* El nombre de la pestaña deja de dibujarse pero no desaparece: sigue ahí
-   para el lector de pantalla, y en el `title` para quien use el mouse. */
-.sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-@media (max-width: 720px) {
-  .stage {
-    background: var(--claro-fondo);
-  }
-
-  /* Sin degradado oscuro: la barra se apoya sobre el claro. */
-  .topbar {
-    background: none;
-  }
-
-  .topbar strong {
-    color: var(--violeta);
-    font-size: 18px;
-  }
-
-  .topbar .back,
-  .topbar .icon {
-    background: var(--claro-boton);
-    color: var(--violeta);
-  }
-
-  /* Darles vuelta los tokens acá adentro alcanza para que cada control que
-     ya existía quede en la paleta nueva sin reescribir su regla. */
-  .controls {
-    --hud-text: var(--violeta);
-    --hud-dim: var(--violeta-suave);
-    --hud-border: var(--violeta-suave);
-    --hud-bg: var(--claro-control);
-    --hud-bg-solid: var(--claro-boton);
-    --accent: var(--violeta);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-    border-top: 0;
-    background: var(--claro-fondo);
-    color: var(--violeta);
-    /* El fondo ya es opaco: el desenfoque no tiene nada que desenfocar y lo
-       único que deja es una costura fina en el borde de la capa. */
-    backdrop-filter: none;
-  }
-
-  .tab-panel {
-    align-self: stretch;
-    padding: 8px 8px 16px;
-  }
-
-  /* La barra deja de ocupar el ancho entero y pasa a ser una píldora. */
-  .tabbar {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    padding: 4px;
-    border-radius: 12px;
-    background: var(--claro-control);
-  }
-
-  .tabbar button {
-    flex: 0 0 auto;
-    gap: 0;
-    width: 48px;
-    min-height: 48px;
-    padding: 10px 4px;
-    border-radius: 12px;
-    color: var(--violeta);
-    transition: background 0.16s var(--ease), color 0.16s var(--ease);
-  }
-
-  .tabbar button svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .tabbar button.is-on {
-    background: var(--violeta);
-    color: #fff;
-  }
-
-  /* La casilla, en la paleta del diseño. */
-  .toggle {
-    gap: 8px;
-  }
-
-  .toggle .box {
-    border-color: var(--violeta-suave);
-  }
-
-  .toggle input:checked ~ .box {
-    border-color: var(--violeta);
-  }
-
-  .toggle input:checked ~ .box::after {
-    background: var(--violeta);
-  }
-
-  /* --- el mismo aire para todos los controles ---------------------
-     La casilla trajo su tipografía del diseño; el resto del panel la
-     hereda para que no convivan dos voces en la misma columna. Son dos
-     escalones y no cinco: 16 para lo que nombra un control, 13 para lo
-     que lo acompaña —el valor, la unidad, la aclaración—. Los botones
-     de grupo van en el chico porque "Proporcional" en 16 no entra en
-     390 px sin partirse. */
-
-  .toggle .etiqueta,
-  .tab-panel .slider .row > span:first-child,
-  .tab-panel .field-label {
-    color: var(--violeta-suave);
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-
-  .tab-panel .slider .row em,
-  .tab-panel .hint,
-  .tab-panel .numbers input,
-  .tab-panel .numbers span,
-  .tab-panel .unit::after {
-    color: var(--violeta-suave);
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0;
-  }
-
-  /* --- el riel del slider ------------------------------------------
-     El tramo que falta va del mismo color que el borde de una casilla sin
-     marcar: las dos cosas dicen lo mismo —"esto está disponible y todavía
-     no"— y decirlo con dos grises distintos era ruido. */
-  .slider .track::before {
-    background: var(--violeta-suave);
-  }
-
-  /* --- los grupos de botones ---------------------------------------
-     Mismo trazo y mismo cuerpo que la casilla. Al elegirlos se invierten:
-     el trazo desaparece y el color pasa al fondo. El borde queda puesto en
-     transparente y no sacado, porque sacarlo encoge el botón 4 px y la fila
-     entera se corre cada vez que tocás una opción. */
-  .segmented button,
-  .papers button,
-  .presets button {
-    border-width: 2px;
-    border-color: var(--violeta-suave);
-    background: none;
-    color: var(--violeta-suave);
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0;
-  }
-
-  .segmented button.is-on,
-  .papers button.is-on,
-  .presets button.is-on {
-    border-color: transparent;
-    background: var(--violeta);
-    color: #fff;
-  }
-
-  /* La casilla, con el trazo dicho. */
-  .toggle .box {
-    border-width: 2px;
-  }
-
-  /* El diálogo de descarga no estaba en los frames, pero sus opciones son
-     el mismo componente que los grupos de arriba: se le dan vuelta los
-     mismos tokens para que no quede media pantalla en la paleta vieja. */
-  .sheet {
-    --hud-text: var(--violeta);
-    --hud-dim: var(--violeta-suave);
-    --hud-border: var(--violeta-suave);
-    --accent: var(--violeta);
-
-    background: var(--claro-fondo);
-    color: var(--violeta);
-  }
-
-  .sheet .field-label {
-    color: var(--violeta-suave);
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
+    padding-top: var(--ds-space-4);
+    padding-bottom: var(--ds-space-4);
   }
 }

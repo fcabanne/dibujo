@@ -38,7 +38,10 @@ referencia/     preparador de la foto de referencia
 mesa/           la mesa de luz
 src/
   portada/      estilos de la portada
-  shared/       lo que usan todas las herramientas
+  shared/
+    ui/         el sistema de diseño: tokens, componentes, íconos, fuentes
+    copy/       los textos de pantalla, un archivo por idioma
+    ...         lo demás que comparten las herramientas
   marco/        el probador de enmarcado
   referencia/   el preparador de la foto de referencia
   mesa/         la mesa de luz
@@ -106,8 +109,17 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   Liviano a propósito: unos pocos KB que nunca fallan por cuota.
 - `src/marco/components/Canvas.tsx` — lienzo con su loop de render, manejo de densidad de
   pantalla y drag & drop de imágenes.
-- `src/shared/tokens.css` — los tokens de diseño: vidrio oscuro, acento cálido. Que todas
-  las herramientas se sientan de la misma familia.
+- `src/shared/ui/` — **el sistema de diseño**, sacado del archivo de Figma "Mi web":
+  tokens con prefijo `--ds-`, tres componentes (Button, IconButton, Checkbox), los seis
+  íconos y las dos tipografías empaquetadas. Un solo import trae todo, estilos
+  incluidos. **Si no está en Figma, no se inventa acá.** Ver `src/shared/ui/LEEME.md`.
+- `src/shared/copy/` — **los textos**, un JSON por idioma. Ningún texto visible se
+  escribe adentro de un componente, y los números también salen de ahí (el separador
+  decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
+  `src/shared/copy/LEEME.md`.
+- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Lo usan Cuadros y
+  Mesa de luz, que todavía no están dibujadas en Figma. Referencia ya no: pasó al
+  sistema de arriba. Cuando las otras dos se dibujen, esta hoja desaparece.
 
 ## Cómo está armado el probador de enmarcado
 
@@ -207,6 +219,21 @@ los que sí: Bordes muestra una perilla, Facetado tres, Original ninguna. Las pe
 sueltas eran honestas pero pedían entender qué es una curva y qué es un sobel, y acá
 lo que se elige es cómo mirar la referencia. El blanco y negro queda afuera del modo
 —y arriba, en la UI— porque es independiente y sobrevive al cambio.
+
+**Referencia usa el sistema de diseño y el archivo de textos; las otras dos todavía
+no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
+mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
+
+**La pantalla de inicio reemplaza al dibujo de ejemplo.** Antes la herramienta abría con
+una naturaleza muerta inventada; ahora, sin foto, muestra la pantalla del diseño
+(Figma 18:76) y las pestañas quedan deshabilitadas. `App` espera a que IndexedDB
+conteste (`ready`) antes de decidir cuál mostrar: sin esa espera parpadea el inicio
+cuando sí había una foto guardada, y parece que se hubiera perdido.
+
+**Quitar la foto conserva los ajustes.** Borra la imagen del navegador y vuelve al
+inicio, pero la grilla, el color y el modo siguen puestos: preparar varias fotos de la
+misma serie no tiene por qué costar reconfigurar cada vez.
 
 ### Pantalla angosta
 

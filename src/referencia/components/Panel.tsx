@@ -1,9 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { copy, fill, formatNumber } from '../../shared/copy'
 import type { Reference } from '../../shared/referenceImage'
+import {
+  BackIcon,
+  Button,
+  Checkbox,
+  CloseIcon,
+  DownloadIcon,
+  FileIcon,
+  GridIcon,
+  IconButton,
+  PaintIcon,
+  UploadIcon,
+} from '../../shared/ui'
 import { GRID_LIMITS } from '../domain/grid'
-import { PAPER_PRESETS } from '../domain/paper'
-import { ColorRow, Hint, Section, Segmented, Slider, Toggle } from './controls'
-import { BackIcon, DownloadIcon, GridIcon, PhotoIcon, SizeIcon, TuneIcon } from './icons'
+import { PAPER_PRESETS, sheetName } from '../domain/paper'
+import { ColorRow, Hint, Section, Segmented, Slider } from './controls'
 import type { Action } from '../state/reducer'
 import type { AppState, EffectsMode, PaperId } from '../types'
 
@@ -11,22 +23,19 @@ interface Props {
   state: AppState
   dispatch: (action: Action) => void
   reference: Reference | null
-  onFile: (file: File) => void
+  onPickFile: () => void
+  onRemove: () => void
   onDownload: () => void
   effectsSupported: boolean
   /** Pantalla angosta: los controles van abajo en pestañas en vez de al costado. */
   compact: boolean
 }
 
-/**
- * Las tres maneras de mirar la referencia. Son caminos cerrados y no perillas
- * sueltas: lo que se elige acá es cómo leer la foto, y para eso no hace falta saber
- * qué es una curva ni un sobel.
- */
+/** Las tres maneras de mirar la referencia, con el ícono que las nombra. */
 const MODES: { id: EffectsMode; label: string; title: string }[] = [
-  { id: 'original', label: 'Original', title: 'La foto tal cual' },
-  { id: 'edges', label: 'Bordes', title: 'Deja los contornos, como un dibujo de línea' },
-  { id: 'facets', label: 'Facetado', title: 'Aplasta la foto a unas pocas manchas de valor' },
+  { id: 'original', label: copy.adjust.original, title: copy.adjust.originalHint },
+  { id: 'edges', label: copy.adjust.edges, title: copy.adjust.edgesHint },
+  { id: 'facets', label: copy.adjust.facets, title: copy.adjust.facetsHint },
 ]
 
 interface PanelSection {
@@ -40,26 +49,23 @@ interface PanelSection {
 }
 
 /**
- * Los controles, definidos una sola vez y servidos de dos formas.
+ * Los controles, definidos una sola vez y servidos de tres formas: la columna
+ * de escritorio, la barra de pestañas de celular, y la versión sin foto —donde
+ * no hay nada que configurar y solo queda la barra de arriba.
  *
- * En escritorio son una columna al costado. En una pantalla angosta el panel y la
- * foto no entran juntos —medido: de 375 px de ancho, el panel se llevaba 315 y a la
- * foto le quedaban 59— así que pasan a ser una barra de pestañas abajo, al estilo de
- * Lightroom: tocás una y suben sus perillas sobre la foto.
- *
- * Lo que **no** cambia es el contenido. Un solo lugar donde está escrito qué
- * controles hay, dos maneras de acomodarlos.
+ * Lo que **no** cambia entre las tres es el contenido. Un solo lugar donde está
+ * escrito qué controles hay.
  */
 export function Panel({
   state,
   dispatch,
   reference,
-  onFile,
+  onPickFile,
+  onRemove,
   onDownload,
   effectsSupported,
   compact,
 }: Props) {
-  const fileRef = useRef<HTMLInputElement>(null)
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>(null)
   const { grid, paper, effects } = state
@@ -76,55 +82,63 @@ export function Panel({
     return () => URL.revokeObjectURL(url)
   }, [reference])
 
-  const picker = (
-    <input
-      ref={fileRef}
-      type="file"
-      accept="image/*"
-      hidden
-      onChange={(e) => {
-        const file = e.target.files?.[0]
-        if (file) onFile(file)
-        e.target.value = ''
-      }}
-    />
+  const topBar = (
+    <div className="topbar">
+      <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
+        <BackIcon />
+      </IconButton>
+      <strong>{copy.app.name}</strong>
+      {reference && (
+        <IconButton label={copy.download.action} onClick={onDownload}>
+          <DownloadIcon />
+        </IconButton>
+      )}
+    </div>
   )
 
   const sections: PanelSection[] = [
     {
       id: 'foto',
-      title: 'Foto',
-      label: 'Foto',
-      icon: <PhotoIcon />,
+      title: copy.photo.title,
+      label: copy.photo.tab,
+      icon: <UploadIcon />,
       content: (
-        /* La original, sin efectos ni grilla: es la referencia contra la que se mira
-           lo que está pasando en el lienzo. En escritorio el nombre y el botón
-           aparecen al pasar por encima; donde no hay puntero que pase por encima,
-           el CSS los deja fijos. */
-        <div className="thumb">
-          {thumb && <img src={thumb} alt={reference?.name ?? 'Foto de referencia'} />}
-          <div className="thumb-over">
-            <button type="button" onClick={() => fileRef.current?.click()}>
-              Cambiar foto
-            </button>
-            {reference && (
-              <span className="thumb-meta">
-                <strong>{reference.name}</strong>
-                <em>
-                  {reference.width.toLocaleString('es-AR')} ×{' '}
-                  {reference.height.toLocaleString('es-AR')} px
-                </em>
-              </span>
-            )}
+        <>
+          <div className="thumb">
+            {thumb && <img src={thumb} alt={reference?.name ?? copy.canvas.alt} />}
           </div>
-        </div>
+
+          {reference && (
+            <p className="photo-meta">
+              <strong>{reference.name}</strong>
+              <em>
+                {fill(copy.photo.size, {
+                  width: formatNumber(reference.width),
+                  height: formatNumber(reference.height),
+                })}
+              </em>
+            </p>
+          )}
+
+          {/* Cambiar y quitar van juntos y visibles. Antes el botón aparecía al
+              pasar el puntero por encima de la miniatura, y donde no hay puntero
+              —un celular— no había forma de llegar a él. */}
+          <div className="photo-actions">
+            <Button variant="quiet" icon={<UploadIcon />} onClick={onPickFile}>
+              {copy.photo.change}
+            </Button>
+            <IconButton label={copy.photo.remove} onClick={onRemove}>
+              <CloseIcon />
+            </IconButton>
+          </div>
+        </>
       ),
     },
     {
       id: 'tamano',
-      title: 'Tamaño del dibujo',
-      label: 'Tamaño',
-      icon: <SizeIcon />,
+      title: copy.paper.title,
+      label: copy.paper.tab,
+      icon: <FileIcon />,
       content: (
         <>
           <div className="papers">
@@ -133,7 +147,7 @@ export function Panel({
               className={paper.id === 'none' ? 'is-on' : ''}
               onClick={() => dispatch({ type: 'paper/patch', patch: { id: 'none' } })}
             >
-              Sin definir
+              {copy.paper.none}
             </button>
             {PAPER_PRESETS.map((preset) => (
               <button
@@ -147,7 +161,7 @@ export function Panel({
                   })
                 }
               >
-                {preset.label}
+                {sheetName(preset.id)}
               </button>
             ))}
             <button
@@ -155,7 +169,7 @@ export function Panel({
               className={paper.id === 'custom' ? 'is-on' : ''}
               onClick={() => dispatch({ type: 'paper/patch', patch: { id: 'custom' } })}
             >
-              A medida
+              {copy.paper.custom}
             </button>
           </div>
 
@@ -169,7 +183,7 @@ export function Panel({
                   max={300}
                   step={0.1}
                   value={paper.w}
-                  aria-label="Ancho en cm"
+                  aria-label={copy.paper.width}
                   onChange={(e) =>
                     dispatch({
                       type: 'paper/patch',
@@ -187,7 +201,7 @@ export function Panel({
                   max={300}
                   step={0.1}
                   value={paper.h}
-                  aria-label="Alto en cm"
+                  aria-label={copy.paper.height}
                   onChange={(e) =>
                     dispatch({
                       type: 'paper/patch',
@@ -203,8 +217,8 @@ export function Panel({
     },
     {
       id: 'grilla',
-      title: 'Grilla',
-      label: 'Grilla',
+      title: copy.grid.title,
+      label: copy.grid.tab,
       icon: <GridIcon />,
       content: (
         <>
@@ -212,9 +226,13 @@ export function Panel({
             value={grid.mode}
             onChange={(mode) => dispatch({ type: 'grid/patch', patch: { mode } })}
             options={[
-              { value: 'none', label: 'Ninguna' },
-              { value: 'proportional', label: 'Proporcional', title: 'Divide la foto en partes iguales' },
-              { value: 'square', label: 'Cuadrada', title: 'Cuadrados exactos desde arriba a la izquierda' },
+              { value: 'none', label: copy.grid.none },
+              {
+                value: 'proportional',
+                label: copy.grid.proportional,
+                title: copy.grid.proportionalHint,
+              },
+              { value: 'square', label: copy.grid.square, title: copy.grid.squareHint },
             ]}
           />
 
@@ -223,7 +241,7 @@ export function Panel({
               {/* El mismo número para los dos modos: cambiar de uno a otro muestra
                   en qué se diferencian, sin que además salte el tamaño. */}
               <Slider
-                label={grid.mode === 'proportional' ? 'Divisiones' : 'Cuadrados a lo ancho'}
+                label={grid.mode === 'proportional' ? copy.grid.divisions : copy.grid.squares}
                 value={grid.count}
                 min={GRID_LIMITS.min}
                 max={GRID_LIMITS.max}
@@ -231,8 +249,8 @@ export function Panel({
                 onChange={(count) => dispatch({ type: 'grid/patch', patch: { count } })}
                 format={(v) =>
                   grid.mode === 'proportional'
-                    ? `${v} × ${v} · ${v * v} casillas`
-                    : `${v} a lo ancho`
+                    ? fill(copy.grid.divisionsValue, { n: v, total: v * v })
+                    : fill(copy.grid.squaresValue, { n: v })
                 }
               />
               <ColorRow
@@ -240,7 +258,7 @@ export function Panel({
                 onChange={(color) => dispatch({ type: 'grid/style', patch: { color } })}
               />
               <Slider
-                label="Espesor"
+                label={copy.grid.weight}
                 value={grid.style.weight}
                 min={1}
                 max={6}
@@ -248,21 +266,21 @@ export function Panel({
                 onChange={(weight) => dispatch({ type: 'grid/style', patch: { weight } })}
               />
               <Slider
-                label="Opacidad"
+                label={copy.grid.opacity}
                 value={Math.round(grid.style.opacity * 100)}
                 min={10}
                 max={100}
                 step={5}
                 onChange={(v) => dispatch({ type: 'grid/style', patch: { opacity: v / 100 } })}
-                format={(v) => `${v}%`}
+                format={(v) => fill(copy.grid.opacityValue, { n: v })}
               />
-              <Toggle
-                label="Etiquetas"
+              <Checkbox
+                label={copy.grid.labels}
                 checked={grid.style.labels}
                 onChange={(labels) => dispatch({ type: 'grid/style', patch: { labels } })}
               />
-              <Toggle
-                label="Subdividir"
+              <Checkbox
+                label={copy.grid.subdivide}
                 checked={grid.subdivide}
                 onChange={(subdivide) => dispatch({ type: 'grid/patch', patch: { subdivide } })}
               />
@@ -273,20 +291,17 @@ export function Panel({
     },
     {
       id: 'ajustes',
-      title: 'Ajustes',
-      label: 'Ajustes',
-      icon: <TuneIcon />,
+      title: copy.adjust.title,
+      label: copy.adjust.tab,
+      icon: <PaintIcon />,
       content: !effectsSupported ? (
-        <Hint>
-          Este navegador no puede aplicar los ajustes (le falta WebGL). La grilla y el
-          export andan igual.
-        </Hint>
+        <Hint>{copy.adjust.unsupported}</Hint>
       ) : (
         <>
           {/* Arriba de los modos porque es independiente de ellos: pasar a blanco y
               negro sobrevive a cambiar de Bordes a Facetado. */}
-          <Toggle
-            label="Blanco y negro"
+          <Checkbox
+            label={copy.adjust.blackAndWhite}
             checked={effects.bw}
             onChange={(bw) => dispatch({ type: 'effects/patch', patch: { bw } })}
           />
@@ -310,7 +325,7 @@ export function Panel({
               para usar esto, y no hay por qué entenderlos. */}
           {effects.mode === 'edges' && (
             <Slider
-              label="Contraste"
+              label={copy.adjust.contrast}
               value={effects.edges}
               min={0}
               max={100}
@@ -322,16 +337,16 @@ export function Panel({
           {effects.mode === 'facets' && (
             <>
               <Slider
-                label="Cantidad"
+                label={copy.adjust.amount}
                 value={effects.tones}
                 min={2}
                 max={4}
                 step={1}
                 onChange={(tones) => dispatch({ type: 'effects/patch', patch: { tones } })}
-                format={(v) => `${v} tonos`}
+                format={(v) => fill(copy.adjust.amountValue, { n: v })}
               />
               <Slider
-                label="Luz"
+                label={copy.adjust.light}
                 value={effects.light}
                 min={-100}
                 max={100}
@@ -340,7 +355,7 @@ export function Panel({
                 format={signed}
               />
               <Slider
-                label="Contraste"
+                label={copy.adjust.contrast}
                 value={effects.contrast}
                 min={-100}
                 max={100}
@@ -355,66 +370,60 @@ export function Panel({
     },
   ]
 
+  const tabBar = (
+    <nav className="tabbar">
+      {sections.map((section) => (
+        <IconButton
+          key={section.id}
+          label={section.label}
+          // Sin foto la primera queda marcada, como en el diseño, y ninguna se
+          // puede tocar: configurar una grilla sin imagen no lleva a ningún lado.
+          selected={reference ? section.id === openTab : section.id === 'foto'}
+          disabled={!reference}
+          onClick={() => setOpenTab(section.id === openTab ? null : section.id)}
+        >
+          {section.icon}
+        </IconButton>
+      ))}
+    </nav>
+  )
+
+  // --- sin foto: solo la barra de arriba, y las pestañas si hay lugar --------
+  if (!reference) {
+    return (
+      <>
+        {topBar}
+        {compact && <div className="controls">{tabBar}</div>}
+      </>
+    )
+  }
+
+  // --- pantalla angosta: pestañas abajo --------------------------------------
   if (compact) {
     const open = sections.find((section) => section.id === openTab) ?? null
     return (
       <>
-        <div className="topbar">
-          <a className="back" href="../" title="Volver a las herramientas">
-            <BackIcon />
-          </a>
-          <strong>Referencia</strong>
-          <button
-            type="button"
-            className="icon"
-            disabled={!reference}
-            onClick={onDownload}
-            aria-label="Descargar"
-            title="Descargar"
-          >
-            <DownloadIcon />
-          </button>
-        </div>
-
+        {topBar}
         <div className="controls">
           {open && (
             <div className="tab-panel" key={open.id}>
               {open.content}
             </div>
           )}
-
-          <nav className="tabbar">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                type="button"
-                className={section.id === openTab ? 'is-on' : ''}
-                aria-pressed={section.id === openTab}
-                title={section.label}
-                aria-label={section.label}
-                // Tocar la pestaña abierta la cierra: es la forma más rápida de
-                // volver a ver la foto entera sin buscar una cruz.
-                onClick={() => setOpenTab(section.id === openTab ? null : section.id)}
-              >
-                {section.icon}
-                <span className="sr">{section.label}</span>
-              </button>
-            ))}
-          </nav>
+          {tabBar}
         </div>
-
-        {picker}
       </>
     )
   }
 
+  // --- escritorio: columna al costado ---------------------------------------
   return (
     <aside className="panel">
       <header>
-        <a className="back" href="../" title="Volver a las herramientas">
+        <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
           <BackIcon />
-        </a>
-        <h1>Referencia</h1>
+        </IconButton>
+        <h1>{copy.app.name}</h1>
       </header>
 
       <div className="scroll">
@@ -428,12 +437,10 @@ export function Panel({
       {/* Fuera del scroll: es la acción que cierra el trabajo, y tener que buscarla
           al pie de una columna larga la esconde justo cuando se la necesita. */}
       <div className="footer">
-        <button type="button" className="wide primary" disabled={!reference} onClick={onDownload}>
-          Descargar
-        </button>
+        <Button variant="loud" icon={<DownloadIcon />} onClick={onDownload}>
+          {copy.download.action}
+        </Button>
       </div>
-
-      {picker}
     </aside>
   )
 }

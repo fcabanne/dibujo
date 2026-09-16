@@ -1,7 +1,9 @@
 /* ------------------------------------------------------------------
-   Lenguaje visual común a todas las herramientas: vidrio oscuro, acento
-   cálido, y una tipografía de sistema. Que se sientan de la misma casa
-   aunque hagan cosas distintas.
+   El tema oscuro: vidrio, acento cálido y tipografía de sistema.
+
+   Lo usan Cuadros y Mesa de luz, que todavía no están dibujadas en
+   Figma. Referencia ya no: pasó al sistema de diseño de `ui/`, que sale
+   del archivo. Cuando las otras dos se dibujen, esta hoja desaparece.
    ------------------------------------------------------------------ */
 
 :root {
@@ -16,16 +18,6 @@
   /* Con overshoot: es lo que le da cuerpo a la entrada de los controles. */
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* La paleta clara de Referencia en celular, tomada del diseño en Figma.
-     Vive acá y no en la hoja de la herramienta porque ningún valor de
-     diseño se escribe suelto; por ahora la usa una sola pantalla. */
-  --violeta: #1c00c9;        /* acento: título, íconos, pestaña abierta */
-  --violeta-suave: #958bcb;  /* texto de control y borde sin marcar */
-  --claro-fondo: #dddddd;    /* la superficie de la app */
-  --claro-control: #c9c6da;  /* la píldora de las pestañas */
-  --claro-boton: #c9c7dc;    /* los botones de la barra de arriba */
-  --mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   color-scheme: dark;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

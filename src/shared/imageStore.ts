@@ -112,6 +112,30 @@ export async function saveOriginal(tool: ToolId, blob: Blob, name: string): Prom
   }
 }
 
+/**
+ * Olvidar la foto de una herramienta. Borra también la que hubiera quedado con
+ * el nombre viejo: si no, renombrar dejaría una copia fantasma que vuelve a
+ * aparecer la próxima vez que se abre.
+ */
+export async function deleteOriginal(tool: ToolId): Promise<void> {
+  lastOriginal.delete(tool)
+  try {
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      const store = tx.objectStore(STORE)
+      store.delete(tool + ':original')
+      const old = RENAMED[tool]
+      if (old) store.delete(old + ':original')
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+    db.close()
+  } catch {
+    // Sin IndexedDB no había nada guardado que borrar.
+  }
+}
+
 export async function loadOriginal(tool: ToolId): Promise<StoredOriginal | null> {
   try {
     const db = await openDb()

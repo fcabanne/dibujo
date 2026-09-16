@@ -1,9 +1,18 @@
 import type { ReactNode } from 'react'
+import { copy } from '../../shared/copy'
 
 /**
- * Los controles del panel. Son propios y no los del probador de enmarcado porque
- * allá viven flotando sobre el cuadro y acá viven en una columna: mismo lenguaje
- * visual (los tokens son compartidos), distinta postura.
+ * Los controles del panel que **no están dibujados en Figma**: el slider, el
+ * grupo de botones y los chips de color.
+ *
+ * No invento componentes nuevos para ellos. Toman los tokens del sistema
+ * —color, tipografía, radio, medida— y su forma sale de la que el diseño sí
+ * define: el grupo de botones repite el patrón de la barra de pestañas (una
+ * píldora clara con el elegido en violeta), que es el único agrupador que
+ * existe en el archivo.
+ *
+ * Cuando se dibujen, se reemplazan por componentes de `shared/ui`.
+ * La casilla ya no está acá: es `Checkbox` del sistema.
  */
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -98,31 +107,6 @@ export function Segmented<T extends string>({
   )
 }
 
-export function Toggle({
-  label,
-  checked,
-  onChange,
-  hint,
-}: {
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  hint?: string
-}) {
-  return (
-    <label className="toggle">
-      {/* La casilla va primero y el nombre después, como en el diseño: se lee
-          "está marcado — qué cosa", que es el orden en que se mira una lista. */}
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="box" aria-hidden="true" />
-      <span className="etiqueta">
-        {label}
-        {hint && <em>{hint}</em>}
-      </span>
-    </label>
-  )
-}
-
 /** Los colores que de verdad se usan encima de una foto, más el cuentagotas para el resto. */
 const COLORS = ['#ffffff', '#111111', '#ff3b30', '#00e5ff', '#ffd60a', '#ff2d95']
 
@@ -136,7 +120,7 @@ export function ColorRow({
   const custom = !COLORS.includes(value.toLowerCase())
   return (
     <div className="field">
-      <span className="field-label">Color</span>
+      <span className="field-label">{copy.grid.color}</span>
       <div className="colors">
         {COLORS.map((color) => (
           <button
@@ -149,9 +133,14 @@ export function ColorRow({
             onClick={() => onChange(color)}
           />
         ))}
-        <label className={'chip is-custom' + (custom ? ' is-on' : '')} title="Otro color">
+        <label className={'chip is-custom' + (custom ? ' is-on' : '')} title={copy.grid.customColor}>
           <span style={{ background: value }} />
-          <input type="color" value={value} onChange={(e) => onChange(e.target.value)} />
+          <input
+            type="color"
+            value={value}
+            aria-label={copy.grid.customColor}
+            onChange={(e) => onChange(e.target.value)}
+          />
         </label>
       </div>
     </div>

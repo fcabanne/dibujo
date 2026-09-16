@@ -1,3 +1,4 @@
+import { copy } from '../../shared/copy'
 import type { Paper, SheetId } from '../types'
 
 /**
@@ -6,33 +7,41 @@ import type { Paper, SheetId } from '../types'
  * entra en la impresora de casa. Lo que sale de acá no está a escala real, y no
  * importa — las medidas que hacen falta están escritas encima.
  */
-export const PRINT_SHEETS: { id: SheetId; label: string; w: number; h: number }[] = [
-  { id: 'a4', label: 'A4', w: 21, h: 29.7 },
-  { id: 'a3', label: 'A3', w: 29.7, h: 42 },
-  { id: 'oficio', label: 'Oficio', w: 21.6, h: 33 },
+export const PRINT_SHEETS: { id: SheetId; w: number; h: number }[] = [
+  { id: 'a4', w: 21, h: 29.7 },
+  { id: 'a3', w: 29.7, h: 42 },
+  { id: 'oficio', w: 21.6, h: 33 },
 ]
+
+/**
+ * Cómo se llama una hoja. Sale del archivo de textos y no del dato porque no
+ * todas son universales: 'Oficio' en inglés es 'Legal'.
+ */
+export function sheetName(id: SheetId | Paper['id']): string {
+  return copy.paper.sheets[id as keyof typeof copy.paper.sheets] ?? String(id).toUpperCase()
+}
 
 /** La hoja de impresión, ya acostada si la foto es apaisada. */
 export function printSheet(id: SheetId, aspect: number): { w: number; h: number; label: string } {
   const sheet = PRINT_SHEETS.find((s) => s.id === id) ?? PRINT_SHEETS[0]
+  const label = sheetName(sheet.id)
   return aspect > 1
-    ? { w: sheet.h, h: sheet.w, label: sheet.label }
-    : { w: sheet.w, h: sheet.h, label: sheet.label }
+    ? { w: sheet.h, h: sheet.w, label }
+    : { w: sheet.w, h: sheet.h, label }
 }
 
 export interface PaperPreset {
   id: Paper['id']
-  label: string
   /** En cm, lado corto primero. */
   w: number
   h: number
 }
 
 export const PAPER_PRESETS: PaperPreset[] = [
-  { id: 'a5', label: 'A5', w: 14.8, h: 21 },
-  { id: 'a4', label: 'A4', w: 21, h: 29.7 },
-  { id: 'a3', label: 'A3', w: 29.7, h: 42 },
-  { id: 'a2', label: 'A2', w: 42, h: 59.4 },
+  { id: 'a5', w: 14.8, h: 21 },
+  { id: 'a4', w: 21, h: 29.7 },
+  { id: 'a3', w: 29.7, h: 42 },
+  { id: 'a2', w: 42, h: 59.4 },
 ]
 
 /**

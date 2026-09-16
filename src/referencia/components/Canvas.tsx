@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { copy } from '../../shared/copy'
 import { aspectOf, type Reference } from '../../shared/referenceImage'
 import { createEffects, type EffectsRenderer } from '../render/effects'
 import { fitRect, paintScene } from '../render/scene'
@@ -280,13 +281,13 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: 
 
       {zoomed && (
         <button type="button" className="fit" onClick={reset}>
-          Ajustar
+          {copy.canvas.fit}
         </button>
       )}
 
       {dragOver && (
         <div className="drop">
-          <span>Soltá tu foto de referencia acá</span>
+          <span>{copy.canvas.drop}</span>
         </div>
       )}
     </div>

@@ -15,6 +15,8 @@
  * más, y acá no hay ninguna razón para pagar ese tercio.
  */
 
+import { copy } from './copy'
+
 /** Lado mayor de la copia que se usa en pantalla. */
 const PREVIEW_MAX = 1800
 
@@ -39,14 +41,14 @@ export async function openReference(blob: Blob, name: string): Promise<Reference
   const img = await decodeBlob(blob)
   const width = img.naturalWidth
   const height = img.naturalHeight
-  if (!width || !height) throw new Error('No se pudo leer la imagen')
+  if (!width || !height) throw new Error(copy.notices.unreadable)
 
   const scale = Math.min(1, PREVIEW_MAX / Math.max(width, height))
   const preview = document.createElement('canvas')
   preview.width = Math.max(1, Math.round(width * scale))
   preview.height = Math.max(1, Math.round(height * scale))
   const ctx = preview.getContext('2d')
-  if (!ctx) throw new Error('No se pudo procesar la imagen')
+  if (!ctx) throw new Error(copy.notices.unprocessable)
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(img, 0, 0, preview.width, preview.height)
 
@@ -54,7 +56,7 @@ export async function openReference(blob: Blob, name: string): Promise<Reference
 }
 
 export async function openReferenceFile(file: File): Promise<Reference> {
-  if (!file.type.startsWith('image/')) throw new Error('El archivo no es una imagen')
+  if (!file.type.startsWith('image/')) throw new Error(copy.notices.notAnImage)
   return openReference(file, file.name)
 }
 
@@ -83,7 +85,7 @@ function decodeBlob(blob: Blob): Promise<HTMLImageElement> {
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('No se pudo abrir la imagen'))
+      reject(new Error(copy.notices.unopenable))
     }
     img.src = url
   })

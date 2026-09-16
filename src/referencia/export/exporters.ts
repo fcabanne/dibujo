@@ -1,3 +1,4 @@
+import { copy } from '../../shared/copy'
 import { aspectOf, baseName, decodeFull, type Reference } from '../../shared/referenceImage'
 import { captionLines } from '../domain/measurements'
 import { cmToPoints, printSheet, SAFE_MARGIN } from '../domain/paper'
@@ -143,7 +144,7 @@ function renderSheet(
  */
 async function write(page: Page, name: string, format: AppState['export']['format']) {
   const jpeg = await toBlob(page.canvas, 'image/jpeg', QUALITY)
-  const filename = `${name}-referencia${page.label}`
+  const filename = `${name}-${copy.download.fileSuffix}${page.label}`
 
   if (format === 'jpg') return { blob: jpeg, filename: `${filename}.jpg` }
 
@@ -199,7 +200,7 @@ function sheetPixels(sheet: { w: number; h: number }): number {
 
 function context(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('No se pudo preparar el lienzo del export')
+  if (!ctx) throw new Error(copy.notices.canvasFailed)
   ctx.imageSmoothingQuality = 'high'
   return ctx
 }
@@ -214,12 +215,7 @@ function toBlob(canvas: HTMLCanvasElement, mime: string, quality?: number): Prom
             // le alcanzó la memoria para un lienzo de este tamaño. Pasa en celulares
             // con fotos grandes, y decirlo así es lo único accionable: bajar la
             // calidad por nuestra cuenta sería romper la promesa del export.
-            reject(
-              new Error(
-                'Este dispositivo se quedó sin memoria para un archivo de ese tamaño. ' +
-                  'Probá con una hoja más chica.',
-              ),
-            ),
+            reject(new Error(copy.notices.outOfMemory)),
       mime,
       quality,
     )

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { PRINT_SHEETS } from '../domain/paper'
+import { copy, fill } from '../../shared/copy'
+import { Button } from '../../shared/ui'
+import { PRINT_SHEETS, sheetName } from '../domain/paper'
 import { Segmented } from './controls'
 import type { Action } from '../state/reducer'
 import type { ExportSize, ExportState } from '../types'
@@ -14,11 +16,11 @@ interface Props {
 }
 
 const SIZES: { value: ExportSize; label: string; title: string }[] = [
-  { value: 'original', label: 'Original', title: 'La foto con sus propios píxeles' },
+  { value: 'original', label: copy.download.original, title: copy.download.originalHint },
   ...PRINT_SHEETS.map((sheet) => ({
     value: sheet.id as ExportSize,
-    label: sheet.label,
-    title: `${sheet.w} × ${sheet.h} cm`,
+    label: sheetName(sheet.id),
+    title: fill(copy.download.sheetHint, { width: sheet.w, height: sheet.h }),
   })),
 ]
 
@@ -68,32 +70,32 @@ export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy
       }}
     >
       <div className="sheet-body">
-        <h2>Descargar</h2>
+        <h2>{copy.download.title}</h2>
 
         <Segmented
-          label="Tamaño"
+          label={copy.download.size}
           value={value.size}
           onChange={(size) => dispatch({ type: 'export/patch', patch: { size } })}
           options={SIZES}
         />
 
         <Segmented
-          label="Formato"
+          label={copy.download.format}
           value={value.format}
           onChange={(format) => dispatch({ type: 'export/patch', patch: { format } })}
           options={[
-            { value: 'pdf', label: 'PDF', title: 'Se imprime sin reescalar' },
-            { value: 'jpg', label: 'JPG', title: 'Una imagen común' },
+            { value: 'pdf', label: copy.download.pdf, title: copy.download.pdfHint },
+            { value: 'jpg', label: copy.download.jpg, title: copy.download.jpgHint },
           ]}
         />
 
         <div className="sheet-actions">
-          <button type="button" onClick={onClose}>
-            Cancelar
-          </button>
-          <button type="button" className="primary" disabled={busy} onClick={onConfirm}>
-            {busy ? 'Preparando…' : 'Descargar'}
-          </button>
+          <Button variant="quiet" onClick={onClose}>
+            {copy.download.cancel}
+          </Button>
+          <Button variant="loud" disabled={busy} onClick={onConfirm}>
+            {busy ? copy.download.working : copy.download.action}
+          </Button>
         </div>
       </div>
     </dialog>
