@@ -1,0 +1,124 @@
+{
+  "locale": "en-US",
+  "language": "English",
+
+  "app": {
+    "title": "Reference — prepare your photo before drawing",
+    "name": "Reference",
+    "back": "Back to the tools"
+  },
+
+  "welcome": {
+    "greeting": "Hello artist!",
+    "intro": "I made this little tool so you can tweak your reference photo before you start drawing.",
+    "hint": "Start by uploading an image, add a grid and try different looks.",
+    "suggestions": "Send me ideas →",
+    "suggestionsUrl": "https://instagram.com/facucabanne",
+    "upload": "Upload photo"
+  },
+
+  "canvas": {
+    "drop": "Drop your reference photo here",
+    "fit": "Fit",
+    "alt": "Reference photo"
+  },
+
+  "photo": {
+    "tab": "Photo",
+    "title": "Photo",
+    "change": "Change photo",
+    "remove": "Remove the photo",
+    "size": "{width} × {height} px"
+  },
+
+  "paper": {
+    "tab": "Size",
+    "title": "Drawing size",
+    "none": "Not set",
+    "custom": "Custom",
+    "width": "Width in cm",
+    "height": "Height in cm",
+    "unit": "cm",
+    "sheets": {
+      "a5": "A5",
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2",
+      "oficio": "Legal"
+    }
+  },
+
+  "grid": {
+    "tab": "Grid",
+    "title": "Grid",
+    "none": "None",
+    "proportional": "Proportional",
+    "proportionalHint": "Divides the photo into equal parts",
+    "square": "Square",
+    "squareHint": "Exact squares starting from the top left",
+    "divisions": "Divisions",
+    "divisionsValue": "{n} × {n} · {total} cells",
+    "squares": "Squares across",
+    "squaresValue": "{n} across",
+    "color": "Colour",
+    "customColor": "Another colour",
+    "weight": "Thickness",
+    "opacity": "Opacity",
+    "opacityValue": "{n}%",
+    "labels": "Labels",
+    "subdivide": "Subdivide"
+  },
+
+  "adjust": {
+    "tab": "Looks",
+    "title": "Looks",
+    "blackAndWhite": "Black and white",
+    "original": "Original",
+    "originalHint": "The photo as it is",
+    "edges": "Edges",
+    "edgesHint": "Keeps the outlines, like a line drawing",
+    "facets": "Faceted",
+    "facetsHint": "Flattens the photo into a few blocks of value",
+    "contrast": "Contrast",
+    "amount": "Amount",
+    "amountValue": "{n} tones",
+    "light": "Light",
+    "unsupported": "This browser can't apply the looks (no WebGL). The grid and the export still work."
+  },
+
+  "download": {
+    "action": "Download",
+    "title": "Download",
+    "size": "Size",
+    "format": "Format",
+    "original": "Original",
+    "originalHint": "The photo at its own pixel size",
+    "sheetHint": "{width} × {height} cm",
+    "pdf": "PDF",
+    "pdfHint": "Prints without rescaling",
+    "jpg": "JPG",
+    "jpgHint": "A plain image",
+    "cancel": "Cancel",
+    "working": "Preparing…",
+    "fileSuffix": "reference"
+  },
+
+  "caption": {
+    "drawing": "Drawing: {width} × {height} cm",
+    "grid": "Grid: {cols} × {rows} · {total} cells",
+    "cell": "Cell: {width} × {height} cm"
+  },
+
+  "notices": {
+    "done": "Done: {file}",
+    "shared": "Shared",
+    "loadFailed": "Couldn't load the image",
+    "downloadFailed": "Couldn't download",
+    "notAnImage": "That file isn't an image",
+    "unreadable": "Couldn't read the image",
+    "unprocessable": "Couldn't process the image",
+    "unopenable": "Couldn't open the image",
+    "canvasFailed": "Couldn't prepare the export canvas",
+    "outOfMemory": "This device ran out of memory for a file that size. Try a smaller sheet."
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "locale": "es-AR",
+  "language": "Castellano",
+
+  "app": {
+    "title": "Referencia — preparar la foto antes de dibujarla",
+    "name": "Referencia",
+    "back": "Volver a las herramientas"
+  },
+
+  "welcome": {
+    "greeting": "Hola artista!",
+    "intro": "Hice esta mini herramienta para que puedas hacerle algunos ajustes a tu foto de referencia antes de empezar a dibujar.",
+    "hint": "Empezá subiendo la imagen, agregale una grilla y dale estilos distintos.",
+    "suggestions": "Dejame sugerencias →",
+    "suggestionsUrl": "https://instagram.com/facucabanne",
+    "upload": "Subir foto"
+  },
+
+  "canvas": {
+    "drop": "Soltá tu foto de referencia acá",
+    "fit": "Ajustar",
+    "alt": "Foto de referencia"
+  },
+
+  "photo": {
+    "tab": "Foto",
+    "title": "Foto",
+    "change": "Cambiar foto",
+    "remove": "Quitar la foto",
+    "size": "{width} × {height} px"
+  },
+
+  "paper": {
+    "tab": "Tamaño",
+    "title": "Tamaño del dibujo",
+    "none": "Sin definir",
+    "custom": "A medida",
+    "width": "Ancho en cm",
+    "height": "Alto en cm",
+    "unit": "cm",
+    "sheets": {
+      "a5": "A5",
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2",
+      "oficio": "Oficio"
+    }
+  },
+
+  "grid": {
+    "tab": "Grilla",
+    "title": "Grilla",
+    "none": "Ninguna",
+    "proportional": "Proporcional",
+    "proportionalHint": "Divide la foto en partes iguales",
+    "square": "Cuadrada",
+    "squareHint": "Cuadrados exactos desde arriba a la izquierda",
+    "divisions": "Divisiones",
+    "divisionsValue": "{n} × {n} · {total} casillas",
+    "squares": "Cuadrados a lo ancho",
+    "squaresValue": "{n} a lo ancho",
+    "color": "Color",
+    "customColor": "Otro color",
+    "weight": "Espesor",
+    "opacity": "Opacidad",
+    "opacityValue": "{n}%",
+    "labels": "Etiquetas",
+    "subdivide": "Subdividir"
+  },
+
+  "adjust": {
+    "tab": "Ajustes",
+    "title": "Ajustes",
+    "blackAndWhite": "Blanco y negro",
+    "original": "Original",
+    "originalHint": "La foto tal cual",
+    "edges": "Bordes",
+    "edgesHint": "Deja los contornos, como un dibujo de línea",
+    "facets": "Facetado",
+    "facetsHint": "Aplasta la foto a unas pocas manchas de valor",
+    "contrast": "Contraste",
+    "amount": "Cantidad",
+    "amountValue": "{n} tonos",
+    "light": "Luz",
+    "unsupported": "Este navegador no puede aplicar los ajustes (le falta WebGL). La grilla y el export andan igual."
+  },
+
+  "download": {
+    "action": "Descargar",
+    "title": "Descargar",
+    "size": "Tamaño",
+    "format": "Formato",
+    "original": "Original",
+    "originalHint": "La foto con sus propios píxeles",
+    "sheetHint": "{width} × {height} cm",
+    "pdf": "PDF",
+    "pdfHint": "Se imprime sin reescalar",
+    "jpg": "JPG",
+    "jpgHint": "Una imagen común",
+    "cancel": "Cancelar",
+    "working": "Preparando…",
+    "fileSuffix": "referencia"
+  },
+
+  "caption": {
+    "drawing": "Dibujo: {width} × {height} cm",
+    "grid": "Grilla: {cols} × {rows} · {total} casillas",
+    "cell": "Casilla: {width} × {height} cm"
+  },
+
+  "notices": {
+    "done": "Listo: {file}",
+    "shared": "Compartido",
+    "loadFailed": "No se pudo cargar la imagen",
+    "downloadFailed": "No se pudo descargar",
+    "notAnImage": "El archivo no es una imagen",
+    "unreadable": "No se pudo leer la imagen",
+    "unprocessable": "No se pudo procesar la imagen",
+    "unopenable": "No se pudo abrir la imagen",
+    "canvasFailed": "No se pudo preparar el lienzo del export",
+    "outOfMemory": "Este dispositivo se quedó sin memoria para un archivo de ese tamaño. Probá con una hoja más chica."
+  }
+}
