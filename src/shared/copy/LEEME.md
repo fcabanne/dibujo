@@ -42,16 +42,21 @@ Agregale `?lang=en` a la dirección:
 http://localhost:5173/referencia/?lang=en
 ```
 
-**El `?lang=` no se guarda**: es una mirada, no una decisión. Al sacarlo de la
-dirección todo vuelve a como estaba, así que mandarle este link a alguien no le deja
-el idioma cambiado.
+**El `?lang=` no se guarda**: es una mirada, no una decisión. Vale para esa visita y
+al sacarlo de la dirección todo vuelve a como estaba, así que mandarle este link a
+alguien no le deja el idioma cambiado.
 
-Para cambiarlo de verdad está el selector abajo del botón de subir foto, y también en
-la pestaña Foto. Dice el nombre del **otro** idioma, no el actual: si la app se abrió
-en uno que no entendés, lo que tenés que poder leer es a dónde vas.
+## Cómo se elige el idioma
 
-Sin `?lang=` ni nada elegido, el orden es: lo que se eligió antes → el idioma del
-sistema → castellano.
+**Solo. No hay selector, y es a propósito.** Nadie que abre una herramienta de dibujo
+quiere que lo primero que le pregunten sea en qué idioma la quiere. El navegador ya
+sabe la respuesta —se la dio el sistema operativo— y volver a preguntar es pedirle a
+la persona que resuelva algo que el programa puede resolver solo.
+
+Se mira la **lista** de idiomas preferidos del navegador, no solo el primero: alguien
+con el teléfono en inglés pero con castellano segundo prefiere leer esto en castellano
+antes que en un idioma que no tenemos. Se toma el primero de esa lista que sepamos
+hablar; si no hay ninguno, castellano.
 
 ## Cómo sumar un idioma
 

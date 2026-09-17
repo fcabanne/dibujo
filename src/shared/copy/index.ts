@@ -16,52 +16,37 @@ const en: Copy = enJson
 
 const LOCALES: Record<string, Copy> = { es, en }
 
-const STORAGE_KEY = 'dibujo:idioma'
-
 /**
- * Qué idioma mostrar, en orden: lo que diga la URL (`?lang=en`), lo que se
- * eligió antes, el idioma del sistema, y castellano.
+ * El idioma no se elige: se deduce del navegador y listo.
  *
- * **El `?lang=` no se guarda.** Es una mirada, no una decisión: sirve para
- * revisar una traducción sin cambiar la configuración de nadie, y al sacarlo
- * de la URL todo vuelve a como estaba. Guardarlo fue un error — alcanzaba con
- * mandar un link de prueba para dejarle el idioma cambiado a alguien, sin
- * forma de volver. Lo único que se guarda es lo que se elige a propósito, con
- * `setLanguage`.
+ * No hay selector, y es a propósito. Nadie que abre una herramienta de dibujo
+ * quiere que lo primero que le pregunten sea en qué idioma. El navegador ya
+ * sabe la respuesta —el sistema operativo se la dio— y preguntar de nuevo es
+ * pedirle al usuario que resuelva algo que el programa puede resolver solo.
+ *
+ * Se mira la **lista** de idiomas preferidos y no solo el primero: alguien con
+ * el teléfono en inglés pero con castellano segundo va a preferir leer esto en
+ * castellano antes que en un tercer idioma que no tenemos. Se toma el primero
+ * de su lista que sepamos hablar.
+ *
+ * El `?lang=` es para revisar una traducción, no una preferencia: vale para
+ * esa visita y no se guarda en ningún lado. Sacarlo de la dirección devuelve
+ * todo a como estaba.
  */
 function resolveLanguage(): string {
   const requested = new URLSearchParams(window.location.search).get('lang')
   if (requested && requested in LOCALES) return requested
 
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (saved && saved in LOCALES) return saved
-  } catch {
-    // Modo privado: se usa igual, solo que no se recuerda.
+  const preferred = window.navigator.languages?.length
+    ? window.navigator.languages
+    : [window.navigator.language]
+
+  for (const tag of preferred) {
+    const code = tag?.slice(0, 2)
+    if (code && code in LOCALES) return code
   }
 
-  const system = window.navigator.language?.slice(0, 2)
-  return system && system in LOCALES ? system : 'es'
-}
-
-/**
- * Cambiar de idioma a propósito. Recarga, porque los textos se resuelven una
- * sola vez al arrancar; recargar para cambiar de idioma es lo normal y cuesta
- * menos que hacer que cada texto de la app sea reactivo.
- *
- * Se va con el `?lang=` sacado de la URL: si quedara puesto, le ganaría a lo
- * que se acaba de elegir.
- */
-export function setLanguage(code: string): void {
-  if (!(code in LOCALES)) return
-  try {
-    window.localStorage.setItem(STORAGE_KEY, code)
-  } catch {
-    // Sin dónde guardarlo, el cambio vale para esta visita.
-  }
-  const url = new URL(window.location.href)
-  url.searchParams.delete('lang')
-  window.location.replace(url.toString())
+  return 'es'
 }
 
 export const language = resolveLanguage()
@@ -69,11 +54,15 @@ export const language = resolveLanguage()
 /** Los textos del idioma elegido. Se usa directo: `copy.grid.title`. */
 export const copy: Copy = LOCALES[language]
 
-/** Los idiomas que existen, para ofrecerlos en algún lado más adelante. */
-export const languages = Object.keys(LOCALES).map((code) => ({
-  code,
-  name: LOCALES[code].language,
-}))
+// Durante un día el idioma se guardó acá. Fue un error —alcanzaba con abrir un
+// link con `?lang=` para quedarse con ese idioma puesto, sin forma de volver— y
+// esta línea limpia lo que aquella versión dejó escrito. Borrable cuando ya no
+// queden navegadores con la clave.
+try {
+  window.localStorage.removeItem('dibujo:idioma')
+} catch {
+  // Modo privado: no había nada que limpiar.
+}
 
 /**
  * Reemplaza `{nombre}` por su valor.
