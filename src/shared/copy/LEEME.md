@@ -46,17 +46,18 @@ http://localhost:5173/referencia/?lang=en
 al sacarlo de la dirección todo vuelve a como estaba, así que mandarle este link a
 alguien no le deja el idioma cambiado.
 
-## Cómo se elige el idioma
+## Qué idioma se muestra
 
-**Solo. No hay selector, y es a propósito.** Nadie que abre una herramienta de dibujo
-quiere que lo primero que le pregunten sea en qué idioma la quiere. El navegador ya
-sabe la respuesta —se la dio el sistema operativo— y volver a preguntar es pedirle a
-la persona que resuelva algo que el programa puede resolver solo.
+**Castellano siempre.** Es el idioma del sitio y no se deduce de nada.
 
-Se mira la **lista** de idiomas preferidos del navegador, no solo el primero: alguien
-con el teléfono en inglés pero con castellano segundo prefiere leer esto en castellano
-antes que en un idioma que no tenemos. Se toma el primero de esa lista que sepamos
-hablar; si no hay ninguno, castellano.
+Hubo dos intentos de deducirlo del navegador y los dos terminaron mostrándole inglés a
+un usuario argentino. `navigator.languages` no dice dónde estás ni qué querés leer:
+dice cómo está configurado el sistema operativo, y un teléfono en inglés no significa
+que su dueño prefiera leer esto en inglés.
+
+La traducción al inglés está completa y no se tira — se revisa con `?lang=en`. Lo que
+no hace es aparecer sola. Cuando el cambio de idioma se diseñe de verdad, con algo que
+se pueda elegir y que quede elegido, se conecta acá.
 
 ## Cómo sumar un idioma
 

@@ -16,37 +16,30 @@ const en: Copy = enJson
 
 const LOCALES: Record<string, Copy> = { es, en }
 
+/** El idioma del sitio. Todo se escribe primero acá. */
+const DEFAULT_LANGUAGE = 'es'
+
 /**
- * El idioma no se elige: se deduce del navegador y listo.
+ * Esto está en castellano. Punto.
  *
- * No hay selector, y es a propósito. Nadie que abre una herramienta de dibujo
- * quiere que lo primero que le pregunten sea en qué idioma. El navegador ya
- * sabe la respuesta —el sistema operativo se la dio— y preguntar de nuevo es
- * pedirle al usuario que resuelva algo que el programa puede resolver solo.
+ * Hubo dos intentos de deducirlo del navegador y los dos dieron inglés a un
+ * usuario argentino, porque `navigator.languages` no dice dónde estás ni qué
+ * querés leer: dice cómo está configurado el sistema operativo. Un teléfono en
+ * inglés no significa que su dueño prefiera leer esto en inglés — este sitio es
+ * de un dibujante argentino y su idioma es el castellano.
  *
- * Se mira la **lista** de idiomas preferidos y no solo el primero: alguien con
- * el teléfono en inglés pero con castellano segundo va a preferir leer esto en
- * castellano antes que en un tercer idioma que no tenemos. Se toma el primero
- * de su lista que sepamos hablar.
+ * Elegir idioma automáticamente es un problema que tiene buenas soluciones, y
+ * ninguna es mirar una lista y creerle. Cuando se encare de verdad —con algo
+ * que se pueda elegir y que quede elegido, dibujado en Figma— se hace bien.
+ * Hasta entonces, una constante que no puede equivocarse.
  *
- * El `?lang=` es para revisar una traducción, no una preferencia: vale para
- * esa visita y no se guarda en ningún lado. Sacarlo de la dirección devuelve
- * todo a como estaba.
+ * La traducción al inglés no se tira: está completa y se revisa con `?lang=en`.
+ * Lo que no hace es aparecer sola.
  */
 function resolveLanguage(): string {
   const requested = new URLSearchParams(window.location.search).get('lang')
   if (requested && requested in LOCALES) return requested
-
-  const preferred = window.navigator.languages?.length
-    ? window.navigator.languages
-    : [window.navigator.language]
-
-  for (const tag of preferred) {
-    const code = tag?.slice(0, 2)
-    if (code && code in LOCALES) return code
-  }
-
-  return 'es'
+  return DEFAULT_LANGUAGE
 }
 
 export const language = resolveLanguage()
