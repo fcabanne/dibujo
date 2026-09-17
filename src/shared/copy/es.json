@@ -51,21 +51,28 @@
   "grid": {
     "tab": "Grilla",
     "title": "Grilla",
-    "none": "Ninguna",
+    "type": "Tipo",
     "proportional": "Proporcional",
     "proportionalHint": "Divide la foto en partes iguales",
     "square": "Cuadrada",
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
     "divisions": "Divisiones",
-    "divisionsValue": "{n} × {n} · {total} casillas",
-    "squares": "Cuadrados a lo ancho",
-    "squaresValue": "{n} a lo ancho",
+    "fewer": "Menos divisiones",
+    "more": "Más divisiones",
     "color": "Color",
     "customColor": "Otro color",
+    "colors": {
+      "white": "Blanco",
+      "black": "Negro",
+      "red": "Rojo",
+      "cyan": "Celeste",
+      "yellow": "Amarillo",
+      "pink": "Rosa"
+    },
     "weight": "Espesor",
     "opacity": "Opacidad",
     "opacityValue": "{n}%",
-    "labels": "Etiquetas",
+    "labels": "Mostrar etiquetas",
     "subdivide": "Subdividir"
   },
 

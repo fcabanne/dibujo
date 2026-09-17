@@ -51,21 +51,28 @@
   "grid": {
     "tab": "Grid",
     "title": "Grid",
-    "none": "None",
+    "type": "Type",
     "proportional": "Proportional",
     "proportionalHint": "Divides the photo into equal parts",
     "square": "Square",
     "squareHint": "Exact squares starting from the top left",
     "divisions": "Divisions",
-    "divisionsValue": "{n} × {n} · {total} cells",
-    "squares": "Squares across",
-    "squaresValue": "{n} across",
+    "fewer": "Fewer divisions",
+    "more": "More divisions",
     "color": "Colour",
     "customColor": "Another colour",
+    "colors": {
+      "white": "White",
+      "black": "Black",
+      "red": "Red",
+      "cyan": "Cyan",
+      "yellow": "Yellow",
+      "pink": "Pink"
+    },
     "weight": "Thickness",
     "opacity": "Opacity",
     "opacityValue": "{n}%",
-    "labels": "Labels",
+    "labels": "Show labels",
     "subdivide": "Subdivide"
   },
 

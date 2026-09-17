@@ -28,7 +28,7 @@ mover de lugar en la frase, pero no borrar ni renombrar:
 
 ```json
 "done": "Listo: {file}"
-"divisionsValue": "{n} × {n} · {total} casillas"
+"grid": "Grilla: {cols} × {rows} · {total} casillas"
 ```
 
 Moverlas es justamente el punto: en otro idioma el orden de las partes de una frase

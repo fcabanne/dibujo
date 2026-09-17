@@ -1,5 +1,12 @@
-/** Cómo se reparte la grilla sobre la foto. */
-export type GridMode = 'none' | 'proportional' | 'square'
+/**
+ * Cómo se reparte la grilla sobre la foto.
+ *
+ * No hay un modo "ninguna": sacar la grilla es bajarle la opacidad a cero, que
+ * es la misma perilla con la que se la atenúa. Un modo aparte para apagarla era
+ * un tercer botón que no elegía nada — y con dos botones y una etiqueta la fila
+ * entra en un celular, que con tres no entraba.
+ */
+export type GridMode = 'proportional' | 'square'
 
 export interface GridStyle {
   color: string

@@ -17,6 +17,11 @@ export interface CheckboxProps {
  * removido: es lo que hace que ande con el teclado, que el lector de
  * pantalla lo anuncie como casilla, y que tocar el texto la marque. El
  * cuadradito dibujado es decoración encima de eso.
+ *
+ * La casilla va a la izquierda del texto, como en el panel del archivo
+ * (22:134): así todas las casillas de una columna arrancan alineadas y se
+ * lee de un vistazo cuáles están marcadas, sin seguir cada renglón hasta el
+ * final.
  */
 export function Checkbox({ checked, onChange, label, hint, disabled }: CheckboxProps) {
   const id = useId()
@@ -31,11 +36,11 @@ export function Checkbox({ checked, onChange, label, hint, disabled }: CheckboxP
         onChange={(e) => onChange(e.target.checked)}
       />
       <label htmlFor={id}>
+        <span className="ds-checkbox-box" aria-hidden="true" />
         <span className="ds-checkbox-text">
           {label}
           {hint && <em>{hint}</em>}
         </span>
-        <span className="ds-checkbox-box" aria-hidden="true" />
       </label>
     </div>
   )

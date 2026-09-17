@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { copy, fill } from '../../shared/copy'
-import { Button } from '../../shared/ui'
+import { Button, ChoiceGroup, type ChoiceOption } from '../../shared/ui'
 import { PRINT_SHEETS, sheetName } from '../domain/paper'
-import { Segmented } from './controls'
+import { Field } from './controls'
 import type { Action } from '../state/reducer'
 import type { ExportSize, ExportState } from '../types'
 
@@ -15,7 +15,7 @@ interface Props {
   busy: boolean
 }
 
-const SIZES: { value: ExportSize; label: string; title: string }[] = [
+const SIZES: ChoiceOption<ExportSize>[] = [
   { value: 'original', label: copy.download.original, title: copy.download.originalHint },
   ...PRINT_SHEETS.map((sheet) => ({
     value: sheet.id as ExportSize,
@@ -72,22 +72,26 @@ export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy
       <div className="sheet-body">
         <h2>{copy.download.title}</h2>
 
-        <Segmented
-          label={copy.download.size}
-          value={value.size}
-          onChange={(size) => dispatch({ type: 'export/patch', patch: { size } })}
-          options={SIZES}
-        />
+        <Field label={copy.download.size}>
+          <ChoiceGroup
+            label={copy.download.size}
+            value={value.size}
+            onChange={(size) => dispatch({ type: 'export/patch', patch: { size } })}
+            options={SIZES}
+          />
+        </Field>
 
-        <Segmented
-          label={copy.download.format}
-          value={value.format}
-          onChange={(format) => dispatch({ type: 'export/patch', patch: { format } })}
-          options={[
-            { value: 'pdf', label: copy.download.pdf, title: copy.download.pdfHint },
-            { value: 'jpg', label: copy.download.jpg, title: copy.download.jpgHint },
-          ]}
-        />
+        <Field label={copy.download.format}>
+          <ChoiceGroup
+            label={copy.download.format}
+            value={value.format}
+            onChange={(format) => dispatch({ type: 'export/patch', patch: { format } })}
+            options={[
+              { value: 'pdf', label: copy.download.pdf, title: copy.download.pdfHint },
+              { value: 'jpg', label: copy.download.jpg, title: copy.download.jpgHint },
+            ]}
+          />
+        </Field>
 
         <div className="sheet-actions">
           <Button variant="quiet" onClick={onClose}>

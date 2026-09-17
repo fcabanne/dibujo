@@ -1,18 +1,15 @@
 import type { ReactNode } from 'react'
 import { copy } from '../../shared/copy'
+import { Swatch, SwatchPicker } from '../../shared/ui'
 
 /**
- * Los controles del panel que **no están dibujados en Figma**: el slider, el
- * grupo de botones y los chips de color.
+ * Cómo se **acomodan** los controles en este panel. Los controles en sí no
+ * están acá: slider, stepper, botones de elegir, casilla y muestras de color
+ * son componentes del sistema (`shared/ui`), porque están dibujados en Figma.
  *
- * No invento componentes nuevos para ellos. Toman los tokens del sistema
- * —color, tipografía, radio, medida— y su forma sale de la que el diseño sí
- * define: el grupo de botones repite el patrón de la barra de pestañas (una
- * píldora clara con el elegido en violeta), que es el único agrupador que
- * existe en el archivo.
- *
- * Cuando se dibujen, se reemplazan por componentes de `shared/ui`.
- * La casilla ya no está acá: es `Checkbox` del sistema.
+ * Lo que queda acá es la caja alrededor: la sección de la columna de
+ * escritorio, las dos formas de emparejar un nombre con su control, y los
+ * textos sueltos.
  */
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -24,91 +21,52 @@ export function Section({ title, children }: { title: string; children: ReactNod
   )
 }
 
-interface SliderProps {
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  onChange: (value: number) => void
-  format?: (value: number) => string
-  disabled?: boolean
-}
-
-export function Slider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  format,
-  disabled,
-}: SliderProps) {
-  const ratio = max === min ? 0 : (value - min) / (max - min)
+/**
+ * Nombre a la izquierda, control a la derecha. Es la fila del panel del
+ * diseño (Figma 22:127, 22:584, 22:237…).
+ *
+ * En una sola línea entran más controles que apilando nombre y control, y en
+ * un panel que se toca de corrido buscando un punto eso es lo que decide si
+ * hay que scrollear entre dos perillas que se comparan entre sí.
+ */
+export function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className={'slider' + (disabled ? ' is-off' : '')}>
-      <span className="row">
-        <span>{label}</span>
-        <em>{format ? format(value) : String(value)}</em>
-      </span>
-      <span className="track">
-        <span className="fill" style={{ width: `${ratio * 100}%` }} />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          disabled={disabled}
-          aria-label={label}
-          onChange={(e) => onChange(Number(e.target.value))}
-        />
-      </span>
-    </label>
-  )
-}
-
-interface Option<T> {
-  value: T
-  label: string
-  title?: string
-}
-
-export function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-}: {
-  value: T
-  options: Option<T>[]
-  onChange: (value: T) => void
-  label?: string
-}) {
-  return (
-    <div className="field">
-      {label && <span className="field-label">{label}</span>}
-      <div className="segmented" role="group" aria-label={label}>
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            title={option.title}
-            className={option.value === value ? 'is-on' : ''}
-            aria-pressed={option.value === value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+    <div className="field-row">
+      <span className="field-name">{label}</span>
+      {children}
     </div>
   )
 }
 
-/** Los colores que de verdad se usan encima de una foto, más el cuentagotas para el resto. */
-const COLORS = ['#ffffff', '#111111', '#ff3b30', '#00e5ff', '#ffd60a', '#ff2d95']
+/**
+ * Nombre arriba, control abajo. Para el diálogo de descarga, donde las
+ * opciones son largas —"Original", "A4", "Oficio"— y no queda media fila
+ * para ellas.
+ */
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="field">
+      <span className="field-label">{label}</span>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Los colores que de verdad se usan encima de una foto, en el orden del
+ * diseño (Figma 22:341), más la rueda para cualquier otro.
+ *
+ * Cada uno con su nombre: un círculo de color no dice nada para quien no lo
+ * ve, y un hexadecimal tampoco.
+ */
+const COLORS = [
+  { value: '#ffffff', name: copy.grid.colors.white },
+  { value: '#111111', name: copy.grid.colors.black },
+  { value: '#ff3b30', name: copy.grid.colors.red },
+  { value: '#00e5ff', name: copy.grid.colors.cyan },
+  { value: '#ffd60a', name: copy.grid.colors.yellow },
+  { value: '#ff2d95', name: copy.grid.colors.pink },
+]
 
 export function ColorRow({
   value,
@@ -117,32 +75,26 @@ export function ColorRow({
   value: string
   onChange: (color: string) => void
 }) {
-  const custom = !COLORS.includes(value.toLowerCase())
+  const current = value.toLowerCase()
+  const custom = !COLORS.some((color) => color.value === current)
+
   return (
-    <div className="field">
-      <span className="field-label">{copy.grid.color}</span>
-      <div className="colors">
-        {COLORS.map((color) => (
-          <button
-            key={color}
-            type="button"
-            className={'chip' + (color === value.toLowerCase() ? ' is-on' : '')}
-            style={{ background: color }}
-            aria-label={color}
-            aria-pressed={color === value.toLowerCase()}
-            onClick={() => onChange(color)}
-          />
-        ))}
-        <label className={'chip is-custom' + (custom ? ' is-on' : '')} title={copy.grid.customColor}>
-          <span style={{ background: value }} />
-          <input
-            type="color"
-            value={value}
-            aria-label={copy.grid.customColor}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </label>
-      </div>
+    <div className="swatches" role="group" aria-label={copy.grid.color}>
+      {COLORS.map((color) => (
+        <Swatch
+          key={color.value}
+          color={color.value}
+          label={color.name}
+          selected={color.value === current}
+          onSelect={() => onChange(color.value)}
+        />
+      ))}
+      <SwatchPicker
+        value={value}
+        selected={custom}
+        label={copy.grid.customColor}
+        onChange={onChange}
+      />
     </div>
   )
 }

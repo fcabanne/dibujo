@@ -110,9 +110,11 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/components/Canvas.tsx` — lienzo con su loop de render, manejo de densidad de
   pantalla y drag & drop de imágenes.
 - `src/shared/ui/` — **el sistema de diseño**, sacado del archivo de Figma "Mi web":
-  tokens con prefijo `--ds-`, tres componentes (Button, IconButton, Checkbox), los seis
-  íconos y las dos tipografías empaquetadas. Un solo import trae todo, estilos
-  incluidos. **Si no está en Figma, no se inventa acá.** Ver `src/shared/ui/LEEME.md`.
+  tokens con prefijo `--ds-`, siete componentes (Button, IconButton, Checkbox, Slider,
+  Stepper, ChoiceGroup, Swatch), los nueve íconos y las tipografías empaquetadas. Un
+  solo import trae todo, estilos incluidos. **Si no está en Figma, no se inventa acá**
+  — y los componentes no traen textos, los reciben por props. Ver
+  `src/shared/ui/LEEME.md`.
 - `src/shared/copy/` — **los textos**, un JSON por idioma. Ningún texto visible se
   escribe adentro de un componente, y los números también salen de ahí (el separador
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
@@ -181,7 +183,20 @@ píxeles. Un valor fijo se vería fino en pantalla y grueso en el export, o al r
 número muestra en qué se diferencian; con un número por modo, cada cambio traía
 además un salto de tamaño y no se veía nada. La cuadrada reparte el ancho justo, así
 que nunca sobra a la derecha — el alto casi nunca es múltiplo y la última fila sale
-cortada.
+cortada. Y se elige con un stepper y no con un slider: seis divisiones es una
+decisión que se toma de a una, no un punto que se busca arrastrando.
+
+**Sacar la grilla es bajarle la opacidad a cero.** No hay un modo "ninguna" — el
+diseño lo sacó, y con razón: era un tercer botón que no elegía nada, y con tres la
+fila no entraba en un celular. `computeGrid` devuelve `null` en cero, y eso es lo que
+apaga también las etiquetas, las cotas y la línea de medidas del export; dibujar
+transparente no alcanzaba, porque esas tres se dibujan con un piso de opacidad para
+que se lean sobre cualquier foto. Una sesión vieja guardada con el modo `'none'` se
+traduce al abrir (ver `persistence.ts`).
+
+**El tamaño del dibujo está escondido, no borrado** (`SHOW_PAPER` en `Panel.tsx`).
+El estado, el dominio y los textos siguen enteros, que es lo que hace que las cotas en
+centímetros puedan volver sin rearmar nada. Prenderlo es cambiar un `false`.
 
 **El tamaño del dibujo y la hoja de impresión son dos cosas distintas.** El primero
 (`state.paper`) existe solo para poder decir cuántos centímetros mide una casilla; la
@@ -227,9 +242,19 @@ mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 
 **La pantalla de inicio reemplaza al dibujo de ejemplo.** Antes la herramienta abría con
 una naturaleza muerta inventada; ahora, sin foto, muestra la pantalla del diseño
-(Figma 18:76) y las pestañas quedan deshabilitadas. `App` espera a que IndexedDB
+(Figma 18:76) y **no hay barra de pestañas**: no hay nada que configurar todavía, y
+una barra de botones apagados promete algo que no cumple. `App` espera a que IndexedDB
 conteste (`ready`) antes de decidir cuál mostrar: sin esa espera parpadea el inicio
 cuando sí había una foto guardada, y parece que se hubiera perdido.
+
+**Cada foto nueva abre la grilla.** Es a lo que se viene. Dejar abierta la pestaña de
+la foto después de subirla sería mostrarle a alguien lo que acaba de hacer en vez de
+lo que sigue.
+
+**La barra de arriba no lleva el nombre de la herramienta**, como en el diseño: solo
+el botón de volver y, cuando hay foto, el de descargar. El nombre sigue estando en un
+`<h1>` para el lector de pantalla — que no se dibuje no quiere decir que la página no
+se llame.
 
 **Quitar la foto conserva los ajustes.** Borra la imagen del navegador y vuelve al
 inicio, pero la grilla, el color y el modo siguen puestos: preparar varias fotos de la

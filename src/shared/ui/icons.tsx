@@ -1,7 +1,7 @@
 /**
  * Los íconos del sistema.
  *
- * Los seis primeros salen del archivo de Figma sin redibujar: el `d` es el
+ * Todos menos el último salen del archivo de Figma sin redibujar: el `d` es el
  * que exporta el archivo, tal cual. Todos comparten métrica —24×24, trazo
  * de 2, puntas y uniones redondas— y esa métrica es lo que los hace ver de
  * la misma familia, así que un ícono nuevo la respeta o no entra.
@@ -76,6 +76,33 @@ export function BackIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
       <path d="M9 6L5 10L9 14M5 10H16C17.0609 10 18.0783 10.4214 18.8284 11.1716C19.5786 11.9217 20 12.9391 20 14C20 15.0609 19.5786 16.0783 18.8284 16.8284C18.0783 17.5786 17.0609 18 16 18H15" />
+    </svg>
+  )
+}
+
+/** La foto. Figma: `Photo` (22:57). */
+export function PhotoIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M15 8H15.01M3 16L8 11C8.928 10.107 10.072 10.107 11 11L16 16M14 14L15 13C15.928 12.107 17.072 12.107 18 13L21 16M3 6C3 5.20435 3.31607 4.44129 3.87868 3.87868C4.44129 3.31607 5.20435 3 6 3H18C18.7956 3 19.5587 3.31607 20.1213 3.87868C20.6839 4.44129 21 5.20435 21 6V18C21 18.7956 20.6839 19.5587 20.1213 20.1213C19.5587 20.6839 18.7956 21 18 21H6C5.20435 21 4.44129 20.6839 3.87868 20.1213C3.31607 19.5587 3 18.7956 3 18V6Z" />
+    </svg>
+  )
+}
+
+/** Uno menos. Figma: `Minus` (22:289). */
+export function MinusIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M5 12H19" />
+    </svg>
+  )
+}
+
+/** Uno más. Figma: `Plus` (22:291). */
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 5V19M5 12H19" />
     </svg>
   )
 }
