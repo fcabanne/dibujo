@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dibujo — herramientas</title>
+    <style rel="stylesheet" crossorigin>:root{--hud-bg: rgba(16, 16, 19, .66);--hud-bg-solid: rgba(22, 22, 26, .9);--hud-border: rgba(255, 255, 255, .16);--hud-text: rgba(255, 255, 255, .93);--hud-dim: rgba(255, 255, 255, .52);--accent: #e6b075;--fondo: #0c0c0e;--shadow-hud: 0 16px 40px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .4);--spring: cubic-bezier(.34, 1.56, .64, 1);--ease: cubic-bezier(.22, 1, .36, 1);color-scheme:dark;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}html,body{margin:0;background:var(--fondo);color:var(--hud-text)}button,input{font:inherit;color:inherit}body{min-height:100vh;display:grid;place-items:center;padding:48px 24px;background:radial-gradient(ellipse at 50% 34%,rgba(255,244,224,.09),transparent 62%),var(--fondo)}.portada{width:100%;max-width:880px}.portada header{text-align:center;margin-bottom:44px}.portada h1{margin:0;font-size:30px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.portada header p{margin:10px 0 0;font-size:14px;color:var(--hud-dim)}.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}.tool{display:flex;flex-direction:column;border-radius:20px;border:1px solid var(--hud-border);background:var(--hud-bg);overflow:hidden;text-decoration:none;color:inherit;box-shadow:var(--shadow-hud);transition:transform .22s var(--ease),border-color .22s var(--ease)}a.tool:hover{transform:translateY(-4px);border-color:#e6b07580}.tool-art{display:block;background:linear-gradient(160deg,#23242a,#15161a);border-bottom:1px solid var(--hud-border)}.tool-art svg{display:block;width:100%;height:auto}.tool-body{display:block;padding:18px 20px 22px}.tool-body strong{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:.02em}.tool-body em{display:block;margin-top:7px;font-style:normal;font-size:13px;line-height:1.5;color:var(--hud-dim)}.badge{padding:3px 9px;border-radius:999px;border:1px solid rgba(230,176,117,.35);background:#e6b0751f;color:var(--accent);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.tool.is-wip{cursor:default}.tool.is-wip .tool-art,.tool.is-wip .tool-body strong,.tool.is-wip .tool-body em{opacity:.45}.tool.is-wip .badge{opacity:1}</style>
+  </head>
+  <body>
+    <main class="portada">
+      <header>
+        <h1>Dibujo</h1>
+        <p>Herramientas para trabajar sobre papel.</p>
+      </header>
+
+      <div class="tools">
+        <a class="tool" href="./marco/">
+          <span class="tool-art">
+            <!-- Un cuadro colgado: marco, passe-partout y la obra adentro. -->
+            <svg viewBox="0 0 200 140" aria-hidden="true">
+              <defs>
+                <linearGradient id="moldura" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#8a5c33" />
+                  <stop offset="0.5" stop-color="#6b4326" />
+                  <stop offset="1" stop-color="#4a2d18" />
+                </linearGradient>
+              </defs>
+              <rect x="54" y="18" width="92" height="112" rx="2" fill="url(#moldura)" />
+              <rect x="64" y="28" width="72" height="92" fill="#efece4" />
+              <rect x="74" y="38" width="52" height="72" fill="#f7f5ef" />
+              <path
+                d="M100 104V56M100 70c-8-6-14-4-16-2 3 5 10 7 16 2Zm0 12c8-6 14-4 16-2-3 5-10 7-16 2Zm0-24c-8-6-14-4-16-2 3 5 10 7 16 2Z"
+                fill="none"
+                stroke="#3a332c"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <span class="tool-body">
+            <strong>Cuadros</strong>
+            <em>
+              Probá marcos, passe-partout y vidrios sobre tu dibujo, y salí con las
+              medidas para encargarlo.
+            </em>
+          </span>
+        </a>
+
+        <a class="tool" href="./referencia/">
+          <span class="tool-art">
+            <!-- Una foto con la grilla de referencia encima. -->
+            <svg viewBox="0 0 200 140" aria-hidden="true">
+              <rect x="46" y="26" width="108" height="88" rx="2" fill="#2c3a46" />
+              <circle cx="80" cy="56" r="12" fill="#d8c38a" />
+              <path d="M46 114l30-34 22 20 18-14 38 28z" fill="#4a5f5a" />
+              <g stroke="rgba(255,255,255,0.55)" stroke-width="1">
+                <path d="M73 26v88M100 26v88M127 26v88M46 48h108M46 70h108M46 92h108" />
+              </g>
+              <rect
+                x="46"
+                y="26"
+                width="108"
+                height="88"
+                rx="2"
+                fill="none"
+                stroke="rgba(255,255,255,0.7)"
+                stroke-width="1.5"
+              />
+            </svg>
+          </span>
+          <span class="tool-body">
+            <strong>Referencia</strong>
+            <em>
+              Prepará la foto antes de dibujarla: grilla para pasarla al papel,
+              ajustes para que se lea mejor, y lista para imprimir.
+            </em>
+          </span>
+        </a>
+
+        <a class="tool" href="./mesa/">
+          <span class="tool-art">
+            <!-- La hoja, la foto asomando translúcida y el trazo siguiéndola. -->
+            <svg viewBox="0 0 200 140" aria-hidden="true">
+              <defs>
+                <linearGradient id="luz" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="0" stop-color="#e6b075" stop-opacity="0.42" />
+                  <stop offset="1" stop-color="#e6b075" stop-opacity="0.03" />
+                </linearGradient>
+              </defs>
+              <rect x="52" y="26" width="96" height="88" rx="2" fill="#f2ece1" />
+              <rect x="52" y="26" width="96" height="88" rx="2" fill="url(#luz)" />
+              <path
+                d="M100 48c-5 0-8 4-7 8 1 4-2 6-5 9-8 7-9 21-1 28 8 7 18 7 26 0 8-7 7-21-1-28-3-3-6-5-5-9 1-4-2-8-7-8z"
+                fill="#4a5f70"
+                opacity="0.34"
+                transform="translate(5 4)"
+              />
+              <path
+                d="M100 48c-5 0-8 4-7 8 1 4-2 6-5 9-8 7-9 21-1 28 8 7 18 7 26 0 8-7 7-21-1-28-3-3-6-5-5-9 1-4-2-8-7-8z"
+                fill="none"
+                stroke="#3a332c"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <!-- las esquinas del visor -->
+              <g fill="none" stroke="#e6b075" stroke-width="2" stroke-linecap="round">
+                <path d="M44 46V36h10M156 46V36h-10M44 94v10h10M156 94v10h-10" />
+              </g>
+            </svg>
+          </span>
+          <span class="tool-body">
+            <strong>Mesa de luz</strong>
+            <em>
+              Apuntá la cámara del celular al papel y calcá: la foto queda encima de lo
+              que ve, tan translúcida como quieras.
+            </em>
+          </span>
+        </a>
+      </div>
+    </main>
+  </body>
+</html>
