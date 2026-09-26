@@ -20,6 +20,8 @@ export { Slider, type SliderProps } from './Slider'
 export { Stepper, type StepperProps } from './Stepper'
 export { ChoiceGroup, type ChoiceGroupProps, type ChoiceOption } from './Choice'
 export { Swatch, SwatchPicker, type SwatchProps, type SwatchPickerProps } from './Swatch'
+export { Dropdown, type DropdownProps } from './Dropdown'
+export { OptionPicker, type OptionPickerProps, type PickerOption } from './OptionPicker'
 
 export {
   UploadIcon,
@@ -32,5 +34,8 @@ export {
   MinusIcon,
   PlusIcon,
   CloseIcon,
+  ChevronDownIcon,
+  ProportionalIcon,
+  SquareIcon,
   type IconProps,
 } from './icons'

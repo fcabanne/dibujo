@@ -8,21 +8,26 @@ import {
   ChoiceGroup,
   CloseIcon,
   DownloadIcon,
+  Dropdown,
   FileIcon,
   GridIcon,
   IconButton,
+  OptionPicker,
   PaintIcon,
   PhotoIcon,
+  ProportionalIcon,
   Slider,
+  SquareIcon,
   Stepper,
   UploadIcon,
   type ChoiceOption,
+  type PickerOption,
 } from '../../shared/ui'
 import { GRID_LIMITS } from '../domain/grid'
 import { PAPER_PRESETS, sheetName } from '../domain/paper'
-import { ColorRow, Hint, Row, Section } from './controls'
+import { CustomColorOption, Hint, NAMED_COLORS, Row, Section } from './controls'
 import type { Action } from '../state/reducer'
-import type { AppState, EffectsMode, PaperId } from '../types'
+import type { AppState, EffectsMode, GridMode, PaperId } from '../types'
 
 interface Props {
   state: AppState
@@ -51,6 +56,27 @@ const MODES: ChoiceOption<EffectsMode>[] = [
   { value: 'edges', label: copy.adjust.edges, title: copy.adjust.edgesHint },
   { value: 'facets', label: copy.adjust.facets, title: copy.adjust.facetsHint },
 ]
+
+/** Cómo se llama el modo elegido, para la fila cerrada del Dropdown. */
+const TYPE_NAMES: Record<GridMode, string> = {
+  proportional: copy.grid.proportional,
+  square: copy.grid.square,
+  none: copy.grid.none,
+}
+
+/** Las tres tarjetas del picker de Tipo. Figma 26:279. "Ninguna" ocupa la fila entera. */
+const TYPE_OPTIONS: PickerOption<GridMode>[] = [
+  { value: 'proportional', label: copy.grid.proportional, icon: <ProportionalIcon /> },
+  { value: 'square', label: copy.grid.square, icon: <SquareIcon /> },
+  { value: 'none', label: copy.grid.none, icon: <CloseIcon />, wide: true },
+]
+
+/** Las cinco tarjetas con nombre del picker de Color. Figma 26:425. La sexta —"Otro"— va como `trailing`. */
+const COLOR_OPTIONS: PickerOption<string>[] = NAMED_COLORS.map((color) => ({
+  value: color.value,
+  label: color.name,
+  icon: <span className="ds-option-swatch" style={{ background: color.value }} />,
+}))
 
 interface PanelSection {
   id: string
@@ -82,7 +108,13 @@ export function Panel({
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
+  /** Cuál de los dos picker de la grilla está abierto, si alguno. Figma 26:279/26:425. */
+  const [picker, setPicker] = useState<'tipo' | 'color' | null>(null)
   const { grid, paper, effects } = state
+
+  // Cambiar de pestaña deja atrás cualquier picker abierto: son parte del
+  // contenido de "grilla", no de la barra de pestañas.
+  useEffect(() => setPicker(null), [openTab])
 
   // La miniatura sale del archivo original, no del lienzo: es la foto como entró.
   // La URL se revoca al cambiar de foto, si no cada carga deja una colgada.
@@ -107,22 +139,18 @@ export function Panel({
     if (reference) setOpenTab('grilla')
   }, [reference])
 
+  // Solo se usa sin foto (18:76): con foto puesta, volver baja a la fila de
+  // abajo junto con descargar y las pestañas (ver el `return` en compacto).
   const topBar = (
     <div className="topbar">
       <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
         <BackIcon />
       </IconButton>
-      {/* El diseño deja la barra con el botón de volver y nada más: en 18:88 y en
-          22:63 el lugar del título es un espaciador vacío. El nombre sigue
-          estando para el lector de pantalla — que no se dibuje no quiere decir
-          que la página no se llame. */}
+      {/* El diseño deja la barra con el botón de volver y nada más: en 18:88 el
+          lugar del título es un espaciador vacío. El nombre sigue estando para
+          el lector de pantalla — que no se dibuje no quiere decir que la
+          página no se llame. */}
       <h1 className="ds-sr">{copy.app.name}</h1>
-      <span className="topbar-gap" />
-      {reference && (
-        <IconButton label={copy.download.action} onClick={onDownload}>
-          <DownloadIcon />
-        </IconButton>
-      )}
     </div>
   )
 
@@ -235,89 +263,109 @@ export function Panel({
     ),
   }
 
+  const isCustomColor = !NAMED_COLORS.some(
+    (color) => color.value === grid.style.color.toLowerCase(),
+  )
+
   const gridSection: PanelSection = {
     id: 'grilla',
     title: copy.grid.title,
     label: copy.grid.tab,
     icon: <GridIcon />,
-    content: (
-      <>
-        {/* El color arriba de todo, como en el diseño: es lo primero que hay que
-            corregir cuando la grilla cae sobre una foto clara y no se ve. */}
-        <ColorRow
-          value={grid.style.color}
-          onChange={(color) => dispatch({ type: 'grid/style', patch: { color } })}
+    content:
+      picker === 'tipo' ? (
+        <OptionPicker
+          label={copy.grid.type}
+          value={grid.mode}
+          columns={2}
+          options={TYPE_OPTIONS}
+          onChange={(mode) => {
+            dispatch({ type: 'grid/patch', patch: { mode } })
+            setPicker(null)
+          }}
         />
-
-        <Row label={copy.grid.type}>
-          <ChoiceGroup
-            label={copy.grid.type}
-            value={grid.mode}
-            onChange={(mode) => dispatch({ type: 'grid/patch', patch: { mode } })}
-            options={[
-              {
-                value: 'proportional',
-                label: copy.grid.proportional,
-                title: copy.grid.proportionalHint,
-              },
-              { value: 'square', label: copy.grid.square, title: copy.grid.squareHint },
-            ]}
-          />
-        </Row>
-
-        {/* El mismo número para los dos modos: cambiar de uno a otro muestra en
-            qué se diferencian, sin que además salte el tamaño. Y de a uno con el
-            stepper, no arrastrando: seis divisiones es una decisión, no un punto
-            que se busca. */}
-        <Row label={copy.grid.divisions}>
-          <Stepper
-            label={copy.grid.divisions}
-            value={grid.count}
-            min={GRID_LIMITS.min}
-            max={GRID_LIMITS.max}
-            onChange={(count) => dispatch({ type: 'grid/patch', patch: { count } })}
-            decrementLabel={copy.grid.fewer}
-            incrementLabel={copy.grid.more}
-          />
-        </Row>
-
-        <Row label={copy.grid.weight}>
-          <Slider
-            label={copy.grid.weight}
-            value={grid.style.weight}
-            min={1}
-            max={6}
-            step={1}
-            onChange={(weight) => dispatch({ type: 'grid/style', patch: { weight } })}
-          />
-        </Row>
-
-        {/* Llega hasta cero, y no es un extremo cualquiera: en cero no hay grilla.
-            Es la forma de sacarla ahora que "ninguna" dejó de ser un tipo. */}
-        <Row label={copy.grid.opacity}>
-          <Slider
-            label={copy.grid.opacity}
-            value={Math.round(grid.style.opacity * 100)}
-            min={0}
-            max={100}
-            step={5}
-            onChange={(v) => dispatch({ type: 'grid/style', patch: { opacity: v / 100 } })}
-            format={(v) => fill(copy.grid.opacityValue, { n: v })}
-          />
-        </Row>
-
-        <Checkbox
-          label={copy.grid.subdivide}
-          checked={grid.subdivide}
-          onChange={(subdivide) => dispatch({ type: 'grid/patch', patch: { subdivide } })}
+      ) : picker === 'color' ? (
+        <OptionPicker
+          label={copy.grid.color}
+          value={isCustomColor ? '' : grid.style.color.toLowerCase()}
+          columns={3}
+          options={COLOR_OPTIONS}
+          onChange={(color) => {
+            dispatch({ type: 'grid/style', patch: { color } })
+            setPicker(null)
+          }}
+          trailing={
+            <CustomColorOption
+              value={grid.style.color}
+              selected={isCustomColor}
+              onChange={(color) => dispatch({ type: 'grid/style', patch: { color } })}
+              onClose={() => setPicker(null)}
+            />
+          }
         />
-        <Checkbox
-          label={copy.grid.labels}
-          checked={grid.style.labels}
-          onChange={(labels) => dispatch({ type: 'grid/style', patch: { labels } })}
-        />
-      </>
-    ),
+      ) : (
+        <>
+          {/* Tipo y Color abren una pantalla propia (`OptionPicker`) en vez de un
+              menú: no hay diseño de un menú flotante en el archivo. */}
+          <Row label={copy.grid.type}>
+            <Dropdown
+              label={copy.grid.type}
+              value={TYPE_NAMES[grid.mode]}
+              onClick={() => setPicker('tipo')}
+            />
+          </Row>
+
+          <Row label={copy.grid.color}>
+            <Dropdown
+              label={copy.grid.color}
+              value={isCustomColor ? copy.grid.customColor : NAMED_COLORS.find(
+                (color) => color.value === grid.style.color.toLowerCase(),
+              )!.name}
+              swatch={grid.style.color}
+              onClick={() => setPicker('color')}
+            />
+          </Row>
+
+          {/* El mismo número para los dos modos: cambiar de uno a otro muestra en
+              qué se diferencian, sin que además salte el tamaño. Y de a uno con el
+              stepper, no arrastrando: seis divisiones es una decisión, no un punto
+              que se busca. */}
+          <Row label={copy.grid.divisions}>
+            <Stepper
+              label={copy.grid.divisions}
+              value={grid.count}
+              min={GRID_LIMITS.min}
+              max={GRID_LIMITS.max}
+              onChange={(count) => dispatch({ type: 'grid/patch', patch: { count } })}
+              decrementLabel={copy.grid.fewer}
+              incrementLabel={copy.grid.more}
+            />
+          </Row>
+
+          <Row label={copy.grid.weight}>
+            <Slider
+              label={copy.grid.weight}
+              value={grid.style.weight}
+              min={1}
+              max={6}
+              step={1}
+              onChange={(weight) => dispatch({ type: 'grid/style', patch: { weight } })}
+            />
+          </Row>
+
+          <Row label={copy.grid.opacity}>
+            <Slider
+              label={copy.grid.opacity}
+              value={Math.round(grid.style.opacity * 100)}
+              min={0}
+              max={100}
+              step={5}
+              onChange={(v) => dispatch({ type: 'grid/style', patch: { opacity: v / 100 } })}
+              format={(v) => fill(copy.grid.opacityValue, { n: v })}
+            />
+          </Row>
+        </>
+      ),
   }
 
   const adjustSection: PanelSection = {
@@ -430,21 +478,34 @@ export function Panel({
   // promete algo y no lo cumple.
   if (!reference) return topBar
 
-  // --- pantalla angosta: pestañas abajo --------------------------------------
+  // --- pantalla angosta: todo abajo --------------------------------------
+  // Con foto puesta, el diseño saca la barra flotante de arriba: volver y
+  // descargar bajan a la misma fila que las pestañas (26:279, 22:45),
+  // flanqueándolas — no una barra aparte. Eso también le deja el alto entero
+  // a la foto, que es lo que la agranda contra la versión anterior.
   if (compact) {
     const open = sections.find((section) => section.id === openTab) ?? null
     return (
-      <>
-        {topBar}
-        <div className="controls">
-          {open && (
-            <div className="tab-panel" key={open.id}>
-              {open.content}
-            </div>
-          )}
+      <div className="controls">
+        {open && (
+          <div className="tab-panel" key={open.id}>
+            {open.content}
+          </div>
+        )}
+        <div className="bottombar">
+          <nav className="tabbar">
+            <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
+              <BackIcon />
+            </IconButton>
+          </nav>
           {tabBar}
+          <nav className="tabbar">
+            <IconButton label={copy.download.action} onClick={onDownload}>
+              <DownloadIcon />
+            </IconButton>
+          </nav>
         </div>
-      </>
+      </div>
     )
   }
 

@@ -9,8 +9,6 @@ interface Props {
   reference: Reference | null
   state: AppState
   onFile: (file: File) => void
-  /** Pantalla angosta: arriba flota una barra y la foto no puede meterse debajo. */
-  compact: boolean
   /** Se avisa una vez si la máquina no puede correr los efectos. */
   onEffectsSupport: (supported: boolean) => void
 }
@@ -18,8 +16,6 @@ interface Props {
 const ZOOM = { min: 0.4, max: 8 }
 /** Aire alrededor de la foto, para que la grilla no muera contra el borde de la ventana. */
 const PAD = 32
-/** Lo que hay que dejar libre arriba cuando la barra flotante está puesta. */
-const TOP_BAR = 64
 
 interface View {
   zoom: number
@@ -27,7 +23,7 @@ interface View {
   y: number
 }
 
-export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: Props) {
+export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const effectsRef = useRef<EffectsRenderer | null>(null)
@@ -38,14 +34,13 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: 
   const frameRef = useRef(0)
   /** Los dedos apoyados. Uno mueve la foto; dos la acercan. */
   const pointersRef = useRef(new Map<number, { x: number; y: number }>())
-  const pinchRef = useRef<{ spread: number; middle: { x: number; y: number } } | null>(null)
+  /** Sin arrastre: el pellizco solo cambia el zoom, nunca la posición. */
+  const pinchRef = useRef<{ spread: number } | null>(null)
 
   const stateRef = useRef(state)
   const refRef = useRef(reference)
-  const compactRef = useRef(compact)
   stateRef.current = state
   refRef.current = reference
-  compactRef.current = compact
 
   const [zoomed, setZoomed] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -82,16 +77,13 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: 
 
     const aspect = aspectOf(current)
     const view = viewRef.current
-    // En pantalla angosta la barra de arriba flota sobre el lienzo, así que la foto
-    // se encuadra en lo que queda por debajo y no en el alto completo.
-    const top = compactRef.current ? TOP_BAR : PAD
-    const availH = box.height - top - PAD
+    const availH = box.height - PAD * 2
     const base = fitRect(aspect, { w: box.width - PAD * 2, h: availH })
     const w = base.w * view.zoom
     const h = base.h * view.zoom
     const rect = {
       x: (box.width - w) / 2 + view.x,
-      y: top + (availH - h) / 2 + view.y,
+      y: PAD + (availH - h) / 2 + view.y,
       w,
       h,
     }
@@ -165,10 +157,11 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: 
   }, [schedule])
 
   /**
-   * Acercar dejando quieto el punto que se está mirando. Vale para la rueda y para
-   * el pellizco: en los dos casos hay un lugar de la pantalla que no se tiene que
-   * mover, el puntero o el medio de los dos dedos. Acercar hacia el centro de la
-   * ventana en vez de hacia ahí obliga a reencuadrar después de cada gesto.
+   * Acercar dejando quieto un punto de la pantalla. Con la rueda es el puntero,
+   * que sí se queda quieto mientras se gira. Con el pellizco es el centro de
+   * la ventana y no el medio de los dedos: ese punto se mueve solo con
+   * temblar la mano, y acercar hacia ahí hacía que la foto pareciera
+   * arrastrarse en vez de acercarse.
    */
   const zoomAt = useCallback((cx: number, cy: number, factor: number) => {
     const wrap = wrapRef.current
@@ -224,20 +217,21 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, compact }: 
       const view = viewRef.current
 
       if (pointers.size >= 2) {
-        // Dos dedos: la distancia entre ellos manda el zoom y su punto medio el
-        // desplazamiento. Se miden de nuevo en cada movimiento en vez de contra el
-        // inicio del gesto, así levantar y volver a apoyar un dedo no pega un salto.
+        // Dos dedos: solo zoom, nunca arrastre. Ancla siempre al centro de la
+        // ventana y no al medio de los dedos — anclar ahí hacía que la foto
+        // pareciera seguir la mano en vez de acercarse, porque ese punto se
+        // mueve con cada temblor del pellizco. La distancia entre los dos
+        // dedos se mide de nuevo en cada movimiento en vez de contra el
+        // inicio del gesto, así levantar y volver a apoyar un dedo no pega
+        // un salto.
         const [a, b] = [...pointers.values()]
         const spread = Math.hypot(a.x - b.x, a.y - b.y)
-        const middle = { x: (a.x + b.x) / 2 - box.left, y: (a.y + b.y) / 2 - box.top }
         const last = pinchRef.current
 
         if (last && last.spread > 0) {
-          view.x += middle.x - last.middle.x
-          view.y += middle.y - last.middle.y
-          zoomAt(middle.x, middle.y, spread / last.spread)
+          zoomAt(box.width / 2, box.height / 2, spread / last.spread)
         }
-        pinchRef.current = { spread, middle }
+        pinchRef.current = { spread }
       } else {
         view.x += e.clientX - previous.x
         view.y += e.clientY - previous.y

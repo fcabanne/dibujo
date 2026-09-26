@@ -1,12 +1,13 @@
 /**
  * Cómo se reparte la grilla sobre la foto.
  *
- * No hay un modo "ninguna": sacar la grilla es bajarle la opacidad a cero, que
- * es la misma perilla con la que se la atenúa. Un modo aparte para apagarla era
- * un tercer botón que no elegía nada — y con dos botones y una etiqueta la fila
- * entra en un celular, que con tres no entraba.
+ * `'none'` volvió: el picker a pantalla completa (Figma 26:279) tiene lugar de
+ * sobra para las tres tarjetas, así que ya no hace falta pisar la opacidad
+ * para sacar la grilla. Es un modo de verdad y no un atajo sobre `opacity` —
+ * elegirlo no toca el valor de la opacidad, que sigue siendo su propia
+ * perilla y no se pierde al volver a Proporcional o Cuadrada.
  */
-export type GridMode = 'proportional' | 'square'
+export type GridMode = 'proportional' | 'square' | 'none'
 
 export interface GridStyle {
   color: string

@@ -282,10 +282,11 @@ miniatura de la foto revelaba "Cambiar foto" con el hover, y en un celular ese b
 quedaba en opacidad 0 — la única forma de cargar una foto propia, inalcanzable.
 
 **Los gestos son nuestros.** `touch-action: none` sobre el lienzo, si no arrastrar
-scrollea la página y pellizcar hace zoom del navegador. Un dedo mueve, dos acercan, y
-las dos cosas usan el mismo `zoomAt`: siempre hay un punto que no se tiene que mover
-—el puntero, o el medio de los dedos—, porque acercar hacia el centro de la ventana
-obliga a reencuadrar después de cada gesto.
+scrollea la página y pellizcar hace zoom del navegador. Un dedo mueve, dos acercan —y
+dos dedos **solo** acercan: no arrastran. Anclar el zoom al medio de los dedos se
+probó y se sacó porque ese punto tiembla con la mano, y la foto parecía seguir el
+gesto en vez de acercarse. El pellizco ancla siempre al centro de la ventana; la
+rueda del mouse sigue anclando al puntero, que ahí sí se queda quieto.
 
 **Guardar se pide por la hoja de compartir** (`deliver` en `exporters.ts`). La
 descarga común es poco confiable en Safari de celular: abre el archivo en una pestaña

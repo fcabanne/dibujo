@@ -166,21 +166,12 @@ body {
   pointer-events: auto;
 }
 
-/* El lugar donde el diseño no pone nada (18:88, 22:63). Empuja lo que venga
-   después contra el borde derecho. */
-.topbar-gap {
-  flex: 1;
-}
-
 /* --- la columna de escritorio ------------------------------------- */
 
 .panel {
   display: flex;
   flex: none;
   flex-direction: column;
-  /* Lo que necesita la fila más ancha. No es "Tipo" con sus dos botones, que
-     entran en menos: son los siete círculos de color, que miden 44 fijos y no
-     se achican. Contando el relleno y la barra de scroll, 360. */
   width: 360px;
   border-left: 1px solid var(--ds-accent-light);
   background: var(--ds-background);
@@ -252,10 +243,11 @@ body {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: var(--ds-space-2);
+  /* padding y gap de 16, como el Container 22:55. */
+  gap: var(--ds-space-5);
   align-items: center;
-  padding: var(--ds-space-2) 0;
-  padding-bottom: calc(var(--ds-space-2) + env(safe-area-inset-bottom));
+  padding: var(--ds-space-5) var(--ds-space-6);
+  padding-bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
   background: var(--ds-background);
   backdrop-filter: blur(16px);
 }
@@ -268,18 +260,29 @@ body {
   /* Lo que mide la pestaña más alta —la grilla, con sus siete filas— en un
      celular común. Más arriba se comería la foto; más abajo scrollearía siempre. */
   max-height: 52vh;
-  padding: 0 var(--ds-space-6);
   overflow-y: auto;
   animation: ds-rise 0.22s var(--ds-ease);
 }
 
-/* La píldora del diseño: contenedor claro, y el elegido en violeta adentro. */
+/* La píldora del diseño: contenedor claro, y el elegido en oscuro adentro.
+   Se usa tres veces en la misma fila —volver, pestañas, descargar— y por eso
+   no tiene ancho propio: cada una mide lo que necesitan sus botones. */
 .tabbar {
   display: flex;
+  flex: none;
   gap: var(--ds-space-1);
   padding: var(--ds-space-1);
   border-radius: var(--ds-radius-group);
   background: var(--ds-accent-light);
+}
+
+/* Volver, pestañas y descargar en una sola fila (Figma 22:45, Frame 18): ya
+   no hay una barra flotante arriba con volver y descargar por su cuenta. */
+.bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 /* --- la fila nombre–control --------------------------------------- */
@@ -288,7 +291,7 @@ body {
   display: flex;
   gap: var(--ds-space-2);
   align-items: center;
-  min-height: var(--ds-control-row);
+  min-height: var(--ds-control-field);
 }
 
 /* Basis 0 y crece: el control se lleva la mitad y el nombre la otra, como en
@@ -297,23 +300,12 @@ body {
 .field-name {
   flex: 1 1 0;
   min-width: 0;
+  overflow: hidden;
   font: var(--ds-text-field);
   color: var(--ds-black);
-}
-
-/* --- las muestras de color ---------------------------------------- */
-
-/* Sin separación propia a lo ancho: el reparto lo hace `space-between`, como
-   en el diseño. Con un `gap` además, los siete círculos necesitan 332 px y en
-   un celular de 375 hay 327 — se pasa por cinco y cae uno a la línea de
-   abajo. El de las filas queda por si aparece una pantalla todavía más
-   angosta. */
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ds-space-1) 0;
-  justify-content: space-between;
-  min-height: var(--ds-control-row);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* --- la foto en su pestaña ---------------------------------------- */

@@ -123,3 +123,41 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+/**
+ * Grilla proporcional. Figma: `Proportional` (26:395/26:417) — mismo caso que
+ * la flecha del Dropdown: no se pudo bajar el trazo exacto, se dibujó a ojo
+ * sobre la captura (dos marcas de esquina, como un ícono de "mantener
+ * proporción").
+ */
+export function ProportionalIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M9 4H5C4.44772 4 4 4.44772 4 5V9M15 4H19C19.5523 4 20 4.44772 20 5V9M9 20H5C4.44772 20 4 19.5523 4 19V15M15 20H19C19.5523 20 20 19.5523 20 19V15" />
+    </svg>
+  )
+}
+
+/** Grilla cuadrada. Figma: `Proportional` (26:395/26:417, variante). */
+export function SquareIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 4H20V20H4V4ZM12 4V20M4 12H20" />
+    </svg>
+  )
+}
+
+/**
+ * La flecha del Dropdown. Figma: `Dropdown` (23:130) — existe en el archivo,
+ * pero esta sesión no pudo bajar el trazo exacto (la red del entorno bloquea
+ * la descarga directa de assets de Figma; solo se pudo ver por captura). Se
+ * dibujó a ojo sobre esa captura, con la métrica del set. Reemplazar el `d`
+ * cuando se pueda leer el archivo.
+ */
+export function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 9L12 15L18 9" />
+    </svg>
+  )
+}

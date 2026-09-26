@@ -56,24 +56,23 @@
     "proportionalHint": "Divides the photo into equal parts",
     "square": "Square",
     "squareHint": "Exact squares starting from the top left",
+    "none": "None",
+    "noneHint": "No grid",
     "divisions": "Divisions",
     "fewer": "Fewer divisions",
     "more": "More divisions",
     "color": "Colour",
-    "customColor": "Another colour",
+    "customColor": "Other",
     "colors": {
       "white": "White",
       "black": "Black",
-      "red": "Red",
       "cyan": "Cyan",
       "yellow": "Yellow",
       "pink": "Pink"
     },
     "weight": "Thickness",
     "opacity": "Opacity",
-    "opacityValue": "{n}%",
-    "labels": "Show labels",
-    "subdivide": "Subdivide"
+    "opacityValue": "{n}%"
   },
 
   "adjust": {

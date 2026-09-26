@@ -123,7 +123,6 @@ export function App() {
           state={state}
           onFile={(file) => void handleFile(file)}
           onEffectsSupport={setEffectsSupported}
-          compact={compact}
         />
       ) : (
         <div

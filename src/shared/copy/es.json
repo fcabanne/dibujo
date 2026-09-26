@@ -56,24 +56,23 @@
     "proportionalHint": "Divide la foto en partes iguales",
     "square": "Cuadrada",
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
+    "none": "Ninguna",
+    "noneHint": "Sin grilla",
     "divisions": "Divisiones",
     "fewer": "Menos divisiones",
     "more": "Más divisiones",
     "color": "Color",
-    "customColor": "Otro color",
+    "customColor": "Otro",
     "colors": {
       "white": "Blanco",
       "black": "Negro",
-      "red": "Rojo",
       "cyan": "Celeste",
       "yellow": "Amarillo",
       "pink": "Rosa"
     },
     "weight": "Espesor",
     "opacity": "Opacidad",
-    "opacityValue": "{n}%",
-    "labels": "Mostrar etiquetas",
-    "subdivide": "Subdividir"
+    "opacityValue": "{n}%"
   },
 
   "adjust": {

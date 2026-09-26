@@ -47,18 +47,18 @@
   /* --- color ------------------------------------------------------
      Variables del archivo de Figma, con su nombre. */
   --ds-black: #101010;
-  --ds-accent-dark: #1c00c9;
-  --ds-accent-light: #dbd8f0;
-  --ds-accent-secondary: #9f95d5;
-  --ds-background: #f6f4ff;
+  --ds-accent-dark: #3d3d3d;
+  --ds-accent-light: #f3eee4;
+  --ds-accent-secondary: #bababa;
+  --ds-background: #fbf8f2;
   --ds-white: #ffffff;
 
   /* Este sigue siendo un estilo suelto, sin nombre de variable. Entra con
-     nombre propio para poder cambiarlo en un lugar. Ojo: contra el fondo da
-     2,82 de contraste, por debajo del 3:1 que pide la norma para elementos
-     de interfaz. Por eso no lleva texto — solo el borde de la casilla sin
+     nombre propio para poder cambiarlo en un lugar. Contra el fondo nuevo da
+     3,05 de contraste, alcanza el 3:1 que pide la norma para elementos de
+     interfaz. Por eso no lleva texto — solo el borde de la casilla sin
      marcar, que es donde el diseño lo puso. */
-  --ds-muted: #958bcb;
+  --ds-muted: #8f8f8f;
 
   /* --- tipografía -------------------------------------------------- */
   --ds-font-display: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system,
@@ -82,10 +82,10 @@
 
   /* --- forma ------------------------------------------------------- */
   --ds-radius-control: 16px; /* Button 18:136 · Navbar 22:57 */
-  --ds-radius-group: 20px; /* Navigation 22:56 · Slider 22:276 · Stepper 22:296 */
+  --ds-radius-group: 20px; /* Navigation 22:56 */
   --ds-radius-small: 12px; /* Choice 22:595 · el ± del stepper 22:289 */
   --ds-radius-check: 6px; /* Checkbox 4:1250 */
-  --ds-radius-pill: 100px; /* Swatch 22:350 · el relleno del slider 22:275 */
+  --ds-radius-pill: 100px; /* Swatch 22:350 */
   --ds-radius-tick: 2px; /* la marca de la casilla */
 
   /* --- medida ------------------------------------------------------ */
@@ -101,11 +101,16 @@
      Coincide con el mínimo que necesita un dedo, así que no hay una medida
      para celular y otra para escritorio. */
   --ds-control-min: 48px;
-  /* 44 px es el alto de lo que se toca en una fila del panel: slider,
-     stepper, muestra de color. */
+  /* 44 px es el alto de lo que se toca en una fila con casilla —Checkbox
+     4:1270—, la única que sigue en esta medida. */
   --ds-control-row: 44px;
-  /* 40 px es lo que va adentro de esos 44. */
+  /* 40 px es lo que va adentro de esos 44 — el botón de elegir, Choice
+     22:595/22:596. */
   --ds-control-sm: 40px;
+  /* 32 px: Slider 22:276, Stepper 22:296 y Dropdown 23:193 se achicaron a
+     esta medida, sin el margen que tenían adentro de una fila de 44 — el
+     control ocupa la fila entera. */
+  --ds-control-field: 32px;
   --ds-icon: 24px;
 
   /* --- movimiento ---------------------------------------------------
