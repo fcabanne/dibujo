@@ -139,20 +139,28 @@ export function Panel({
     if (reference) setOpenTab('grilla')
   }, [reference])
 
-  // Solo se usa sin foto (18:76): con foto puesta, volver baja a la fila de
-  // abajo junto con descargar y las pestañas (ver el `return` en compacto).
-  const topBar = (
-    <div className="topbar">
-      <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
-        <BackIcon />
-      </IconButton>
-      {/* El diseño deja la barra con el botón de volver y nada más: en 18:88 el
-          lugar del título es un espaciador vacío. El nombre sigue estando para
-          el lector de pantalla — que no se dibuje no quiere decir que la
-          página no se llame. */}
-      <h1 className="ds-sr">{copy.app.name}</h1>
-    </div>
-  )
+  /**
+   * Abre Instagram en la app y no en el navegador. Un `<a href>` normal deja
+   * la decisión en manos del sistema, y ahí perdía: abría siempre el
+   * navegador. El esquema `instagram://` sí dispara la app cuando está
+   * instalada — a la página no le llega ningún aviso de que "funcionó", así
+   * que el fallback a la web es la ausencia de una señal (`visibilitychange`)
+   * en vez de una confirmación.
+   */
+  const openSuggestions = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const url = copy.welcome.suggestionsUrl
+    const username = new URL(url).pathname.replace(/\//g, '')
+    let fellBack = false
+    const fallback = () => {
+      if (fellBack || document.hidden) return
+      fellBack = true
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+    document.addEventListener('visibilitychange', fallback, { once: true })
+    window.setTimeout(fallback, 900)
+    window.location.href = `instagram://user?username=${username}`
+  }
 
   const photoSection: PanelSection = {
     id: 'foto',
@@ -281,7 +289,9 @@ export function Panel({
           options={TYPE_OPTIONS}
           onChange={(mode) => {
             dispatch({ type: 'grid/patch', patch: { mode } })
-            setPicker(null)
+            // "Ninguna" no vuelve a las filas: sin grilla no hay nada que ver
+            // ahí, y lo más probable después de sacarla es elegir otro tipo.
+            if (mode !== 'none') setPicker(null)
           }}
         />
       ) : picker === 'color' ? (
@@ -472,11 +482,26 @@ export function Panel({
     </nav>
   )
 
-  // --- sin foto: la barra de arriba y nada más ------------------------------
+  // --- sin foto: volver y sugerencias, abajo y juntos ------------------------
   // El diseño de la pantalla de inicio (18:76) no lleva pestañas: no hay nada
-  // que configurar todavía, y una barra de botones apagados es una barra que
-  // promete algo y no lo cumple.
-  if (!reference) return topBar
+  // que configurar todavía. Volver comparte fila con "Dejame sugerencias" en
+  // vez de flotar arriba solo: es la misma barra de abajo que el resto de la
+  // herramienta, no una tercera forma de acomodar la navegación.
+  if (!reference) {
+    return (
+      <div className="welcome-bottombar">
+        <nav className="tabbar">
+          <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
+            <BackIcon />
+          </IconButton>
+        </nav>
+        <h1 className="ds-sr">{copy.app.name}</h1>
+        <a className="ds-link" href={copy.welcome.suggestionsUrl} onClick={openSuggestions}>
+          {copy.welcome.suggestions}
+        </a>
+      </div>
+    )
+  }
 
   // --- pantalla angosta: todo abajo --------------------------------------
   // Con foto puesta, el diseño saca la barra flotante de arriba: volver y

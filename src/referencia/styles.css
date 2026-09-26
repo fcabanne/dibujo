@@ -137,33 +137,22 @@ body {
   font: var(--ds-text-control);
 }
 
-/* Abajo de todo, no pegado al botón: es de otra conversación. */
-.welcome-link {
-  position: absolute;
-  bottom: calc(40px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-}
+/* --- la barra de abajo, sin foto ------------------------------------
+   Volver y "Dejame sugerencias" comparten la misma fila, flotando sobre la
+   pantalla de inicio — la misma idea que la barra de abajo con foto puesta,
+   solo que acá no hay pestañas en el medio. */
 
-/* --- la barra de arriba ------------------------------------------- */
-
-.topbar {
+.welcome-bottombar {
   position: absolute;
-  top: 0;
   right: 0;
+  bottom: 0;
   left: 0;
   z-index: 2;
   display: flex;
-  gap: var(--ds-space-3);
   align-items: center;
-  padding: var(--ds-space-3) var(--ds-space-4);
-  padding-top: calc(var(--ds-space-3) + env(safe-area-inset-top));
-  /* La barra no roba el gesto: arrastrar sobre el aire mueve la foto. */
-  pointer-events: none;
-}
-
-.topbar > * {
-  pointer-events: auto;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
 }
 
 /* --- la columna de escritorio ------------------------------------- */
