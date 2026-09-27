@@ -19,7 +19,6 @@
 
   "canvas": {
     "drop": "Drop your reference photo here",
-    "fit": "Fit",
     "alt": "Reference photo"
   },
 
@@ -51,29 +50,28 @@
   "grid": {
     "tab": "Grid",
     "title": "Grid",
-    "type": "Type",
+    "type": "Grid",
     "proportional": "Proportional",
     "proportionalHint": "Divides the photo into equal parts",
     "square": "Square",
     "squareHint": "Exact squares starting from the top left",
-    "divisions": "Divisions",
-    "fewer": "Fewer divisions",
-    "more": "More divisions",
+    "none": "None",
+    "noneHint": "No grid",
+    "divisions": "Amount",
+    "fewer": "Fewer",
+    "more": "More",
     "color": "Colour",
-    "customColor": "Another colour",
+    "customColor": "Other",
     "colors": {
       "white": "White",
       "black": "Black",
-      "red": "Red",
       "cyan": "Cyan",
       "yellow": "Yellow",
       "pink": "Pink"
     },
     "weight": "Thickness",
     "opacity": "Opacity",
-    "opacityValue": "{n}%",
-    "labels": "Show labels",
-    "subdivide": "Subdivide"
+    "opacityValue": "{n}%"
   },
 
   "adjust": {
@@ -105,6 +103,7 @@
     "pdfHint": "Prints without rescaling",
     "jpg": "JPG",
     "jpgHint": "A plain image",
+    "labels": "Labels",
     "cancel": "Cancel",
     "working": "Preparing…",
     "fileSuffix": "reference"

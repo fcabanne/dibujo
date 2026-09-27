@@ -67,7 +67,14 @@ function renderOriginal(
   const canvas = document.createElement('canvas')
   canvas.width = ref.width
   canvas.height = ref.height
-  paintScene(context(canvas), { x: 0, y: 0, w: ref.width, h: ref.height }, photo, state, aspect)
+  paintScene(
+    context(canvas),
+    { x: 0, y: 0, w: ref.width, h: ref.height },
+    photo,
+    state,
+    aspect,
+    state.export.labels,
+  )
 
   return {
     canvas,
@@ -121,6 +128,7 @@ function renderSheet(
     photo,
     state,
     aspect,
+    state.export.labels,
   )
 
   // En el margen de abajo, que es papel vacío: acá hay dónde ponerlas sin taparle

@@ -25,15 +25,11 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, grid: { ...state.grid, style: { ...state.grid.style, ...action.patch } } }
     case 'effects/patch':
       return { ...state, effects: { ...state.effects, ...action.patch } }
-    // Cambiar de modo reescribe todo salvo el blanco y negro, que es aparte.
+    // Cambiar de modo reescribe todo, `bw` incluido.
     case 'effects/mode':
       return {
         ...state,
-        effects: {
-          mode: action.mode,
-          bw: state.effects.bw,
-          ...EFFECT_MODES[action.mode],
-        },
+        effects: { mode: action.mode, ...EFFECT_MODES[action.mode] },
       }
     case 'paper/patch':
       return { ...state, paper: { ...state.paper, ...action.patch } }

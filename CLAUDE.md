@@ -170,29 +170,47 @@ cálculo y los comentarios siguen hablando de la grilla.
   que decía 2,5 cm sale de 2,3; un PDF con la hoja declarada en tamaño real se
   imprime 1:1 y la regla coincide. El JPEG entra tal cual con el filtro `DCTDecode`,
   así que elegir PDF no cuesta ninguna vuelta extra de compresión.
-- `src/referencia/components/DownloadDialog.tsx` — las dos preguntas del export (tamaño y
-  formato) preguntadas recién al exportar. Vivían abiertas en el panel y eran dos
-  controles que no se tocan mientras se trabaja, compitiendo por la atención con los
-  que sí.
+- `src/referencia/components/DownloadDialog.tsx` — las preguntas del export (tamaño,
+  formato y etiquetas) preguntadas recién al exportar. Vivían abiertas en el panel y
+  eran controles que no se tocan mientras se trabaja, compitiendo por la atención con
+  los que sí.
 
 **El espesor de las líneas y el paso del sobel se guardan relativos al ancho**, no en
 píxeles. Un valor fijo se vería fino en pantalla y grueso en el export, o al revés.
+Arranca en 4 (`grid.style.weight`, de 1 a 6).
 
 **Los dos modos comparten el mismo número** (`grid.count`, de 2 a 8 según
-`GRID_LIMITS`). Es a propósito: cambiar de proporcional a cuadrada con el mismo
-número muestra en qué se diferencian; con un número por modo, cada cambio traía
-además un salto de tamaño y no se veía nada. La cuadrada reparte el ancho justo, así
-que nunca sobra a la derecha — el alto casi nunca es múltiplo y la última fila sale
-cortada. Y se elige con un stepper y no con un slider: seis divisiones es una
-decisión que se toma de a una, no un punto que se busca arrastrando.
+`GRID_LIMITS`, arranca en 4). Es a propósito: cambiar de proporcional a cuadrada con
+el mismo número muestra en qué se diferencian; con un número por modo, cada cambio
+traía además un salto de tamaño y no se veía nada. La cuadrada reparte el ancho
+justo, así que nunca sobra a la derecha — el alto casi nunca es múltiplo y la última
+fila sale cortada. Y se elige con un stepper y no con un slider: es una decisión que
+se toma de a una, no un punto que se busca arrastrando. En la UI se llama "Cantidad"
+y no "Divisiones" — el campo y `grid.count` siguen hablando de divisiones puertas
+adentro, es solo la palabra que ve quien dibuja la que cambió.
 
-**Sacar la grilla es bajarle la opacidad a cero.** No hay un modo "ninguna" — el
-diseño lo sacó, y con razón: era un tercer botón que no elegía nada, y con tres la
-fila no entraba en un celular. `computeGrid` devuelve `null` en cero, y eso es lo que
-apaga también las etiquetas, las cotas y la línea de medidas del export; dibujar
-transparente no alcanzaba, porque esas tres se dibujan con un piso de opacidad para
-que se lean sobre cualquier foto. Una sesión vieja guardada con el modo `'none'` se
-traduce al abrir (ver `persistence.ts`).
+**`GridMode` tiene un tercer valor real: `'none'`.** Hubo una época sin él —sacar la
+grilla era solo bajarle la opacidad a cero, y un tercer botón no entraba en la fila
+de un celular—, pero el picker a pantalla completa (`OptionPicker`, ver más abajo)
+tiene lugar de sobra para las tres tarjetas. Elegir "Ninguna" no toca `opacity`: son
+dos perillas independientes, y perder el valor de una al tocar la otra sería el tipo
+de acoplamiento que rompe la confianza en un control. `computeGrid` devuelve `null`
+tanto en `mode === 'none'` como en opacidad cero — las dos siguen siendo formas
+válidas de no tener grilla, y cualquiera de las dos apaga también las etiquetas, las
+cotas y la línea de medidas del export. **Es el modo por defecto** (`DEFAULT_STATE`):
+la foto arranca sin grilla, y elegir Proporcional o Cuadrada es un paso que se da a
+propósito, no algo que ya viene puesto.
+
+**Las etiquetas son una pregunta del export, no de la grilla.** Viven en
+`state.export.labels` y se prenden con un interruptor (`Switch`) en el diálogo de
+descarga, no en el panel — y a propósito **no** en `grid.style`, aunque ahí vivían
+antes: ese objeto lo leen por igual la vista previa y el export (`paintScene`/
+`paintGrid`, la misma función para las dos), así que si las etiquetas fueran parte
+suyo prenderlas se vería también en la foto mientras se trabaja. En cambio
+`paintScene`/`paintGrid` reciben `labels` como parámetro aparte, con default `false`:
+el lienzo nunca lo pasa, y solo `exportFile` lo manda en `state.export.labels`. Así
+"solo se ven en la descarga" es una consecuencia de la firma de la función, no una
+convención que haya que acordarse de respetar.
 
 **El tamaño del dibujo está escondido, no borrado** (`SHOW_PAPER` en `Panel.tsx`).
 El estado, el dominio y los textos siguen enteros, que es lo que hace que las cotas en
@@ -228,12 +246,29 @@ cotas, esa esquina es suya: no se dibujan ahí ni la "A" ni el "1".
 (`typeSize`), nunca contra el tamaño de la casilla. Si escalara con la grilla, el
 mismo número saldría minúsculo con ocho divisiones y descomunal con dos.
 
-**Los ajustes de imagen son tres modos cerrados**, no cinco perillas (`EffectsMode` y
-`EFFECT_MODES`). Cada modo fija los valores que no le importan y deja a la vista solo
-los que sí: Bordes muestra una perilla, Facetado tres, Original ninguna. Las perillas
-sueltas eran honestas pero pedían entender qué es una curva y qué es un sobel, y acá
-lo que se elige es cómo mirar la referencia. El blanco y negro queda afuera del modo
-—y arriba, en la UI— porque es independiente y sobrevive al cambio.
+**Los ajustes de imagen son cuatro modos cerrados**, no cinco perillas (`EffectsMode`
+y `EFFECT_MODES`). Cada modo fija los valores que no le importan y deja a la vista
+solo los que sí: Original ninguna, Blanco y negro una, Bordes una, Facetado tres. Las
+perillas sueltas eran honestas pero pedían entender qué es una curva y qué es un
+sobel, y acá lo que se elige es cómo mirar la referencia. **`bw` ya no es
+independiente del modo** — antes sobrevivía a cambiar de modo a propósito, pero
+"Bordes en color" o "Facetado en color" no eran combinaciones que alguien pidiera:
+son monocromos porque son de línea o de manchas de valor, no porque alguien lo haya
+tildado aparte. Blanco y negro pasó a ser su propio modo (con una perilla propia,
+Contraste) en vez de una casilla que convivía con los otros tres. `reducer.ts`
+reescribe `bw` entero al cambiar de modo, y `persistence.ts` lo vuelve a derivar del
+modo guardado al abrir, para que una sesión vieja con "Bordes" y `bw: false` no
+reaparezca a color.
+
+**El selector de Tipo, Color y Ajustes es el mismo componente** (`Dropdown` +
+`OptionPicker`): una fila cerrada que lleva a una pantalla propia de tarjetas
+grandes, no un menú que se abre encima. Ese picker **sobrevive a cambiar de
+pestaña** — si quedó en "Ninguna", o a mitad de elegir un modo de Ajustes, volver a
+esa pestaña lo encuentra como se dejó. Lo único que lo cierra es una foto nueva
+(`Panel.tsx`, el `useEffect` que también abre la pestaña de grilla). Y un modo sin nada
+que configurar —"Ninguna" en la grilla, "Original" en Ajustes— deja su picker
+abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fila
+sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz también;
 Cuadros todavía no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
@@ -282,10 +317,69 @@ miniatura de la foto revelaba "Cambiar foto" con el hover, y en un celular ese b
 quedaba en opacidad 0 — la única forma de cargar una foto propia, inalcanzable.
 
 **Los gestos son nuestros.** `touch-action: none` sobre el lienzo, si no arrastrar
-scrollea la página y pellizcar hace zoom del navegador. Un dedo mueve, dos acercan, y
-las dos cosas usan el mismo `zoomAt`: siempre hay un punto que no se tiene que mover
-—el puntero, o el medio de los dedos—, porque acercar hacia el centro de la ventana
-obliga a reencuadrar después de cada gesto.
+scrollea la página y pellizcar hace zoom del navegador. Un dedo mueve, dos acercan —y
+dos dedos **solo** acercan, ancladas al medio de los dedos, igual que la rueda del
+mouse ancla al puntero.
+
+**Solo se puede mover la foto hacia el lado que sobra**, como en Lightroom: si la
+foto zoomeada no excede el ancho o el alto disponible en pantalla, ese eje no se
+mueve, ni arrastrando ni pellizcando lejos del centro. `Canvas.tsx` lo recalcula en
+cada cuadro contra el tamaño real de la ventana, así que un cambio de tamaño no deja
+la vista fuera de rango. Esto es lo que hace que anclar el pellizco al medio de los
+dedos sea seguro: antes, sin este recorte, ese punto temblaba con la mano y la foto
+parecía arrastrarse sola; ahora, como mucho, la vista llega al borde de lo que sobra.
+No hay botón de "Ajustar" — doble tap (o doble clic) recentra, y con el movimiento ya
+acotado no hace falta un botón aparte para volver.
+
+**La foto no se mueve por navegar los controles**, solo por lo que se le hace con los
+dedos — ni siquiera al abrir o cerrar el cajón entero. `.stage` (el lienzo) mide
+siempre el alto entero de `.app` menos la barra de pestañas, una medida constante:
+`.controls` es su único hermano de flex, y lo que cambia de tamaño adentro suyo —el
+cajón (`.tab-drawer`)— está sacado del flujo (`position: absolute`, anclado con
+`bottom: 100%` al borde de arriba de `.controls`) para que no le cuente. El cajón
+**flota sobre la foto** en vez de empujarla: abierto, tapa con su propio fondo una
+franja de abajo, como una bandeja que se levanta encima; cerrado, no tapa nada y se
+ve la foto entera. Por eso puede medir lo que mide su contenido y nada más —Blanco y
+negro, una perilla, ocupa menos que Facetado, tres— sin que el lienzo se
+reencuadre nunca: cambiar de pestaña, abrir un picker o colapsar todo el panel son
+la misma clase de cambio para la foto, ninguno la mueve. `Panel.tsx` mide ese alto con
+`useDrawerHeight`: un `ResizeObserver` sobre la vista actual (`.panel-view`, no
+`.tab-panel`, que ya tiene un alto impuesto por el cajón) que sigue el contenido real
+—el de una perilla que aparece o desaparece, por ejemplo— y lo manda como
+`--content-height` a `.controls`, de donde `.tab-drawer.is-open` lo toma. Antes el
+cajón tenía un alto fijo, el de su vista más alta (`52vh` primero, después
+`--panel-height: 213px` fijo), y las vistas más chicas dejaban un vacío; ahora cada
+una mide lo justo.
+
+**El cajón repite el padding de `.controls`, no lo hereda.** Al sacarlo del flujo
+para que no empuje el lienzo, dejó de estar adentro de la caja con relleno de
+`.controls` — así que sin su propio `padding: 16px 24px 0` (con `box-sizing:
+border-box`, para que entre en el alto medido y no se sume aparte) su contenido
+queda pegado a los tres bordes. La franja de abajo, antes de llegar a la barra de
+pestañas, no hace falta repetirla: la pone el padding-top de `.controls`, que ahora
+le toca solo a esa barra.
+
+**El movimiento dice de dónde viene y a dónde va cada cosa**, y nada se anima para
+adornar. La barra de pestañas lleva una marca oscura que viaja de botón en botón; una
+pestaña nueva entra del lado en que está su botón; un picker entra "hacia adentro"
+y las filas vuelven "hacia afuera"; el cajón se despliega y se pliega, y la foto
+crece o se achica con él cuadro a cuadro. Lo tocable se hunde al apretarlo y vuelve
+con resorte. En el lienzo: la foto nueva aparece fundiéndose, cambiar la grilla o
+el modo de Ajustes funde lo viejo con lo nuevo (solo en cambios de un toque — lo que
+se arrastra, como el espesor o el contraste, no se funde, porque llegaría siempre
+tarde al dedo), arrastrar más allá del borde ofrece resistencia y vuelve al soltar,
+achicar por debajo del encuadre vuelve solo, y el doble tap recentra en un
+recorrido. Las duraciones y las curvas son tokens (`--ds-dur-*`, `--ds-ease`,
+`--ds-spring`); lo que vive en JavaScript usa `shared/motion.ts` con la misma curva.
+Con `prefers-reduced-motion` todo llega a su estado final en el acto.
+
+**El doble tap se reconoce a mano** (`Canvas.tsx`), no con `dblclick`: no todos los
+celulares lo mandan. Con mouse sí se usa `dblclick`, y se ignora si un doble tap
+táctil acaba de resolverlo, para no recentrar dos veces.
+
+**El hover solo existe con un puntero que pasa por encima** (`@media (hover:
+hover)`). En un celular el hover queda pegado después del toque, y el botón quedaba
+pintado como si lo siguieran tocando.
 
 **Guardar se pide por la hoja de compartir** (`deliver` en `exporters.ts`). La
 descarga común es poco confiable en Safari de celular: abre el archivo en una pestaña

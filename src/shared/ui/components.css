@@ -25,7 +25,8 @@
   text-align: center;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.16s var(--ds-ease);
+  transition: opacity var(--ds-dur-fast) var(--ds-ease),
+    transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-button svg {
@@ -48,13 +49,12 @@
   color: var(--ds-accent-dark);
 }
 
-/* Derivados: el archivo no dibuja estos estados. */
-.ds-button:hover:not(:disabled) {
-  opacity: 0.88;
-}
-
-.ds-button:active:not(:disabled) {
-  opacity: 0.76;
+/* Derivados: el archivo no dibuja estos estados. El de apretar vive con los
+   demás, en "presión", al final de la hoja. */
+@media (hover: hover) {
+  .ds-button:hover:not(:disabled) {
+    opacity: 0.88;
+  }
 }
 
 .ds-button:disabled {
@@ -79,8 +79,9 @@
   background: none;
   color: var(--ds-accent-dark);
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease),
-    opacity 0.16s var(--ds-ease);
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease), opacity var(--ds-dur-fast) var(--ds-ease),
+    transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-icon-button svg {
@@ -93,9 +94,13 @@
   color: var(--ds-white);
 }
 
-/* Derivados. */
-.ds-icon-button:hover:not(:disabled):not(.is-selected) {
-  background: var(--ds-accent-light);
+/* Derivados. Solo con un puntero que de verdad pasa por encima: en un
+   celular el hover queda pegado después del toque, y el botón se quedaba
+   pintado como si todavía lo estuvieran tocando. */
+@media (hover: hover) {
+  .ds-icon-button:hover:not(:disabled):not(.is-selected) {
+    background: var(--ds-accent-light);
+  }
 }
 
 .ds-icon-button:disabled {
@@ -193,10 +198,76 @@
   cursor: default;
 }
 
+/* --- Switch — sin frame en Figma -----------------------------------
+   Misma familia que el Slider: relleno plano, sin píldora, nada de sombras.
+   Un rectángulo (el riel) con un cuadrado adentro (la manija) que se corre
+   de un lado al otro, más chico que cualquier otro control tocable —no
+   compite con el tamaño de fila de 32, porque no vive solo en una fila: va
+   al lado de un texto, como el Checkbox. */
+
+.ds-switch {
+  position: relative;
+  display: inline-flex;
+}
+
+/* El input sigue existiendo y sigue recibiendo el foco: lo que se esconde
+   es su dibujo, no él (mismo truco que `.ds-checkbox input`). */
+.ds-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.ds-switch label {
+  display: flex;
+  cursor: pointer;
+}
+
+.ds-switch-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--ds-accent-light);
+}
+
+.ds-switch-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 14px;
+  height: 14px;
+  background: var(--ds-accent-secondary);
+  transition: transform 0.16s var(--ds-spring), background-color 0.16s var(--ds-ease);
+}
+
+.ds-switch input:checked ~ label .ds-switch-thumb {
+  background: var(--ds-accent-dark);
+  /* 40 de riel, 14 de manija, 4 de margen de cada lado: al fondo le quedan
+     18px para correr. */
+  transform: translateX(18px);
+}
+
+.ds-switch input:focus-visible ~ label .ds-switch-track {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+}
+
+.ds-switch.is-disabled label {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* --- Slider — Figma 22:276 -----------------------------------------
    Sin manija: el relleno es el control y el valor va escrito encima. El
    `<input type="range">` está debajo, transparente y del tamaño de la
-   píldora: es lo que se toca y lo que entiende el teclado. */
+   fila: es lo que se toca y lo que entiende el teclado.
+
+   Achicado a 32 y sin radio: el componente perdió la píldora que tenía —
+   ahora es una fila plana, al ras, sin el margen de 4 px que antes separaba
+   el relleno del borde. */
 
 .ds-slider {
   position: relative;
@@ -205,21 +276,17 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  height: var(--ds-control-row);
-  padding: var(--ds-space-1);
-  border-radius: var(--ds-radius-group);
+  height: var(--ds-control-field);
   background: var(--ds-accent-light);
 }
 
 .ds-slider-fill {
   position: absolute;
-  top: var(--ds-space-1);
-  bottom: var(--ds-space-1);
-  left: var(--ds-space-1);
-  /* `--ds-fill` va de 0 a 1 y lo pone el componente. El descuento es el
-     relleno de la píldora: sin él, al 100% se saldría por la derecha. */
-  width: calc((100% - var(--ds-space-2)) * var(--ds-fill, 0));
-  border-radius: var(--ds-radius-pill);
+  top: 0;
+  bottom: 0;
+  left: 0;
+  /* `--ds-fill` va de 0 a 1 y lo pone el componente. */
+  width: calc(100% * var(--ds-fill, 0));
   background: var(--ds-accent-secondary);
   pointer-events: none;
   transition: width 0.08s linear;
@@ -254,18 +321,17 @@
   pointer-events: none;
 }
 
-/* --- Stepper — Figma 22:296 ---------------------------------------- */
+/* --- Stepper — Figma 22:296 ----------------------------------------
+   Achicado a 32, igual que el Slider: sin el margen que antes separaba los
+   botones ± del borde de la fila, así que crecen con ella. */
 
 .ds-stepper {
   display: flex;
   flex: 1;
-  gap: var(--ds-space-1);
   align-items: center;
   justify-content: center;
   min-width: 0;
-  height: var(--ds-control-row);
-  padding: var(--ds-space-1);
-  border-radius: var(--ds-radius-group);
+  height: var(--ds-control-field);
   background: var(--ds-accent-light);
 }
 
@@ -274,15 +340,16 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--ds-control-sm);
-  height: var(--ds-control-sm);
+  width: var(--ds-control-field);
+  height: var(--ds-control-field);
   padding: 0;
   border: 0;
   border-radius: var(--ds-radius-small);
   background: none;
   color: var(--ds-accent-dark);
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease);
+  transition: color var(--ds-dur-fast) var(--ds-ease),
+    opacity var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-stepper button svg {
@@ -297,18 +364,248 @@
   cursor: default;
 }
 
-/* Derivado. */
-.ds-stepper button:hover:not(:disabled) {
-  background: var(--ds-background);
+/* Derivado. Sin fondo propio: a 32 el botón toca los bordes de la fila, y un
+   relleno ahí encima se veía como un segundo recuadro pisando el primero. */
+@media (hover: hover) {
+  .ds-stepper button:hover:not(:disabled) {
+    opacity: 0.7;
+  }
 }
 
+/* Recorta al número que rueda: el que entra viene de afuera de la fila. */
 .ds-stepper-value {
+  position: relative;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   font: var(--ds-text-number);
   color: var(--ds-accent-dark);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+/* El número nuevo entra desde el lado hacia el que se contó: de abajo si
+   subió, de arriba si bajó. Así el stepper se lee como un contador y no
+   como un texto que se reemplaza. */
+.ds-stepper-digit {
+  display: block;
+}
+
+.ds-stepper-digit.is-up {
+  animation: ds-roll-up var(--ds-dur) var(--ds-ease);
+}
+
+.ds-stepper-digit.is-down {
+  animation: ds-roll-down var(--ds-dur) var(--ds-ease);
+}
+
+@keyframes ds-roll-up {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+  }
+}
+
+@keyframes ds-roll-down {
+  from {
+    opacity: 0;
+    transform: translateY(-70%);
+  }
+}
+
+/* --- Dropdown — Figma 23:193 (Tipo) / 23:243 (Color) ---------------
+   La fila cerrada de un campo que se elige en otra pantalla (`OptionPicker`):
+   el nombre elegido, y a veces un color, con la flecha siempre al final. */
+
+.ds-dropdown {
+  display: flex;
+  flex: 1;
+  gap: var(--ds-space-1);
+  align-items: center;
+  min-width: 0;
+  height: var(--ds-control-field);
+  padding: var(--ds-space-1);
+  border: 0;
+  background: var(--ds-accent-light);
+  cursor: pointer;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
+}
+
+/* Sin radio: en 23:243 es un cuadrado, no la píldora de Swatch. El color
+   cambia fundiéndose y no de golpe: es lo último que se ve de la elección
+   que se acaba de hacer en el picker. */
+.ds-dropdown-swatch {
+  flex: none;
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+  transition: background-color var(--ds-dur) var(--ds-ease);
+}
+
+.ds-dropdown-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-align: left;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ds-dropdown-arrow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+  color: var(--ds-black);
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
+}
+
+.ds-dropdown-arrow svg {
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+}
+
+/* Al apretar, la flecha baja un poco: anticipa que la fila lleva a otra
+   pantalla, "hacia adentro". */
+.ds-dropdown:active .ds-dropdown-arrow {
+  transform: translateY(2px);
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
+}
+
+/* --- OptionPicker — Figma 26:279 (Tipo) / 26:425 (Color) -----------
+   La pantalla de tarjetas grandes a la que lleva un Dropdown. Sin radio,
+   como el resto de esta camada de componentes. */
+
+.ds-option-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  width: 100%;
+}
+
+.ds-option-header {
+  margin: 0;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-align: center;
+  text-transform: uppercase;
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease) backwards;
+}
+
+.ds-option-grid {
+  display: grid;
+  gap: var(--ds-space-2);
+  width: 100%;
+}
+
+.ds-option-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ds-option-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ds-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: 18px 11px;
+  border: 0;
+  background: var(--ds-accent-light);
+  color: var(--ds-black);
+  font: var(--ds-text-field);
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
+  /* Las tarjetas llegan en cascada, en orden de lectura: el ojo las recorre
+     en el mismo orden en que aparecen. `--i` lo pone el componente. `backwards`
+     para que ninguna se vea antes de su turno. */
+  animation: ds-card-in var(--ds-dur) var(--ds-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+.ds-option svg {
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+}
+
+.ds-option.is-wide {
+  grid-column: 1 / -1;
+}
+
+.ds-option.is-selected {
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
+}
+
+/* El ícono de la tarjeta que se acaba de elegir da un salto chico: confirma
+   el toque en el lugar exacto donde se hizo, antes de que el picker se
+   cierre. */
+.ds-option.is-selected > :first-child {
+  animation: ds-select var(--ds-dur-slow) var(--ds-spring);
+}
+
+/* Derivado: el archivo no dibuja el estado de paso. */
+@media (hover: hover) {
+  .ds-option:hover:not(.is-selected) {
+    background: var(--ds-background);
+  }
+}
+
+@keyframes ds-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+@keyframes ds-select {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes ds-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* El cuadradito de color de una tarjeta de Color — mismo dibujo que el del
+   Dropdown, un poco más grande. */
+.ds-option-swatch {
+  flex: none;
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+  border-radius: var(--ds-radius-pill);
+}
+
+/* La tarjeta "Otro": un `<label>` en vez de un `<button>`, para poder tapar
+   toda la tarjeta con un `<input type="color">` invisible — el mismo truco
+   que `SwatchPicker`. */
+.ds-option--any {
+  position: relative;
+}
+
+.ds-option--any input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* --- Choice — Figma 22:595 (elegido) / 22:596 (sin elegir) --------- */
@@ -341,7 +638,8 @@
   font: var(--ds-text-control);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), border-color 0.16s var(--ds-ease);
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    border-color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-choice.is-selected {
@@ -350,8 +648,10 @@
 }
 
 /* Derivado. */
-.ds-choice:hover:not(.is-selected) {
-  background: var(--ds-accent-light);
+@media (hover: hover) {
+  .ds-choice:hover:not(.is-selected) {
+    background: var(--ds-accent-light);
+  }
 }
 
 /* --- Swatch — Figma 22:352 (un color) / 22:406 (la rueda) ---------- */
@@ -367,6 +667,7 @@
   border-radius: var(--ds-radius-pill);
   background: var(--ds-accent-light);
   cursor: pointer;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 /* El aro va por dentro y no como `border`: con un borde de verdad el círculo
@@ -384,8 +685,10 @@
 
 /* El único color crudo del sistema, y a propósito: esto es un espectro. No se
    puede armar con la paleta de la marca porque no es tema, es contenido — son
-   los colores que hay, no los nuestros. Los topes salen tal cual del archivo. */
-.ds-swatch--any > span {
+   los colores que hay, no los nuestros. Los topes salen tal cual del archivo.
+   La tarjeta "Otro" del OptionPicker (26:495) usa el mismo degradé. */
+.ds-swatch--any > span,
+.ds-option-swatch--any {
   background: conic-gradient(
     from 180deg,
     rgb(255, 0, 0) 0%,
@@ -447,8 +750,38 @@
   cursor: pointer;
 }
 
-.ds-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .ds-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* --- presión ---------------------------------------------------------
+   Derivado, como todos los estados: lo que se toca se hunde un poco y
+   vuelve con resorte al soltarlo. Se hunde rápido (`--ds-dur-press`, más
+   corto que cualquier toque) y vuelve lento y con rebote (la transición de
+   cada bloque de arriba). Es la diferencia entre un botón que responde y
+   uno que solo cambia de color cuando ya pasó todo.
+
+   Los anchos —la fila del Dropdown, las tarjetas del picker— se hunden
+   menos: el mismo porcentaje sobre trescientos píxeles se ve como un
+   salto. */
+
+.ds-button:active:not(:disabled),
+.ds-icon-button:active:not(:disabled),
+.ds-stepper button:active:not(:disabled),
+.ds-choice:active,
+.ds-swatch:active {
+  transform: scale(var(--ds-press));
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
+}
+
+.ds-dropdown:active,
+.ds-option:active {
+  transform: scale(var(--ds-press-wide));
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
 }
 
 /* --- foco -----------------------------------------------------------
@@ -460,6 +793,8 @@
 .ds-link:focus-visible,
 .ds-choice:focus-visible,
 .ds-stepper button:focus-visible,
+.ds-dropdown:focus-visible,
+.ds-option:focus-visible,
 .ds-swatch:focus-visible,
 .ds-checkbox input:focus-visible ~ label .ds-checkbox-box {
   outline: 2px solid var(--ds-accent-dark);

@@ -15,6 +15,11 @@ if (!root) throw new Error('Falta el nodo #root')
 document.title = copy.app.title
 document.documentElement.lang = language
 
+// Safari de celular no aplica `:active` si nadie escucha `touchstart` en la
+// página: los botones no se hundían al tocarlos. Un oyente vacío y pasivo
+// alcanza, y no demora el scroll.
+document.addEventListener('touchstart', () => {}, { passive: true })
+
 createRoot(root).render(
   <StrictMode>
     <App />

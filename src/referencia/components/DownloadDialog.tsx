@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { copy, fill } from '../../shared/copy'
-import { Button, ChoiceGroup, type ChoiceOption } from '../../shared/ui'
+import { Button, ChoiceGroup, Switch, type ChoiceOption } from '../../shared/ui'
 import { PRINT_SHEETS, sheetName } from '../domain/paper'
-import { Field } from './controls'
+import { Field, Row } from './controls'
 import type { Action } from '../state/reducer'
 import type { ExportSize, ExportState } from '../types'
 
@@ -92,6 +92,14 @@ export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy
             ]}
           />
         </Field>
+
+        <Row label={copy.download.labels}>
+          <Switch
+            label={copy.download.labels}
+            checked={value.labels}
+            onChange={(labels) => dispatch({ type: 'export/patch', patch: { labels } })}
+          />
+        </Row>
 
         <div className="sheet-actions">
           <Button variant="quiet" onClick={onClose}>

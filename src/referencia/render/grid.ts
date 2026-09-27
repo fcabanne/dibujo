@@ -38,6 +38,13 @@ export function drawGrid(
   style: GridStyle,
   /** Medida de una casilla en cm sobre el dibujo final, si se conoce. */
   cellSize: { w: number; h: number } | null,
+  /**
+   * Letras en las columnas y números en las filas. Es una pregunta del
+   * export (`state.export.labels`, elegida en el diálogo de descarga), no
+   * del estilo de la grilla — por eso llega como parámetro y no como parte
+   * de `style`: la vista previa la pasa siempre en `false`.
+   */
+  labels: boolean,
 ): void {
   const lw = lineWidthFor(rect, style)
 
@@ -73,7 +80,7 @@ export function drawGrid(
   // La cota vive en la misma esquina que la "A" y el "1". Cuando está, esa esquina es
   // suya: la medida necesita llegar hasta el borde para que se entienda qué mide, y
   // dos cosas peleando por el mismo lugar no se leen ninguna.
-  if (style.labels) drawLabels(ctx, rect, lines, style, cotas)
+  if (labels) drawLabels(ctx, rect, lines, style, cotas)
 }
 
 function strokeLines(
