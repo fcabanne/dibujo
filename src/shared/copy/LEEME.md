@@ -76,6 +76,6 @@ No hace falta ninguna librería para eso: lo hace TypeScript solo.
 
 ## Lo que todavía no pasa por acá
 
-Referencia sí, entera. **Cuadros, Mesa de luz y la portada todavía no**: sus textos
-siguen escritos adentro de sus componentes. Cuando les toque, se suman con sus
+Referencia y Mesa de luz sí, enteras. **Cuadros y la portada todavía no**: sus
+textos siguen escritos adentro de sus componentes. Cuando les toque, se suman con sus
 propias secciones a estos mismos archivos.

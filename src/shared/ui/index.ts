@@ -32,5 +32,6 @@ export {
   MinusIcon,
   PlusIcon,
   CloseIcon,
+  CornersIcon,
   type IconProps,
 } from './icons'

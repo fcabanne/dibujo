@@ -119,9 +119,9 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   escribe adentro de un componente, y los números también salen de ahí (el separador
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
   `src/shared/copy/LEEME.md`.
-- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Lo usan Cuadros y
-  Mesa de luz, que todavía no están dibujadas en Figma. Referencia ya no: pasó al
-  sistema de arriba. Cuando las otras dos se dibujen, esta hoja desaparece.
+- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Ya solo lo usa
+  Cuadros, que todavía no está dibujada en Figma. Referencia y Mesa de luz pasaron al
+  sistema de arriba. Cuando Cuadros se dibuje, esta hoja desaparece.
 
 ## Cómo está armado el probador de enmarcado
 
@@ -235,8 +235,8 @@ sueltas eran honestas pero pedían entender qué es una curva y qué es un sobel
 lo que se elige es cómo mirar la referencia. El blanco y negro queda afuera del modo
 —y arriba, en la UI— porque es independiente y sobrevive al cambio.
 
-**Referencia usa el sistema de diseño y el archivo de textos; las otras dos todavía
-no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+**Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz también;
+Cuadros todavía no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
 no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
 mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 
@@ -304,23 +304,53 @@ El celular en un trípode mirando el papel, la cámara ocupando la pantalla y la
 encima, translúcida. Se dibuja mirando la pantalla: lo que se ve es el lápiz real
 avanzando sobre la foto.
 
-Es la más chica de las tres y no tiene dominio ni render propios — no hay nada que
-calcular, solo un `<video>` y un `<img>` apilados. Todo el diseño está en lo que
-**no** hay.
+Es la más chica de las tres: no hay render propio, solo un `<video>` y un `<img>`
+apilados, y el único cálculo es el de las esquinas (`corners.ts`). Todo el diseño
+está en lo que **no** hay.
 
-**Son dos controles y ninguna instrucción.** Cargar la foto y cuánto se ve. El
-permiso de cámara lo pide el navegador con su propio cartel, y no se antepone ninguna
-pantalla nuestra explicándolo: agregarla sería pedir permiso para pedir permiso.
+**Se ve como Referencia.** Mismo sistema de diseño, mismos textos en `copy` (sección
+`mesa`), mismo botón de volver arriba a la izquierda. Lo único propio es que acá todo
+flota sobre la cámara y no sobre el fondo claro, así que cada cosa que se toca va en
+su propia tarjeta (`.card`, `.chip`, `.dock`), que es la que le pone el fondo.
 
-**La foto va fija, encajada con un 5% de margen.** No se arrastra ni se escala. El
-encuadre fino se hace moviendo el teléfono, que para eso está el trípode, y cualquier
-gesto de ajuste sobre la pantalla compite con la mano que dibuja. El margen es de
-seguridad: pegada al borde, la foto cae justo donde la lente deforma.
+**Es solo para celular.** No hay acomodo de escritorio: la herramienta es un teléfono
+en un trípode.
+
+**Abajo, una sola píldora con tres cosas**: cambiar la foto, cuánto se ve, y ajustar
+las esquinas. Sin foto, en su lugar hay una tarjeta de bienvenida con una frase y el
+botón de subir — la misma idea que el inicio de Referencia. Y como allá, `App`
+espera a IndexedDB (`ready`) antes de mostrarla. El permiso de cámara lo pide el
+navegador con su propio cartel, y no se antepone ninguna pantalla nuestra
+explicándolo: agregarla sería pedir permiso para pedir permiso.
+
+**La foto entra encajada con un 5% de margen, y se calza con las esquinas.** El
+margen es de seguridad: pegada al borde, la foto cae justo donde la lente deforma. El
+encuadre grueso se sigue haciendo moviendo el teléfono; las esquinas son para lo que
+el teléfono no arregla. Un trípode casi nunca queda perpendicular a la hoja, la
+cámara la ve como un trapecio, y una foto derecha no calza nunca. Llevando cada
+esquina de la foto a su marca en el papel, la foto toma la misma perspectiva que la
+cámara (`perspective` en `corners.ts`, un `matrix3d` y no triángulos: con triángulos
+una recta que cruza la diagonal sale doblada).
+
+- **Es un modo, no un gesto suelto.** Fuera del ajuste la foto no recibe toques: todo
+  gesto sobre la pantalla compite con la mano que dibuja. Adentro, cada esquina se
+  arrastra de su manija y arrastrar la foto la mueve entera.
+- **La manija va afuera de la esquina**, en diagonal, unida por un hilo. Encima, el
+  dedo taparía justo el punto que se está calzando. El arrastre es relativo: la
+  esquina se corre lo que se corre el dedo, sin saltar a donde apoyó.
+- **Una esquina no puede dar vuelta la foto** (`isConvex`): si el movimiento la
+  cruzaría, se queda donde estaba.
+- **La frase de ayuda va arriba**, al lado de volver, y solo mientras se ajusta. Abajo
+  taparía las esquinas de abajo de la foto.
+- **Las esquinas se guardan en fracciones de la pantalla**, junto con la opacidad: el
+  trípode no se mueve de un día para el otro. Una foto nueva las vuelve a cero, porque
+  trae otra proporción. "Restablecer" hace lo mismo a mano.
 
 **Los controles se van solos** (`useIdle`) y vuelven con un toque en cualquier lado.
 Abajo de esa pantalla hay una hoja de papel: todo lo que quede dibujado encima es
 papel que no se ve. Mientras están escondidos no reciben toques — el primero
 despierta la interfaz y no mueve nada, que es lo que uno quiere cuando toca a ciegas.
+Ajustando no se van: sería sacarle las manijas de abajo del dedo.
 
 **La pantalla se mantiene prendida** (`useWakeLock`). Dibujar es justamente no tocar
 el teléfono; sin esto se apaga a los treinta segundos y hay que soltar el lápiz. El
@@ -332,4 +362,4 @@ pantalla. Parece que anda hasta que se mueve el papel y no pasa nada, así que
 `useCamera` lo vuelve a arrancar cuando la pestaña se hace visible.
 
 La foto se guarda como las demás, en IndexedDB bajo su propia clave (`'mesa'`), y la
-opacidad —un número— en localStorage.
+opacidad y las esquinas en localStorage.

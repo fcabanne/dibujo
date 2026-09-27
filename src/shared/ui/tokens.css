@@ -7,8 +7,8 @@
    White— para que buscar uno en Figma y buscarlo en el código sea la
    misma búsqueda.
 
-   Todo lleva el prefijo `--ds-`. No es decoración: Cuadros y Mesa de luz
-   siguen usando el tema oscuro de `../tokens.css`, y sin prefijo un token
+   Todo lleva el prefijo `--ds-`. No es decoración: Cuadros sigue
+   usando el tema oscuro de `../tokens.css`, y sin prefijo un token
    nuevo le pisaría un color a una herramienta que nadie rediseñó todavía.
 
    Lo que NO viene de Figma está marcado abajo, uno por uno. Si más

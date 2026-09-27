@@ -45,7 +45,7 @@ está la app; de eso se encarga `shared/copy`.
 | `Stepper.tsx` | − número + , para lo que se elige de a uno |
 | `Choice.tsx` | los botones chicos de elegir una opción entre pocas |
 | `Swatch.tsx` | la muestra de color, y la que abre la rueda del sistema |
-| `icons.tsx` | los nueve íconos del archivo, más la X |
+| `icons.tsx` | los nueve íconos del archivo, más la X y las esquinas |
 | `fonts/` | Space Grotesk y las dos pesadas de Space Mono |
 
 ## Cómo cambiar algo
@@ -92,8 +92,9 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    un elemento de interfaz. Por eso no lleva texto — solo el borde de la casilla sin
    marcar, que es donde el diseño lo puso. `Accent Secondary` da 2,50 y por lo mismo
    solo se usa para el relleno del slider y para el ± apagado del stepper.
-3. **El ícono X no existe.** Está dibujado con la métrica del set (24×24, trazo 2,
-   puntas redondas) y marcado en `icons.tsx` como el único que no viene del archivo.
+3. **Los íconos X y Esquinas no existen.** Están dibujados con la métrica del set
+   (24×24, trazo 2, puntas redondas) y marcados en `icons.tsx` como los que no vienen
+   del archivo. Esquinas lo usa la mesa de luz para ajustar dónde cae la foto.
 4. **No hay estados dibujados** — ni hover, ni foco, ni deshabilitado. Los que hay
    están resueltos con opacidad y con tokens que ya existen, sin colores nuevos, y
    están marcados como derivados en `components.css`. La excepción es el ± apagado

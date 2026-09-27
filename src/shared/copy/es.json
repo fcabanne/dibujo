@@ -127,5 +127,25 @@
     "unopenable": "No se pudo abrir la imagen",
     "canvasFailed": "No se pudo preparar el lienzo del export",
     "outOfMemory": "Este dispositivo se quedó sin memoria para un archivo de ese tamaño. Probá con una hoja más chica."
+  },
+
+  "mesa": {
+    "name": "Mesa de luz",
+    "intro": "Apoyá el celu en un trípode mirando la hoja, subí la foto y calcá sobre la pantalla.",
+    "upload": "Subir foto",
+    "change": "Cambiar foto",
+    "opacity": "Cuánto se ve la foto",
+    "opacityValue": "{n}%",
+    "corners": "Ajustar esquinas",
+    "cornersHint": "Llevá cada esquina a su marca en la hoja. Arrastrando la foto se mueve entera.",
+    "corner": "Esquina {n}",
+    "reset": "Restablecer",
+    "done": "Listo",
+    "insecure": "La cámara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
+    "openSite": "Abrir la mesa de luz",
+    "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
+    "denied": "La cámara está bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
+    "noCamera": "No se encontró ninguna cámara.",
+    "retry": "Reintentar"
   }
 }

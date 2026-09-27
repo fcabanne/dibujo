@@ -123,3 +123,19 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+/**
+ * Las esquinas: ajustar dónde cae la foto en la mesa de luz.
+ *
+ * **Tampoco viene de Figma**, igual que la X. Son las cuatro esquinas de un
+ * visor —las mismas que dibuja la portada para la mesa de luz— con la métrica
+ * del set: 24×24, trazo 2, puntas redondas y el radio de 2 que usan `Photo` y
+ * `File` en sus vértices. Cuando se dibuje en el archivo, se reemplaza el `d`.
+ */
+export function CornersIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 9V6C4 4.89543 4.89543 4 6 4H9M15 4H18C19.1046 4 20 4.89543 20 6V9M20 15V18C20 19.1046 19.1046 20 18 20H15M9 20H6C4.89543 20 4 19.1046 4 18V15" />
+    </svg>
+  )
+}
