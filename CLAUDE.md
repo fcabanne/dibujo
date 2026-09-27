@@ -337,6 +337,14 @@ cajón tenía un alto fijo, el de su vista más alta (`52vh` primero, después
 `--panel-height: 213px` fijo), y las vistas más chicas dejaban un vacío; ahora cada
 una mide lo justo.
 
+**El cajón repite el padding de `.controls`, no lo hereda.** Al sacarlo del flujo
+para que no empuje el lienzo, dejó de estar adentro de la caja con relleno de
+`.controls` — así que sin su propio `padding: 16px 24px 0` (con `box-sizing:
+border-box`, para que entre en el alto medido y no se sume aparte) su contenido
+queda pegado a los tres bordes. La franja de abajo, antes de llegar a la barra de
+pestañas, no hace falta repetirla: la pone el padding-top de `.controls`, que ahora
+le toca solo a esa barra.
+
 **El movimiento dice de dónde viene y a dónde va cada cosa**, y nada se anima para
 adornar. La barra de pestañas lleva una marca oscura que viaja de botón en botón; una
 pestaña nueva entra del lado en que está su botón; un picker entra "hacia adentro"

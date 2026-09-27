@@ -276,6 +276,13 @@ body {
   height: 0;
   overflow: hidden;
   visibility: hidden;
+  /* Ya no es hijo de flujo de `.controls`, así que no hereda su padding: se
+     repite acá el mismo espacio —16 arriba, 16 a los costados, como el
+     Container 22:55—, para que su contenido caiga en el mismo lugar que
+     antes. `border-box` para que ese padding entre en el alto medido y no se
+     sume aparte. */
+  padding: var(--ds-space-5) var(--ds-space-6) 0;
+  box-sizing: border-box;
   background: var(--ds-background);
   backdrop-filter: blur(16px);
   /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
@@ -285,6 +292,11 @@ body {
     visibility 0s linear var(--ds-dur-slow);
 }
 
+/* El `+ space-5` es el padding-top de acá arriba, no un espacio aparte: con
+   `border-box`, ese margen entra en el alto en vez de sumarse a él, y la
+   caja de contenido le queda exactamente `--content-height` a `.tab-panel`.
+   La franja debajo del cajón, antes de llegar a las pestañas, la pone el
+   padding-top de `.controls` (ver arriba) — ya no hace falta repetirla acá. */
 .tab-drawer.is-open {
   height: calc(var(--content-height, 213px) + var(--ds-space-5));
   visibility: visible;
@@ -294,7 +306,6 @@ body {
 .tab-panel {
   width: 100%;
   height: 100%;
-  margin-bottom: var(--ds-space-5);
   overflow-x: hidden;
   /* Salvavidas: nada limita cuánto puede crecer `--content-height` contra el
      alto real de la pantalla, así que en el peor de los casos (una ventana
