@@ -196,17 +196,16 @@ export function ChevronDownIcon({ className }: IconProps) {
 }
 
 /**
- * Las esquinas: ajustar dónde cae la foto en la mesa de luz.
+ * La linterna: la luz de la cámara, para iluminar la hoja en la mesa de luz.
  *
- * **Tampoco viene de Figma**, igual que la X. Son las cuatro esquinas de un
- * visor —las mismas que dibuja la portada para la mesa de luz— con la métrica
- * del set: 24×24, trazo 2, puntas redondas y el radio de 2 que usan `Photo` y
- * `File` en sus vértices. Cuando se dibuje en el archivo, se reemplaza el `d`.
+ * **Tampoco viene de Figma.** Cabeza ancha arriba, mango abajo y el botón en el
+ * medio, con la métrica del set y el radio de 1 que usan los extremos de `File`.
+ * Cuando se dibuje en el archivo, se reemplaza el `d`.
  */
-export function CornersIcon({ className }: IconProps) {
+export function FlashlightIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
-      <path d="M4 9V6C4 4.89543 4.89543 4 6 4H9M15 4H18C19.1046 4 20 4.89543 20 6V9M20 15V18C20 19.1046 19.1046 20 18 20H15M9 20H6C4.89543 20 4 19.1046 4 18V15" />
+      <path d="M7 3H17V6L15 10V20C15 20.5523 14.5523 21 14 21H10C9.44772 21 9 20.5523 9 20V10L7 6V3ZM7 6H17M12 13V15" />
     </svg>
   )
 }

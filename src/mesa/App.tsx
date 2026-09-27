@@ -3,10 +3,18 @@ import { copy, fill } from '../shared/copy'
 import { loadArtworkFile } from '../shared/imageFile'
 import { loadArtwork, saveArtwork } from '../shared/imageStore'
 import { openInstagram } from '../shared/suggestions'
-import { BackIcon, Button, IconButton, PhotoIcon, Slider, UploadIcon } from '../shared/ui'
+import {
+  BackIcon,
+  Button,
+  FlashlightIcon,
+  IconButton,
+  PhotoIcon,
+  Slider,
+  UploadIcon,
+} from '../shared/ui'
 import type { Quad } from './corners'
 import { Overlay } from './Overlay'
-import { loadSession, saveSession } from './persistence'
+import { loadSession, photoKey, saveSession } from './persistence'
 import { useCamera, type CameraStatus } from './useCamera'
 import { useIdle } from './useIdle'
 import { useStageSize } from './useStageSize'
@@ -44,7 +52,13 @@ export function App() {
     let cancelled = false
     void loadArtwork('mesa').then((saved) => {
       if (cancelled) return
-      if (saved) setPhoto(saved)
+      if (saved) {
+        setPhoto(saved)
+        // Si la foto cambió mientras la mesa estaba cerrada —la mandó Referencia—,
+        // las esquinas guardadas eran de otra.
+        const key = photoKey(saved)
+        setSession((s) => (s.photo === key ? s : { ...s, corners: null, photo: key }))
+      }
       setReady(true)
     })
     return () => {
@@ -67,7 +81,7 @@ export function App() {
       const { src } = await loadArtworkFile(file)
       setPhoto(src)
       // Otra foto trae otra proporción: las esquinas de la anterior la deformarían.
-      setSession((s) => ({ ...s, corners: null }))
+      setSession((s) => ({ ...s, corners: null, photo: photoKey(src) }))
       void saveArtwork('mesa', src)
     } catch {
       // Un archivo que no se puede abrir no rompe nada: queda la foto de antes.
@@ -139,6 +153,20 @@ export function App() {
                   format={(v) => fill(copy.mesa.opacityValue, { n: v })}
                 />
               </nav>
+              {/* Aparte, como volver: no es de la foto sino de la hoja. Y solo si el
+                  teléfono deja prenderla — un botón que no hace nada es peor que
+                  ninguno. */}
+              {camera.torchSupported && (
+                <nav className="pill">
+                  <IconButton
+                    label={camera.torch ? copy.mesa.torchOff : copy.mesa.torchOn}
+                    selected={camera.torch}
+                    onClick={camera.toggleTorch}
+                  >
+                    <FlashlightIcon />
+                  </IconButton>
+                </nav>
+              )}
             </div>
           </div>
         </>

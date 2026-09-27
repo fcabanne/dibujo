@@ -35,7 +35,7 @@ export {
   MinusIcon,
   PlusIcon,
   CloseIcon,
-  CornersIcon,
+  FlashlightIcon,
   ChevronDownIcon,
   ProportionalIcon,
   SquareIcon,

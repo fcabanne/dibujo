@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { copy, fill } from '../shared/copy'
 import { openReferenceFile, type Reference } from '../shared/referenceImage'
-import { deleteOriginal, loadOriginal, saveOriginal } from '../shared/imageStore'
+import { deleteOriginal, loadOriginal, saveArtwork, saveOriginal } from '../shared/imageStore'
 import { Canvas } from './components/Canvas'
 import { useCompact } from './hooks/useCompact'
 import { DownloadDialog } from './components/DownloadDialog'
 import { Panel } from './components/Panel'
 import { Welcome } from './components/Welcome'
-import { deliver, exportFile } from './export/exporters'
+import { deliver, exportFile, exportForLightTable } from './export/exporters'
 import { loadSession, saveSession } from './state/persistence'
 import { reducer } from './state/reducer'
 
@@ -115,6 +115,24 @@ export function App() {
     }
   }, [busy, notify, reference, state])
 
+  /**
+   * Manda la foto tal como se ve —con la grilla y los ajustes— a la mesa de luz y
+   * la abre. Viaja por IndexedDB, bajo la clave de la mesa: las dos herramientas
+   * viven en el mismo sitio y ven el mismo almacenamiento, así que no hay nada que
+   * subir a ningún lado.
+   */
+  const handleLightTable = useCallback(async () => {
+    if (!reference || busy) return
+    setBusy(true)
+    try {
+      await saveArtwork('mesa', await exportForLightTable(reference, state))
+      window.location.href = '../mesa/'
+    } catch (error) {
+      setBusy(false)
+      notify(error instanceof Error ? error.message : copy.notices.lightTableFailed)
+    }
+  }, [busy, notify, reference, state])
+
   // Sin foto no hay columna que mostrar al costado, así que el escritorio usa el
   // mismo acomodo apilado que el celular.
   const stacked = compact || !reference
@@ -172,6 +190,7 @@ export function App() {
         value={state.export}
         dispatch={dispatch}
         onConfirm={() => void handleDownload()}
+        onLightTable={() => void handleLightTable()}
         onClose={closeDialog}
         busy={busy}
       />

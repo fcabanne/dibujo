@@ -215,11 +215,11 @@ body {
   min-width: 0;
 }
 
-/* Restablecer, arriba de la foto y contra su lado. Aparece solo cuando hay
-   algo que deshacer. */
+/* Restablecer, arriba de la barra y al medio. Aparece solo cuando hay algo
+   que deshacer. */
 .reset {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   animation: ds-rise 0.22s var(--ds-ease);
 }
 

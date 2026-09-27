@@ -57,6 +57,45 @@ export async function exportFile(ref: Reference, state: AppState): Promise<Outpu
   }
 }
 
+/**
+ * Lado más largo de la foto que se manda a la mesa de luz. Es el mismo techo con el
+ * que la mesa reescala lo que se sube a mano (`shared/imageFile`): más grande no se
+ * ve mejor a través de una cámara, y no entraría en el almacenamiento del navegador.
+ */
+const LIGHT_TABLE_SIDE = 2000
+
+/**
+ * La foto preparada —ajustes, grilla y, si están prendidas, etiquetas— lista para
+ * calcarla en la mesa de luz. Sale por `paintScene`, el mismo camino que la pantalla
+ * y los exports: lo que se ve en Referencia es lo que aparece en la mesa.
+ *
+ * Tamaño y formato del diálogo no cuentan acá: la mesa no imprime, solo muestra.
+ */
+export async function exportForLightTable(ref: Reference, state: AppState): Promise<string> {
+  const aspect = aspectOf(ref)
+  const image = await decodeFull(ref)
+  const effects = isNeutral(state.effects) ? null : createEffects()
+
+  try {
+    const photo = effects ? effects.apply(image, ref.width, ref.height, state.effects) : image
+    const scale = Math.min(1, LIGHT_TABLE_SIDE / Math.max(ref.width, ref.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(ref.width * scale)
+    canvas.height = Math.round(ref.height * scale)
+    paintScene(
+      context(canvas),
+      { x: 0, y: 0, w: canvas.width, h: canvas.height },
+      photo,
+      state,
+      aspect,
+      state.export.labels,
+    )
+    return canvas.toDataURL('image/jpeg', 0.9)
+  } finally {
+    effects?.dispose()
+  }
+}
+
 /** La foto con sus propios píxeles, ni uno más ni uno menos. */
 function renderOriginal(
   ref: Reference,

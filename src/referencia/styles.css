@@ -623,8 +623,17 @@ body {
   padding: var(--ds-space-5);
 }
 
+.sheet-header {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  justify-content: space-between;
+  /* La X mide 48 y el título 25: sin esto el aire de abajo crecería con ella. */
+  margin: calc(var(--ds-space-3) * -1) calc(var(--ds-space-3) * -1) var(--ds-space-4) 0;
+}
+
 .sheet-body h2 {
-  margin: 0 0 var(--ds-space-5);
+  margin: 0;
   font: var(--ds-text-title);
   color: var(--ds-black);
 }
@@ -639,6 +648,7 @@ body {
 
 .sheet-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--ds-space-2);
   margin-top: var(--ds-space-7);
 }

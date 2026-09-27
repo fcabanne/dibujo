@@ -96,9 +96,9 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    norma pide 3 para un elemento de interfaz. Por eso solo se usa para el relleno
    del slider y para el ± apagado del stepper, nunca para texto — el borde de la
    casilla sin marcar usa `--ds-muted`, que sí llega (3,05).
-3. **Los íconos X y Esquinas no existen.** Están dibujados con la métrica del set
+3. **Los íconos X y Linterna no existen.** Están dibujados con la métrica del set
    (24×24, trazo 2, puntas redondas) y marcados en `icons.tsx` como los que no vienen
-   del archivo. Esquinas lo usa la mesa de luz para ajustar dónde cae la foto.
+   del archivo. Linterna lo usa la mesa de luz para prender la luz de la cámara.
 4. **No hay estados dibujados** — ni hover, ni foco, ni deshabilitado. Los que hay
    están resueltos con opacidad y con tokens que ya existen, sin colores nuevos, y
    están marcados como derivados en `components.css`. La excepción es el ± apagado

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { copy, fill } from '../../shared/copy'
-import { Button, ChoiceGroup, Switch, type ChoiceOption } from '../../shared/ui'
+import { Button, ChoiceGroup, CloseIcon, IconButton, Switch, type ChoiceOption } from '../../shared/ui'
 import { PRINT_SHEETS, sheetName } from '../domain/paper'
 import { Field, Row } from './controls'
 import type { Action } from '../state/reducer'
@@ -11,6 +11,8 @@ interface Props {
   value: ExportState
   dispatch: (action: Action) => void
   onConfirm: () => void
+  /** Llevar la foto así preparada a la mesa de luz, en vez de bajarla. */
+  onLightTable: () => void
   onClose: () => void
   busy: boolean
 }
@@ -25,13 +27,29 @@ const SIZES: ChoiceOption<ExportSize>[] = [
 ]
 
 /**
+ * La mesa de luz vive en el mismo sitio y la foto le llega por el almacenamiento
+ * del navegador. Abierta como archivo suelto (`file://`, la versión que se manda
+ * por mail) no hay mesa al lado a la cual llevarla — y la mesa ni siquiera anda
+ * así, porque la cámara pide https.
+ */
+const CAN_REACH_LIGHT_TABLE = window.location.protocol !== 'file:'
+
+/**
  * Las dos preguntas del export, recién cuando se va a exportar.
  *
  * Antes vivían abiertas en el panel, y eran dos controles que no se tocan mientras
  * se trabaja compitiendo por la atención con los que sí. Acá es un `<dialog>` nativo
  * y no un div: el foco queda atrapado adentro y Escape cierra, gratis.
  */
-export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy }: Props) {
+export function DownloadDialog({
+  open,
+  value,
+  dispatch,
+  onConfirm,
+  onLightTable,
+  onClose,
+  busy,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -70,7 +88,14 @@ export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy
       }}
     >
       <div className="sheet-body">
-        <h2>{copy.download.title}</h2>
+        {/* Cerrar es una X arriba y no un "Cancelar" al lado de "Descargar": abajo
+            quedan solo los caminos de salida, y cerrar no es uno de ellos. */}
+        <header className="sheet-header">
+          <h2>{copy.download.title}</h2>
+          <IconButton label={copy.download.close} onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </header>
 
         <Field label={copy.download.size}>
           <ChoiceGroup
@@ -102,12 +127,14 @@ export function DownloadDialog({ open, value, dispatch, onConfirm, onClose, busy
         </Row>
 
         <div className="sheet-actions">
-          <Button variant="quiet" onClick={onClose}>
-            {copy.download.cancel}
-          </Button>
           <Button variant="loud" disabled={busy} onClick={onConfirm}>
             {busy ? copy.download.working : copy.download.action}
           </Button>
+          {CAN_REACH_LIGHT_TABLE && (
+            <Button variant="quiet" disabled={busy} onClick={onLightTable}>
+              {copy.download.lightTable}
+            </Button>
+          )}
         </div>
       </div>
     </dialog>

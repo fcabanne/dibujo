@@ -223,6 +223,10 @@ impresora. El export en hoja **no** sale a escala real, y está bien: el dibujo 
 ser un A2 y la impresora llegar hasta A4. Lo que lo vuelve utilizable es que las
 medidas estén escritas encima, no que esté a escala.
 
+**El diálogo de descarga se cierra con una X arriba**, no con un "Cancelar" al lado de
+"Descargar": abajo quedan solo los caminos de salida —descargar, o llevar la foto a la
+mesa de luz—, y cerrar no es uno de ellos.
+
 **Un `<dialog>` modal no siempre se cierra solo con Escape.** En la vista empotrada
 del escritorio el evento llega a la página —trusted y todo— y el navegador no lo
 cierra. `DownloadDialog` lo maneja a mano, y escucha `close` con
@@ -420,9 +424,23 @@ no: un cartel del navegador encima de la bienvenida la taparía antes de que nad
 lea. El permiso lo pide el navegador con su propio cartel, y no se antepone ninguna
 pantalla nuestra explicándolo: sería pedir permiso para pedir permiso.
 
-**Abajo, volver a la izquierda y la foto a la derecha**, en dos pastillas separadas:
-son de conversaciones distintas y no se tienen que tocar una por otra. La de la foto
-tiene cambiarla y cuánto se ve.
+**Abajo, volver a la izquierda, la foto al medio y la linterna a la derecha**, cada
+una en su pastilla: son de conversaciones distintas y no se tienen que tocar una por
+otra. La de la foto tiene cambiarla y cuánto se ve.
+
+**La linterna aparece solo si el teléfono deja prenderla** (`torch` en
+`useCamera`). Es Chrome en Android; en iPhone el navegador no la presta, y un botón
+que no hace nada es peor que ninguno. Sirve porque el teléfono en el trípode le hace
+sombra justo a la parte de la hoja que se está dibujando.
+
+**La foto puede llegar desde Referencia.** El diálogo de descarga tiene "Llevar a la
+mesa de luz": la foto sale como se ve —ajustes, grilla y etiquetas— por el mismo
+`paintScene` de siempre (`exportForLightTable`), se guarda en IndexedDB bajo la
+clave `'mesa'` y se abre la mesa. Las dos herramientas viven en el mismo sitio y ven
+el mismo almacenamiento, así que la promesa de no subir nada sigue en pie. Como la
+foto cambia sin pasar por la mesa, la sesión guarda de qué foto son las esquinas
+(`photoKey`) y las reinicia si no coinciden. En la versión suelta de Referencia
+(`file://`) el botón no aparece: no hay mesa al lado a la cual llevarla.
 
 **La foto arranca encajada en el lugar libre** (`INSET` en `corners.ts`): sin
 meterse abajo de la barra, con aire alrededor para las manijas y lejos del borde,
@@ -440,8 +458,8 @@ triángulos: con triángulos una recta que cruza la diagonal sale doblada).
 - **Arrastrar la foto la mueve entera.**
 - **Una esquina no puede dar vuelta la foto** (`isConvex`): si el movimiento la
   cruzaría, se queda donde estaba.
-- **"Restablecer" aparece solo si se movió algo.** Un botón que no cambiaría nada es
-  un botón que hay que leer para nada.
+- **"Restablecer" aparece solo si se movió algo**, arriba de la barra y al medio. Un
+  botón que no cambiaría nada es un botón que hay que leer para nada.
 - **No hay textos de ayuda.** Se probó una frase mientras se ajustaba y sobraba:
   además de ser texto de más, tapaba las manijas.
 - **Las esquinas se guardan en fracciones de la pantalla**, junto con la opacidad: el
