@@ -42,19 +42,20 @@ export interface GridState {
 }
 
 /**
- * Qué se le está haciendo a la foto. Son tres caminos cerrados y no cinco perillas
+ * Qué se le está haciendo a la foto. Son cuatro caminos cerrados y no cinco perillas
  * sueltas: las perillas sueltas son honestas pero exigen saber qué hace cada una, y
  * lo que uno quiere acá es elegir cómo mirar la referencia, no revelarla a mano.
  *
  * Cada modo fija los valores que no le importan y deja a la vista solo los que sí.
+ * `bw` es de estos: Bordes y Facetado son monocromos siempre, y "Blanco y negro" es
+ * su propio modo, no un interruptor que conviva con los otros tres.
  */
-export type EffectsMode = 'original' | 'edges' | 'facets'
+export type EffectsMode = 'original' | 'bw' | 'edges' | 'facets'
 
 /**
  * Los efectos, todos en unidades de persona y no de shader: el shader traduce.
  *
- * El modo manda sobre estos valores, salvo `bw`, que es independiente: pasar a
- * blanco y negro no tiene que ver con qué se le está haciendo a la foto.
+ * El modo manda sobre todos estos valores, `bw` incluido.
  */
 export interface Effects {
   mode: EffectsMode

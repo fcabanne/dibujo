@@ -1,5 +1,5 @@
 import type { AppState } from '../types'
-import { DEFAULT_STATE } from './defaults'
+import { DEFAULT_STATE, EFFECT_MODES } from './defaults'
 
 const KEY = 'referencia:session:v1'
 
@@ -36,7 +36,15 @@ export function loadSession(): AppState {
           weight: Math.min(6, Math.max(1, Math.round(parsed.grid?.style?.weight ?? DEFAULT_STATE.grid.style.weight))),
         },
       },
-      effects: { ...DEFAULT_STATE.effects, ...parsed.effects },
+      effects: {
+        ...DEFAULT_STATE.effects,
+        ...parsed.effects,
+        // `bw` dejó de ser independiente del modo: una sesión vieja pudo guardarlo
+        // suelto (Bordes en color, por ejemplo, que ya no puede pasar). Se
+        // recalcula siempre desde el modo final y nunca se lee del storage.
+        bw: (EFFECT_MODES[parsed.effects?.mode ?? DEFAULT_STATE.effects.mode] ?? EFFECT_MODES.original)
+          .bw,
+      },
       paper: { ...DEFAULT_STATE.paper, ...parsed.paper },
       export: { ...DEFAULT_STATE.export, ...parsed.export },
     }

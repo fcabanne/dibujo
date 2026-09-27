@@ -19,7 +19,6 @@
 
   "canvas": {
     "drop": "Soltá tu foto de referencia acá",
-    "fit": "Ajustar",
     "alt": "Foto de referencia"
   },
 
@@ -58,9 +57,9 @@
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
     "none": "Ninguna",
     "noneHint": "Sin grilla",
-    "divisions": "Divisiones",
-    "fewer": "Menos divisiones",
-    "more": "Más divisiones",
+    "divisions": "Cantidad",
+    "fewer": "Menos",
+    "more": "Más",
     "color": "Color",
     "customColor": "Otro",
     "colors": {

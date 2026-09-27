@@ -148,6 +148,39 @@ export function SquareIcon({ className }: IconProps) {
 }
 
 /**
+ * Blanco y negro. **No viene de Figma** — no hay un frame dibujado para el
+ * picker de Ajustes todavía. Un círculo partido al medio, la marca habitual
+ * de contraste/blanco y negro.
+ */
+export function ContrastIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3V21" />
+    </svg>
+  )
+}
+
+/** Bordes. **No viene de Figma**, mismo caso que `ContrastIcon`: un trazo en
+ * zigzag, como un contorno. */
+export function EdgesIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M3 16L8 8L12 13L16 6L21 11" />
+    </svg>
+  )
+}
+
+/** Facetado. **No viene de Figma**, mismo caso: un hexágono, como una faceta. */
+export function FacetsIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 3L20 8V16L12 21L4 16V8Z" />
+    </svg>
+  )
+}
+
+/**
  * La flecha del Dropdown. Figma: `Dropdown` (23:130) — existe en el archivo,
  * pero esta sesión no pudo bajar el trazo exacto (la red del entorno bloquea
  * la descarga directa de assets de Figma; solo se pudo ver por captura). Se

@@ -19,7 +19,6 @@
 
   "canvas": {
     "drop": "Drop your reference photo here",
-    "fit": "Fit",
     "alt": "Reference photo"
   },
 
@@ -58,9 +57,9 @@
     "squareHint": "Exact squares starting from the top left",
     "none": "None",
     "noneHint": "No grid",
-    "divisions": "Divisions",
-    "fewer": "Fewer divisions",
-    "more": "More divisions",
+    "divisions": "Amount",
+    "fewer": "Fewer",
+    "more": "More",
     "color": "Colour",
     "customColor": "Other",
     "colors": {

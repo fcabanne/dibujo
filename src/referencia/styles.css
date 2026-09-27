@@ -60,21 +60,6 @@ body {
   height: 100%;
 }
 
-.stage .fit {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  padding: var(--ds-space-2) var(--ds-space-5);
-  border: 0;
-  border-radius: var(--ds-radius-control);
-  background: var(--ds-accent-light);
-  color: var(--ds-accent-dark);
-  font: var(--ds-text-meta);
-  cursor: pointer;
-  transform: translateX(-50%);
-  animation: ds-rise-centered 0.28s var(--ds-spring);
-}
-
 .stage .drop {
   position: absolute;
   display: grid;
@@ -246,9 +231,13 @@ body {
   flex-direction: column;
   gap: var(--ds-space-2);
   width: 100%;
-  /* Lo que mide la pestaña más alta —la grilla, con sus siete filas— en un
-     celular común. Más arriba se comería la foto; más abajo scrollearía siempre. */
-  max-height: 52vh;
+  /* Fija, no un máximo: si el alto cambiara con el contenido —la grilla no
+     mide lo mismo que Ajustes, y un picker no mide lo mismo que sus filas
+     cerradas—, la foto de arriba se reencuadraría cada vez que se cambia de
+     pestaña o se abre un picker. Con esto la foto no se mueve nunca por
+     navegar los controles, solo por lo que uno le hace con los dedos. Lo que
+     sobra en una pestaña más baja queda vacío; lo que no entra, scrollea. */
+  height: 52vh;
   overflow-y: auto;
   animation: ds-rise 0.22s var(--ds-ease);
 }
@@ -497,17 +486,6 @@ body {
   from {
     opacity: 0;
     transform: translateY(8px);
-  }
-}
-
-@keyframes ds-rise-centered {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 8px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
   }
 }
 

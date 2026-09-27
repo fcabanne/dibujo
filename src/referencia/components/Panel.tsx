@@ -4,11 +4,13 @@ import type { Reference } from '../../shared/referenceImage'
 import {
   BackIcon,
   Button,
-  Checkbox,
   ChoiceGroup,
   CloseIcon,
+  ContrastIcon,
   DownloadIcon,
   Dropdown,
+  EdgesIcon,
+  FacetsIcon,
   FileIcon,
   GridIcon,
   IconButton,
@@ -20,7 +22,6 @@ import {
   SquareIcon,
   Stepper,
   UploadIcon,
-  type ChoiceOption,
   type PickerOption,
 } from '../../shared/ui'
 import { GRID_LIMITS } from '../domain/grid'
@@ -50,11 +51,24 @@ interface Props {
  */
 const SHOW_PAPER: boolean = false
 
-/** Las tres maneras de mirar la referencia. */
-const MODES: ChoiceOption<EffectsMode>[] = [
-  { value: 'original', label: copy.adjust.original, title: copy.adjust.originalHint },
-  { value: 'edges', label: copy.adjust.edges, title: copy.adjust.edgesHint },
-  { value: 'facets', label: copy.adjust.facets, title: copy.adjust.facetsHint },
+/** Cómo se llama el modo elegido, para la fila cerrada del Dropdown de Ajustes. */
+const ADJUST_NAMES: Record<EffectsMode, string> = {
+  original: copy.adjust.original,
+  bw: copy.adjust.blackAndWhite,
+  edges: copy.adjust.edges,
+  facets: copy.adjust.facets,
+}
+
+/**
+ * Las cuatro maneras de mirar la referencia. Sin frame en Figma todavía —ver
+ * el punto 8 del LEEME del sistema de diseño—, así que 2 columnas es una
+ * decisión del código y no algo medido de un archivo.
+ */
+const ADJUST_OPTIONS: PickerOption<EffectsMode>[] = [
+  { value: 'original', label: copy.adjust.original, icon: <PhotoIcon /> },
+  { value: 'bw', label: copy.adjust.blackAndWhite, icon: <ContrastIcon /> },
+  { value: 'edges', label: copy.adjust.edges, icon: <EdgesIcon /> },
+  { value: 'facets', label: copy.adjust.facets, icon: <FacetsIcon /> },
 ]
 
 /** Cómo se llama el modo elegido, para la fila cerrada del Dropdown. */
@@ -108,13 +122,15 @@ export function Panel({
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
-  /** Cuál de los dos picker de la grilla está abierto, si alguno. Figma 26:279/26:425. */
-  const [picker, setPicker] = useState<'tipo' | 'color' | null>(null)
+  /**
+   * Cuál picker está abierto, si alguno — el de Tipo/Color de la grilla
+   * (Figma 26:279/26:425) o el de Ajustes. Sobrevive a cambiar de pestaña a
+   * propósito: si quedó en "Ninguna" o a mitad de elegir, volver a la
+   * pestaña lo encuentra como se dejó, no reiniciado. Lo único que lo cierra
+   * es una foto nueva (ver el `useEffect` de abajo).
+   */
+  const [picker, setPicker] = useState<'tipo' | 'color' | 'ajustes' | null>(null)
   const { grid, paper, effects } = state
-
-  // Cambiar de pestaña deja atrás cualquier picker abierto: son parte del
-  // contenido de "grilla", no de la barra de pestañas.
-  useEffect(() => setPicker(null), [openTab])
 
   // La miniatura sale del archivo original, no del lienzo: es la foto como entró.
   // La URL se revoca al cambiar de foto, si no cada carga deja una colgada.
@@ -129,14 +145,18 @@ export function Panel({
   }, [reference])
 
   /**
-   * Cada foto nueva abre la grilla.
+   * Cada foto nueva abre la grilla, cerrando cualquier picker que hubiera
+   * quedado abierto de la foto anterior.
    *
    * Es a lo que se viene: subir la foto y ponerle la grilla encima. Dejar la
    * pestaña de la foto abierta después de subirla sería mostrarle a alguien lo
    * que acaba de hacer en vez de lo que sigue.
    */
   useEffect(() => {
-    if (reference) setOpenTab('grilla')
+    if (reference) {
+      setOpenTab('grilla')
+      setPicker(null)
+    }
   }, [reference])
 
   /**
@@ -385,19 +405,47 @@ export function Panel({
     icon: <PaintIcon />,
     content: !effectsSupported ? (
       <Hint>{copy.adjust.unsupported}</Hint>
+    ) : picker === 'ajustes' ? (
+      <OptionPicker
+        label={copy.adjust.title}
+        value={effects.mode}
+        columns={2}
+        options={ADJUST_OPTIONS}
+        onChange={(mode) => {
+          dispatch({ type: 'effects/mode', mode })
+          setPicker(null)
+        }}
+      />
     ) : (
       <>
-        <ChoiceGroup
-          className="ds-choice-group--start"
-          label={copy.adjust.title}
-          value={effects.mode}
-          onChange={(mode) => dispatch({ type: 'effects/mode', mode })}
-          options={MODES}
-        />
+        {/* Igual que Tipo/Color de la grilla: la fila cerrada lleva a una
+            pantalla propia en vez de abrir un menú acá mismo. */}
+        <Row label={copy.adjust.title}>
+          <Dropdown
+            label={copy.adjust.title}
+            value={ADJUST_NAMES[effects.mode]}
+            onClick={() => setPicker('ajustes')}
+          />
+        </Row>
 
         {/* Cada modo muestra solo la perilla que le importa. El resto de los
             valores los fija él, y esconderlos es el punto: son los que hay que
-            entender para usar esto, y no hay por qué entenderlos. */}
+            entender para usar esto, y no hay por qué entenderlos. Original no
+            muestra ninguna. */}
+        {effects.mode === 'bw' && (
+          <Row label={copy.adjust.contrast}>
+            <Slider
+              label={copy.adjust.contrast}
+              value={effects.contrast}
+              min={-100}
+              max={100}
+              step={1}
+              onChange={(contrast) => dispatch({ type: 'effects/patch', patch: { contrast } })}
+              format={signed}
+            />
+          </Row>
+        )}
+
         {effects.mode === 'edges' && (
           <Row label={copy.adjust.contrast}>
             <Slider
@@ -448,14 +496,6 @@ export function Panel({
             </Row>
           </>
         )}
-
-        {/* Abajo, con las casillas, pero independiente de los modos: pasar a
-            blanco y negro sobrevive a cambiar de Bordes a Facetado. */}
-        <Checkbox
-          label={copy.adjust.blackAndWhite}
-          checked={effects.bw}
-          onChange={(bw) => dispatch({ type: 'effects/patch', patch: { bw } })}
-        />
       </>
     ),
   }

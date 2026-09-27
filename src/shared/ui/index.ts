@@ -37,5 +37,8 @@ export {
   ChevronDownIcon,
   ProportionalIcon,
   SquareIcon,
+  ContrastIcon,
+  EdgesIcon,
+  FacetsIcon,
   type IconProps,
 } from './icons'

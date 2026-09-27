@@ -23,6 +23,8 @@ interface View {
   y: number
 }
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
 export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -42,7 +44,6 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   stateRef.current = state
   refRef.current = reference
 
-  const [zoomed, setZoomed] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
   /**
@@ -81,6 +82,23 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     const base = fitRect(aspect, { w: box.width - PAD * 2, h: availH })
     const w = base.w * view.zoom
     const h = base.h * view.zoom
+
+    // Como en Lightroom: solo se puede mover hacia el lado que sobra. Si la
+    // foto zoomeada no excede el ancho o el alto disponible, ese eje no se
+    // mueve nunca — ni con el dedo ni con un pellizco que ancle lejos del
+    // centro. Se recalcula en cada cuadro, así que un cambio de tamaño de la
+    // ventana (o del panel de abajo) vuelve a dejar la vista adentro de rango
+    // en vez de dejar la foto descentrada.
+    // De referencia va `box.height` y no `availH`: el PAD se cancela solo,
+    // porque entra igual arriba y abajo tanto en `base` como en el centrado
+    // de acá abajo — el centro de la foto es siempre el centro de la
+    // ventana, sin importar el zoom. Usar `availH` acá dejaba un margen de
+    // PAD que ningún arrastre podía correr.
+    const overflowX = Math.max(0, (w - box.width) / 2)
+    const overflowY = Math.max(0, (h - box.height) / 2)
+    view.x = clamp(view.x, -overflowX, overflowX)
+    view.y = clamp(view.y, -overflowY, overflowY)
+
     const rect = {
       x: (box.width - w) / 2 + view.x,
       y: PAD + (availH - h) / 2 + view.y,
@@ -147,21 +165,21 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   // tiene por qué tener sentido en la nueva.
   useEffect(() => {
     viewRef.current = { zoom: 1, x: 0, y: 0 }
-    setZoomed(false)
   }, [reference])
 
   const reset = useCallback(() => {
     viewRef.current = { zoom: 1, x: 0, y: 0 }
-    setZoomed(false)
     schedule()
   }, [schedule])
 
   /**
-   * Acercar dejando quieto un punto de la pantalla. Con la rueda es el puntero,
-   * que sí se queda quieto mientras se gira. Con el pellizco es el centro de
-   * la ventana y no el medio de los dedos: ese punto se mueve solo con
-   * temblar la mano, y acercar hacia ahí hacía que la foto pareciera
-   * arrastrarse en vez de acercarse.
+   * Acercar dejando quieto un punto de la pantalla: el puntero con la rueda,
+   * el medio de los dedos con el pellizco. Antes esto se ancló al centro de
+   * la ventana para el pellizco, porque sin el recorte de más abajo un punto
+   * que tiembla hacía parecer que la foto se arrastraba. Con la foto
+   * recortada a lo que sobra, anclar en el punto que se está mirando vuelve
+   * a ser seguro: como mucho el pellizco corrige la vista al límite del
+   * recorte, nunca la deja a la deriva.
    */
   const zoomAt = useCallback((cx: number, cy: number, factor: number) => {
     const wrap = wrapRef.current
@@ -180,8 +198,6 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     view.zoom = zoom
     view.x = cx - u * w - (box.width - w) / 2
     view.y = cy - v * h - (box.height - h) / 2
-
-    setZoomed(Math.abs(zoom - 1) > 0.01)
   }, [])
 
   const onWheel = useCallback(
@@ -217,25 +233,22 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       const view = viewRef.current
 
       if (pointers.size >= 2) {
-        // Dos dedos: solo zoom, nunca arrastre. Ancla siempre al centro de la
-        // ventana y no al medio de los dedos — anclar ahí hacía que la foto
-        // pareciera seguir la mano en vez de acercarse, porque ese punto se
-        // mueve con cada temblor del pellizco. La distancia entre los dos
-        // dedos se mide de nuevo en cada movimiento en vez de contra el
-        // inicio del gesto, así levantar y volver a apoyar un dedo no pega
-        // un salto.
+        // Dos dedos: solo zoom, ancla al medio de los dedos. La distancia
+        // entre ellos se mide de nuevo en cada movimiento en vez de contra el
+        // inicio del gesto, así levantar y volver a apoyar uno no pega un
+        // salto. El recorte de más abajo (en `draw`) es lo que hace que
+        // anclar acá sea seguro: como mucho la vista llega al borde de lo
+        // que sobra, nunca se va a la deriva.
         const [a, b] = [...pointers.values()]
         const spread = Math.hypot(a.x - b.x, a.y - b.y)
+        const middle = { x: (a.x + b.x) / 2 - box.left, y: (a.y + b.y) / 2 - box.top }
         const last = pinchRef.current
 
-        if (last && last.spread > 0) {
-          zoomAt(box.width / 2, box.height / 2, spread / last.spread)
-        }
+        if (last && last.spread > 0) zoomAt(middle.x, middle.y, spread / last.spread)
         pinchRef.current = { spread }
       } else {
         view.x += e.clientX - previous.x
         view.y += e.clientY - previous.y
-        setZoomed(true)
       }
 
       schedule()
@@ -272,12 +285,6 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       }}
     >
       <canvas ref={canvasRef} />
-
-      {zoomed && (
-        <button type="button" className="fit" onClick={reset}>
-          {copy.canvas.fit}
-        </button>
-      )}
 
       {dragOver && (
         <div className="drop">

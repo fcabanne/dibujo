@@ -113,3 +113,6 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    descarga directa de assets de Figma, solo se podía ver por captura—. Se
    dibujaron sobre esa captura con la métrica del set. Reemplazar los `d` en
    `icons.tsx` cuando se pueda leer el archivo con una red sin esa traba.
+8. **El picker de Ajustes no tiene frame en Figma todavía.** `ContrastIcon`,
+   `EdgesIcon` y `FacetsIcon` son invención directa, con la métrica del set pero sin
+   ningún nodo de referencia. Cuando se dibuje esa pantalla, se reemplazan los tres.
