@@ -251,7 +251,10 @@ reaparezca a color.
 grandes, no un menú que se abre encima. Ese picker **sobrevive a cambiar de
 pestaña** — si quedó en "Ninguna", o a mitad de elegir un modo de Ajustes, volver a
 esa pestaña lo encuentra como se dejó. Lo único que lo cierra es una foto nueva
-(`Panel.tsx`, el `useEffect` que también abre la pestaña de grilla).
+(`Panel.tsx`, el `useEffect` que también abre la pestaña de grilla). Y un modo sin nada
+que configurar —"Ninguna" en la grilla, "Original" en Ajustes— deja su picker
+abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fila
+sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
 **Referencia usa el sistema de diseño y el archivo de textos; las otras dos todavía
 no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
@@ -321,6 +324,9 @@ Ajustes, y un picker no mide lo mismo que sus filas cerradas—, el lienzo de ar
 reencuadraría cada vez, y la foto parecería saltar sola al cambiar de pestaña.
 Colapsar el panel entero (tocar de nuevo la pestaña abierta) sí achica el lienzo a
 propósito: ese es un gesto explícito para ver más foto, no una navegación de paso.
+Ese alto fijo es el de la vista más alta y nada más (`--panel-height`, 213 px: un
+picker de dos filas de tarjetas); todo lo demás está hecho para entrar ahí. Antes
+era `52vh`, y en un celular común le robaba a la foto 200 px de aire vacío.
 
 **El movimiento dice de dónde viene y a dónde va cada cosa**, y nada se anima para
 adornar. La barra de pestañas lleva una marca oscura que viaja de botón en botón; una

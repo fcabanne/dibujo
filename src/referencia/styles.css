@@ -252,6 +252,17 @@ body {
   backdrop-filter: blur(16px);
 }
 
+/* El alto del panel es el de su vista más alta, y ni un píxel más: cada
+   píxel de acá es uno que le falta a la foto. La más alta es un picker de dos
+   filas de tarjetas (Figma 26:279) —título, 16 de aire, dos tarjetas de 85,5
+   y 8 entre ellas—, y todo lo demás está hecho para entrar ahí: las cinco
+   filas de la grilla miden 192, Facetado 152, y la miniatura de la pestaña
+   Foto se achicó para que esa pestaña también mida esto. Antes era `52vh`, y
+   en un celular común eran 200 px de aire que le robaba a la foto. */
+.controls {
+  --panel-height: 213px;
+}
+
 .tab-drawer {
   width: 100%;
   height: 0;
@@ -266,7 +277,7 @@ body {
 }
 
 .tab-drawer.is-open {
-  height: calc(52vh + var(--ds-space-5));
+  height: calc(var(--panel-height) + var(--ds-space-5));
   visibility: visible;
   transition: height var(--ds-dur-slow) var(--ds-ease), visibility 0s;
 }
@@ -279,7 +290,7 @@ body {
      pestaña o se abre un picker. Con esto la foto no se mueve nunca por
      navegar los controles, solo por lo que uno le hace con los dedos. Lo que
      sobra en una pestaña más baja queda vacío; lo que no entra, scrollea. */
-  height: 52vh;
+  height: var(--panel-height);
   margin-bottom: var(--ds-space-5);
   overflow-x: hidden;
   overflow-y: auto;
@@ -409,7 +420,9 @@ body {
 
 .thumb {
   position: relative;
-  height: 132px;
+  /* Lo que deja libre el alto del panel (ver `--panel-height`) después del
+     nombre del archivo y los botones de cambiar y quitar. */
+  height: 113px;
   overflow: hidden;
   border-radius: var(--ds-radius-control);
   /* A cuadros: sin él, una foto con transparencia se confunde con el fondo. */

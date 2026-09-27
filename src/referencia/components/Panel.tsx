@@ -311,6 +311,18 @@ export function Panel({
     ),
   }
 
+  /**
+   * Qué picker se ve en cada pestaña. No sale solo del estado `picker`: un
+   * modo que no tiene nada que configurar —"Ninguna" en la grilla,
+   * "Original" en Ajustes— deja su picker abierto siempre, porque la vista
+   * cerrada sería una fila sola con un vacío abajo. Así es como la pestaña de
+   * Ajustes abre directo en sus cuatro tarjetas, y como "Ninguna" sigue en
+   * su picker aunque se haya cargado otra foto.
+   */
+  const gridPicker =
+    picker === 'color' ? 'color' : picker === 'tipo' || grid.mode === 'none' ? 'tipo' : null
+  const adjustPicker = picker === 'ajustes' || effects.mode === 'original'
+
   const isCustomColor = !NAMED_COLORS.some(
     (color) => color.value === grid.style.color.toLowerCase(),
   )
@@ -321,7 +333,7 @@ export function Panel({
     label: copy.grid.tab,
     icon: <GridIcon />,
     content:
-      picker === 'tipo' ? (
+      gridPicker === 'tipo' ? (
         <OptionPicker
           label={copy.grid.type}
           value={grid.mode}
@@ -331,10 +343,15 @@ export function Panel({
             dispatch({ type: 'grid/patch', patch: { mode } })
             // "Ninguna" no vuelve a las filas: sin grilla no hay nada que ver
             // ahí, y lo más probable después de sacarla es elegir otro tipo.
-            if (mode !== 'none') closePickerSoon()
+            if (mode !== 'none') {
+              // Abierto a mano durante la pausa: si estaba abierto solo por
+              // "Ninguna", al cambiar el modo se cerraría en el acto.
+              setPicker('tipo')
+              closePickerSoon()
+            }
           }}
         />
-      ) : picker === 'color' ? (
+      ) : gridPicker === 'color' ? (
         <OptionPicker
           label={copy.grid.color}
           value={isCustomColor ? '' : grid.style.color.toLowerCase()}
@@ -425,7 +442,7 @@ export function Panel({
     icon: <PaintIcon />,
     content: !effectsSupported ? (
       <Hint>{copy.adjust.unsupported}</Hint>
-    ) : picker === 'ajustes' ? (
+    ) : adjustPicker ? (
       <OptionPicker
         label={copy.adjust.title}
         value={effects.mode}
@@ -433,7 +450,12 @@ export function Panel({
         options={ADJUST_OPTIONS}
         onChange={(mode) => {
           dispatch({ type: 'effects/mode', mode })
-          closePickerSoon()
+          // "Original" se queda en las tarjetas, igual que "Ninguna": no hay
+          // nada que ajustar abajo.
+          if (mode !== 'original') {
+            setPicker('ajustes')
+            closePickerSoon()
+          }
         }}
       />
     ) : (
@@ -565,11 +587,7 @@ export function Panel({
    */
   const shown = sections.find((section) => section.id === (openTab ?? lastTab.current)) ?? null
   const pickerPart = (id: string) =>
-    id === 'grilla' && (picker === 'tipo' || picker === 'color')
-      ? picker
-      : id === 'ajustes' && picker === 'ajustes'
-        ? 'picker'
-        : 'filas'
+    id === 'grilla' && gridPicker ? gridPicker : id === 'ajustes' && adjustPicker ? 'picker' : 'filas'
   const viewKey = shown ? `${shown.id}:${pickerPart(shown.id)}` : ''
   const previousView = useRef({ key: viewKey, open: openTab !== null })
   const viewMotion = useRef('is-rise')
