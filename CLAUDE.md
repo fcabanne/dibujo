@@ -322,6 +322,28 @@ reencuadraría cada vez, y la foto parecería saltar sola al cambiar de pestaña
 Colapsar el panel entero (tocar de nuevo la pestaña abierta) sí achica el lienzo a
 propósito: ese es un gesto explícito para ver más foto, no una navegación de paso.
 
+**El movimiento dice de dónde viene y a dónde va cada cosa**, y nada se anima para
+adornar. La barra de pestañas lleva una marca oscura que viaja de botón en botón; una
+pestaña nueva entra del lado en que está su botón; un picker entra "hacia adentro"
+y las filas vuelven "hacia afuera"; el cajón se despliega y se pliega, y la foto
+crece o se achica con él cuadro a cuadro. Lo tocable se hunde al apretarlo y vuelve
+con resorte. En el lienzo: la foto nueva aparece fundiéndose, cambiar la grilla o
+el modo de Ajustes funde lo viejo con lo nuevo (solo en cambios de un toque — lo que
+se arrastra, como el espesor o el contraste, no se funde, porque llegaría siempre
+tarde al dedo), arrastrar más allá del borde ofrece resistencia y vuelve al soltar,
+achicar por debajo del encuadre vuelve solo, y el doble tap recentra en un
+recorrido. Las duraciones y las curvas son tokens (`--ds-dur-*`, `--ds-ease`,
+`--ds-spring`); lo que vive en JavaScript usa `shared/motion.ts` con la misma curva.
+Con `prefers-reduced-motion` todo llega a su estado final en el acto.
+
+**El doble tap se reconoce a mano** (`Canvas.tsx`), no con `dblclick`: no todos los
+celulares lo mandan. Con mouse sí se usa `dblclick`, y se ignora si un doble tap
+táctil acaba de resolverlo, para no recentrar dos veces.
+
+**El hover solo existe con un puntero que pasa por encima** (`@media (hover:
+hover)`). En un celular el hover queda pegado después del toque, y el botón quedaba
+pintado como si lo siguieran tocando.
+
 **Guardar se pide por la hoja de compartir** (`deliver` en `exporters.ts`). La
 descarga común es poco confiable en Safari de celular: abre el archivo en una pestaña
 en vez de guardarlo. Donde no hay `navigator.share`, cae en la descarga de siempre.

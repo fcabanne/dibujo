@@ -19,7 +19,21 @@ export function paintScene(
   aspect: number,
 ): void {
   ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+  paintGrid(ctx, rect, state, aspect)
+}
 
+/**
+ * La mitad de `paintScene` que va encima de la foto. Existe suelta para el
+ * lienzo, que durante un cambio de grilla pinta la vieja y la nueva a la vez
+ * con opacidades cruzadas. No es un segundo camino: `paintScene` la usa
+ * tal cual, así que lo que se funde en pantalla es lo mismo que sale.
+ */
+export function paintGrid(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  state: AppState,
+  aspect: number,
+): void {
   const lines = computeGrid(state.grid, aspect)
   if (!lines) return
 

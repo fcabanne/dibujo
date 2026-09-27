@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 export interface PickerOption<T extends string> {
   value: T
@@ -43,7 +43,7 @@ export function OptionPicker<T extends string>({
     <div className="ds-option-picker">
       <p className="ds-option-header">{label}</p>
       <div className={`ds-option-grid ds-option-grid--${columns}`}>
-        {options.map((option) => (
+        {options.map((option, index) => (
           <button
             key={option.value}
             type="button"
@@ -52,6 +52,8 @@ export function OptionPicker<T extends string>({
               (option.value === value ? ' is-selected' : '') +
               (option.wide ? ' is-wide' : '')
             }
+            // El orden de la cascada de entrada (ver `.ds-option` en el CSS).
+            style={{ '--i': index } as CSSProperties}
             onClick={() => onChange(option.value)}
           >
             {option.icon}

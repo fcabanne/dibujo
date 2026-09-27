@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
+import { easeOut, prefersReducedMotion, tween } from '../../shared/motion'
 import { aspectOf, type Reference } from '../../shared/referenceImage'
 import { createEffects, type EffectsRenderer } from '../render/effects'
-import { fitRect, paintScene } from '../render/scene'
-import type { AppState } from '../types'
+import { fitRect, paintGrid } from '../render/scene'
+import type { AppState, GridState } from '../types'
 
 interface Props {
   reference: Reference | null
@@ -16,6 +17,12 @@ interface Props {
 const ZOOM = { min: 0.4, max: 8 }
 /** Aire alrededor de la foto, para que la grilla no muera contra el borde de la ventana. */
 const PAD = 32
+/** Cuánto dura un fundido del lienzo: una grilla sobre otra, o un modo de Ajustes sobre otro. */
+const FADE = 220
+/** Cuánto tarda la vista en volver sola a su lugar: doble tap, o soltar fuera de rango. */
+const SETTLE = 340
+/** Dos toques más juntos que esto, en tiempo y en distancia, son un doble tap. */
+const DOUBLE_TAP = { ms: 300, px: 30 }
 
 interface View {
   zoom: number
@@ -23,7 +30,45 @@ interface View {
   y: number
 }
 
+/**
+ * Cómo se aplica el recorte de la vista en `draw`:
+ * - `clamp`: al rango, sin más. El estado de siempre.
+ * - `elastic`: mientras un dedo arrastra. Se deja pasar del borde con
+ *   resistencia —cuanto más se tira, menos avanza— y al soltar vuelve. Es la
+ *   forma de decir "hasta acá" sin frenar en seco, que se siente como un
+ *   error.
+ * - `free`: mientras la vista vuelve sola a su lugar. Sin recorte, porque el
+ *   recorrido arranca afuera del rango y tiene que poder terminar adentro sin
+ *   pegar un salto en el primer cuadro.
+ */
+type Bounds = 'clamp' | 'elastic' | 'free'
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+/**
+ * Pasarse del borde, como al estirar algo: cuanto más se tira, menos avanza,
+ * y nunca pasa de `reach`. La curva es la de iOS (el `0.55`), la que
+ * cualquiera que haya usado un celular ya tiene en la mano.
+ */
+function rubber(value: number, limit: number, reach: number): number {
+  const over = Math.abs(value) - limit
+  if (over <= 0) return value
+  return Math.sign(value) * (limit + (1 - 1 / ((over * 0.55) / reach + 1)) * reach)
+}
+
+/**
+ * Lo que de la grilla cambia de un toque y conviene fundir: el tipo, la
+ * cantidad, el color. El espesor y la opacidad no — se arrastran, y fundir
+ * cada paso del arrastre haría que la grilla llegue siempre tarde al dedo.
+ */
+function gridJumped(a: GridState, b: GridState): boolean {
+  return a.mode !== b.mode || a.count !== b.count || a.style.color !== b.style.color
+}
+
+/** La misma escena, con la grilla dada y su opacidad multiplicada por `alpha`. */
+function withGrid(state: AppState, grid: GridState, alpha: number): AppState {
+  return { ...state, grid: { ...grid, style: { ...grid.style, opacity: grid.style.opacity * alpha } } }
+}
 
 export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -31,6 +76,9 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const effectsRef = useRef<EffectsRenderer | null>(null)
   const photoRef = useRef<CanvasImageSource | null>(null)
   const viewRef = useRef<View>({ zoom: 1, x: 0, y: 0 })
+  const boundsRef = useRef<Bounds>('clamp')
+  /** Dónde quedó la foto en el último cuadro, ya con el recorte o la resistencia aplicados. */
+  const shownRef = useRef({ x: 0, y: 0 })
   /** Lo último que se dibujó, para poder anclar el zoom al puntero. */
   const placedRef = useRef({ x: 0, y: 0, w: 0, h: 0 })
   const frameRef = useRef(0)
@@ -38,6 +86,21 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const pointersRef = useRef(new Map<number, { x: number; y: number }>())
   /** Sin arrastre: el pellizco solo cambia el zoom, nunca la posición. */
   const pinchRef = useRef<{ spread: number } | null>(null)
+  /** Corta la vuelta animada en curso, si hay una. Un dedo nuevo siempre gana. */
+  const stopSettle = useRef<() => void>(() => {})
+  const wheelTimer = useRef(0)
+  /** El toque en curso, para saber al soltar si fue un toque o un arrastre. */
+  const pressRef = useRef({ time: 0, x: 0, y: 0, moved: false })
+  /** El último toque suelto, para reconocer el segundo de un doble tap. */
+  const tapRef = useRef({ time: 0, x: 0, y: 0 })
+  const touchDoubleRef = useRef(0)
+
+  /** Una grilla que se está yendo, fundida debajo de la que llega. */
+  const gridFadeRef = useRef<{ from: GridState; start: number } | null>(null)
+  const previousGrid = useRef(state.grid)
+  /** La foto en el modo de Ajustes anterior, fundida debajo del nuevo. */
+  const photoFadeRef = useRef<{ from: HTMLCanvasElement; start: number } | null>(null)
+  const previousEffects = useRef({ reference, mode: state.effects.mode })
 
   const stateRef = useRef(state)
   const refRef = useRef(reference)
@@ -46,11 +109,21 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
 
   const [dragOver, setDragOver] = useState(false)
 
+  const drawRef = useRef<() => void>(() => {})
+
   /**
    * Se dibuja cuando cambia algo y no sesenta veces por segundo: acá no hay nada
-   * animado, y un loop permanente sería tener la placa encendida mirando una foto
-   * quieta.
+   * animado salvo durante un fundido o una vuelta, y un loop permanente sería
+   * tener la placa encendida mirando una foto quieta.
    */
+  const schedule = useCallback(() => {
+    if (frameRef.current) return
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = 0
+      drawRef.current()
+    })
+  }, [])
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current
     const wrap = wrapRef.current
@@ -85,45 +158,76 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
 
     // Como en Lightroom: solo se puede mover hacia el lado que sobra. Si la
     // foto zoomeada no excede el ancho o el alto disponible, ese eje no se
-    // mueve nunca — ni con el dedo ni con un pellizco que ancle lejos del
-    // centro. Se recalcula en cada cuadro, así que un cambio de tamaño de la
-    // ventana (o del panel de abajo) vuelve a dejar la vista adentro de rango
-    // en vez de dejar la foto descentrada.
+    // mueve nunca. Se recalcula en cada cuadro, así que un cambio de tamaño
+    // de la ventana (o del panel de abajo) vuelve a dejar la vista adentro de
+    // rango en vez de dejar la foto descentrada.
     // De referencia va `box.height` y no `availH`: el PAD se cancela solo,
     // porque entra igual arriba y abajo tanto en `base` como en el centrado
-    // de acá abajo — el centro de la foto es siempre el centro de la
-    // ventana, sin importar el zoom. Usar `availH` acá dejaba un margen de
-    // PAD que ningún arrastre podía correr.
+    // de acá abajo — el centro de la foto es siempre el centro de la ventana,
+    // sin importar el zoom.
     const overflowX = Math.max(0, (w - box.width) / 2)
     const overflowY = Math.max(0, (h - box.height) / 2)
-    view.x = clamp(view.x, -overflowX, overflowX)
-    view.y = clamp(view.y, -overflowY, overflowY)
+    let dx = view.x
+    let dy = view.y
+    if (boundsRef.current === 'clamp') {
+      view.x = dx = clamp(view.x, -overflowX, overflowX)
+      view.y = dy = clamp(view.y, -overflowY, overflowY)
+    } else if (boundsRef.current === 'elastic') {
+      // Poco recorrido a propósito: tiene que leerse como resistencia, no
+      // como que la foto se mueve igual.
+      const reach = Math.min(box.width, box.height) * 0.08
+      dx = rubber(view.x, overflowX, reach)
+      dy = rubber(view.y, overflowY, reach)
+    }
+    shownRef.current = { x: dx, y: dy }
 
     const rect = {
-      x: (box.width - w) / 2 + view.x,
-      y: PAD + (availH - h) / 2 + view.y,
+      x: (box.width - w) / 2 + dx,
+      y: PAD + (availH - h) / 2 + dy,
       w,
       h,
     }
     placedRef.current = rect
 
+    const now = performance.now()
+    let fading = false
     ctx.imageSmoothingQuality = 'high'
-    paintScene(ctx, rect, photo, stateRef.current, aspect)
-  }, [])
 
-  const schedule = useCallback(() => {
-    if (frameRef.current) return
-    frameRef.current = requestAnimationFrame(() => {
-      frameRef.current = 0
-      draw()
-    })
-  }, [draw])
+    const photoFade = photoFadeRef.current
+    if (photoFade) {
+      const t = Math.min(1, (now - photoFade.start) / FADE)
+      ctx.drawImage(photoFade.from, rect.x, rect.y, rect.w, rect.h)
+      ctx.globalAlpha = easeOut(t)
+      ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+      ctx.globalAlpha = 1
+      if (t < 1) fading = true
+      else photoFadeRef.current = null
+    } else {
+      ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+    }
+
+    const scene = stateRef.current
+    const gridFade = gridFadeRef.current
+    if (gridFade) {
+      const e = easeOut(Math.min(1, (now - gridFade.start) / FADE))
+      paintGrid(ctx, rect, withGrid(scene, gridFade.from, 1 - e), aspect)
+      paintGrid(ctx, rect, withGrid(scene, scene.grid, e), aspect)
+      if (e < 1) fading = true
+      else gridFadeRef.current = null
+    } else {
+      paintGrid(ctx, rect, scene, aspect)
+    }
+
+    if (fading) schedule()
+  }, [schedule])
+  drawRef.current = draw
 
   // Los efectos se recalculan solo cuando cambian ellos o la foto. Es el paso caro
   // del cuadro: mover la grilla no tiene por qué volver a pasar la foto por el shader.
   useEffect(() => {
     if (!reference) {
       photoRef.current = null
+      photoFadeRef.current = null
       schedule()
       return
     }
@@ -132,11 +236,42 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       onEffectsSupport(effectsRef.current !== null)
     }
     const { preview } = reference
+
+    // Cambiar de modo de Ajustes funde la foto de un modo al otro en vez de
+    // cambiarla de golpe: pasar de color a blanco y negro se ve como un
+    // cambio de luz, no como otra foto. La de antes se copia acá porque el
+    // renderizador reusa su lienzo y la va a pisar en la línea de abajo.
+    // Solo al cambiar de modo: las perillas de adentro se arrastran, y un
+    // fundido por cada paso haría que la foto llegue siempre tarde al dedo.
+    const before = previousEffects.current
+    previousEffects.current = { reference, mode: state.effects.mode }
+    if (
+      before.reference === reference &&
+      before.mode !== state.effects.mode &&
+      photoRef.current &&
+      !prefersReducedMotion()
+    ) {
+      const snapshot = document.createElement('canvas')
+      snapshot.width = preview.width
+      snapshot.height = preview.height
+      snapshot.getContext('2d')?.drawImage(photoRef.current, 0, 0, preview.width, preview.height)
+      photoFadeRef.current = { from: snapshot, start: performance.now() }
+    }
+
     photoRef.current = effectsRef.current
       ? effectsRef.current.apply(preview, preview.width, preview.height, state.effects)
       : preview
     schedule()
   }, [reference, state.effects, schedule, onEffectsSupport])
+
+  // La grilla que cambia de un toque se funde con la anterior.
+  useEffect(() => {
+    const before = previousGrid.current
+    previousGrid.current = state.grid
+    if (before !== state.grid && gridJumped(before, state.grid) && !prefersReducedMotion()) {
+      gridFadeRef.current = { from: before, start: performance.now() }
+    }
+  }, [state.grid])
 
   // Cualquier otro cambio —grilla, color, medidas— solo repinta.
   useEffect(schedule, [state, schedule])
@@ -155,31 +290,96 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       // Volver a cero no es cosmético: `schedule` usa este ref como candado, y si
       // queda con el número de un cuadro ya cancelado no vuelve a pedir ninguno.
       frameRef.current = 0
+      stopSettle.current()
+      window.clearTimeout(wheelTimer.current)
       effectsRef.current?.dispose()
       effectsRef.current = null
     },
     [],
   )
 
-  // Al cambiar de foto, la vista vuelve a encuadrar sola: el zoom de la anterior no
-  // tiene por qué tener sentido en la nueva.
+  // Al cambiar de foto, la vista vuelve a encuadrar sola: el zoom de la anterior
+  // no tiene por qué tener sentido en la nueva. Y la foto nueva aparece
+  // fundiéndose desde un poco más chica, en vez de reemplazar a la otra de un
+  // cuadro al siguiente — se lee como "llegó", no como un parpadeo.
   useEffect(() => {
+    stopSettle.current()
     viewRef.current = { zoom: 1, x: 0, y: 0 }
+    boundsRef.current = 'clamp'
+    if (reference && !prefersReducedMotion()) {
+      canvasRef.current?.animate(
+        [
+          { opacity: 0, transform: 'scale(0.985)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      )
+    }
   }, [reference])
 
-  const reset = useCallback(() => {
-    viewRef.current = { zoom: 1, x: 0, y: 0 }
-    schedule()
-  }, [schedule])
+  /**
+   * Lleva la vista a `target` en un recorrido, en vez de saltar. Arranca de
+   * donde la foto se ve ahora (con la resistencia del borde incluida, si se
+   * está soltando un arrastre), así el primer cuadro coincide con el último
+   * que se vio.
+   */
+  const settleTo = useCallback(
+    (target: View) => {
+      stopSettle.current()
+      const view = viewRef.current
+      const from = { zoom: view.zoom, ...shownRef.current }
+      if (from.zoom === target.zoom && from.x === target.x && from.y === target.y) {
+        boundsRef.current = 'clamp'
+        schedule()
+        return
+      }
+      boundsRef.current = 'free'
+      stopSettle.current = tween(
+        SETTLE,
+        (t) => {
+          view.zoom = from.zoom + (target.zoom - from.zoom) * t
+          view.x = from.x + (target.x - from.x) * t
+          view.y = from.y + (target.y - from.y) * t
+          drawRef.current()
+        },
+        () => {
+          boundsRef.current = 'clamp'
+          stopSettle.current = () => {}
+          schedule()
+        },
+      )
+    },
+    [schedule],
+  )
+
+  /**
+   * Después de un gesto, la vista se acomoda sola: si quedó más chica que el
+   * encuadre vuelve a él —achicar por debajo se puede, como en la galería del
+   * celular, pero no se queda así—, y si un arrastre la dejó pasada del borde
+   * vuelve al borde.
+   */
+  const settle = useCallback(() => {
+    const wrap = wrapRef.current
+    const rect = placedRef.current
+    if (!wrap || !rect.w) return
+    const box = wrap.getBoundingClientRect()
+    const view = viewRef.current
+    const zoom = Math.max(1, view.zoom)
+    const w = (rect.w / view.zoom) * zoom
+    const h = (rect.h / view.zoom) * zoom
+    const reachX = Math.max(0, (w - box.width) / 2)
+    const reachY = Math.max(0, (h - box.height) / 2)
+    const shown = shownRef.current
+    settleTo({ zoom, x: clamp(shown.x, -reachX, reachX), y: clamp(shown.y, -reachY, reachY) })
+  }, [settleTo])
+
+  const reset = useCallback(() => settleTo({ zoom: 1, x: 0, y: 0 }), [settleTo])
 
   /**
    * Acercar dejando quieto un punto de la pantalla: el puntero con la rueda,
-   * el medio de los dedos con el pellizco. Antes esto se ancló al centro de
-   * la ventana para el pellizco, porque sin el recorte de más abajo un punto
-   * que tiembla hacía parecer que la foto se arrastraba. Con la foto
-   * recortada a lo que sobra, anclar en el punto que se está mirando vuelve
-   * a ser seguro: como mucho el pellizco corrige la vista al límite del
-   * recorte, nunca la deja a la deriva.
+   * el medio de los dedos con el pellizco. El recorte de `draw` es lo que hace
+   * seguro anclar en el punto que se está mirando: como mucho la vista llega
+   * al borde de lo que sobra, nunca se va a la deriva.
    */
   const zoomAt = useCallback((cx: number, cy: number, factor: number) => {
     const wrap = wrapRef.current
@@ -204,15 +404,35 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     (e: React.WheelEvent) => {
       const box = wrapRef.current?.getBoundingClientRect()
       if (!box) return
+      stopSettle.current()
+      boundsRef.current = 'clamp'
       zoomAt(e.clientX - box.left, e.clientY - box.top, Math.exp(-e.deltaY * 0.0012))
       schedule()
+      // La rueda no tiene un "soltar": se da por terminado el gesto cuando deja
+      // de girar un momento.
+      window.clearTimeout(wheelTimer.current)
+      wheelTimer.current = window.setTimeout(settle, 180)
     },
-    [schedule, zoomAt],
+    [schedule, settle, zoomAt],
   )
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    stopSettle.current()
+    const pointers = pointersRef.current
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     pinchRef.current = null
+
+    if (pointers.size === 1) {
+      pressRef.current = { time: performance.now(), x: e.clientX, y: e.clientY, moved: false }
+      boundsRef.current = 'elastic'
+    } else {
+      // Entra el segundo dedo: lo que el primero estiraba de más queda donde
+      // se ve, y el pellizco sigue desde ahí con el recorte normal.
+      pressRef.current.moved = true
+      Object.assign(viewRef.current, shownRef.current)
+      boundsRef.current = 'clamp'
+    }
+
     try {
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     } catch {
@@ -235,10 +455,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       if (pointers.size >= 2) {
         // Dos dedos: solo zoom, ancla al medio de los dedos. La distancia
         // entre ellos se mide de nuevo en cada movimiento en vez de contra el
-        // inicio del gesto, así levantar y volver a apoyar uno no pega un
-        // salto. El recorte de más abajo (en `draw`) es lo que hace que
-        // anclar acá sea seguro: como mucho la vista llega al borde de lo
-        // que sobra, nunca se va a la deriva.
+        // inicio del gesto, así levantar y volver a apoyar uno no pega un salto.
         const [a, b] = [...pointers.values()]
         const spread = Math.hypot(a.x - b.x, a.y - b.y)
         const middle = { x: (a.x + b.x) / 2 - box.left, y: (a.y + b.y) / 2 - box.top }
@@ -249,6 +466,8 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       } else {
         view.x += e.clientX - previous.x
         view.y += e.clientY - previous.y
+        const press = pressRef.current
+        if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) press.moved = true
       }
 
       schedule()
@@ -256,11 +475,45 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     [schedule, zoomAt],
   )
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    pointersRef.current.delete(e.pointerId)
-    // Que el dedo que queda no arrastre con el salto de haber sido parte del pellizco.
-    pinchRef.current = null
-  }, [])
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const pointers = pointersRef.current
+      pointers.delete(e.pointerId)
+      // Que el dedo que queda no arrastre con el salto de haber sido parte del pellizco.
+      pinchRef.current = null
+
+      if (pointers.size > 0) {
+        boundsRef.current = 'elastic'
+        return
+      }
+
+      // Doble tap, reconocido a mano: `dblclick` no llega en todos los
+      // celulares. Solo toques cortos y quietos — un arrastre que termina cerca
+      // de donde empezó el anterior no es un doble tap.
+      const now = performance.now()
+      const press = pressRef.current
+      if (e.pointerType !== 'mouse' && !press.moved && now - press.time < 250) {
+        const tap = tapRef.current
+        if (now - tap.time < DOUBLE_TAP.ms && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < DOUBLE_TAP.px) {
+          tapRef.current = { time: 0, x: 0, y: 0 }
+          touchDoubleRef.current = now
+          reset()
+          return
+        }
+        tapRef.current = { time: now, x: e.clientX, y: e.clientY }
+      }
+
+      settle()
+    },
+    [reset, settle],
+  )
+
+  // Con mouse el doble clic llega como `dblclick`. En un celular que además lo
+  // manda, ya lo resolvió el doble tap de arriba: no se recentra dos veces.
+  const onDoubleClick = useCallback(() => {
+    if (performance.now() - touchDoubleRef.current < 500) return
+    reset()
+  }, [reset])
 
   return (
     <div
@@ -271,7 +524,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onDoubleClick={reset}
+      onDoubleClick={onDoubleClick}
       onDragOver={(e) => {
         e.preventDefault()
         setDragOver(true)

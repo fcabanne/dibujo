@@ -25,7 +25,8 @@
   text-align: center;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.16s var(--ds-ease);
+  transition: opacity var(--ds-dur-fast) var(--ds-ease),
+    transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-button svg {
@@ -48,13 +49,12 @@
   color: var(--ds-accent-dark);
 }
 
-/* Derivados: el archivo no dibuja estos estados. */
-.ds-button:hover:not(:disabled) {
-  opacity: 0.88;
-}
-
-.ds-button:active:not(:disabled) {
-  opacity: 0.76;
+/* Derivados: el archivo no dibuja estos estados. El de apretar vive con los
+   demás, en "presión", al final de la hoja. */
+@media (hover: hover) {
+  .ds-button:hover:not(:disabled) {
+    opacity: 0.88;
+  }
 }
 
 .ds-button:disabled {
@@ -79,8 +79,9 @@
   background: none;
   color: var(--ds-accent-dark);
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease),
-    opacity 0.16s var(--ds-ease);
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease), opacity var(--ds-dur-fast) var(--ds-ease),
+    transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-icon-button svg {
@@ -93,9 +94,13 @@
   color: var(--ds-white);
 }
 
-/* Derivados. */
-.ds-icon-button:hover:not(:disabled):not(.is-selected) {
-  background: var(--ds-accent-light);
+/* Derivados. Solo con un puntero que de verdad pasa por encima: en un
+   celular el hover queda pegado después del toque, y el botón se quedaba
+   pintado como si todavía lo estuvieran tocando. */
+@media (hover: hover) {
+  .ds-icon-button:hover:not(:disabled):not(.is-selected) {
+    background: var(--ds-accent-light);
+  }
 }
 
 .ds-icon-button:disabled {
@@ -281,7 +286,8 @@
   background: none;
   color: var(--ds-accent-dark);
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease);
+  transition: color var(--ds-dur-fast) var(--ds-ease),
+    opacity var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-stepper button svg {
@@ -298,17 +304,51 @@
 
 /* Derivado. Sin fondo propio: a 32 el botón toca los bordes de la fila, y un
    relleno ahí encima se veía como un segundo recuadro pisando el primero. */
-.ds-stepper button:hover:not(:disabled) {
-  opacity: 0.7;
+@media (hover: hover) {
+  .ds-stepper button:hover:not(:disabled) {
+    opacity: 0.7;
+  }
 }
 
+/* Recorta al número que rueda: el que entra viene de afuera de la fila. */
 .ds-stepper-value {
+  position: relative;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   font: var(--ds-text-number);
   color: var(--ds-accent-dark);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+/* El número nuevo entra desde el lado hacia el que se contó: de abajo si
+   subió, de arriba si bajó. Así el stepper se lee como un contador y no
+   como un texto que se reemplaza. */
+.ds-stepper-digit {
+  display: block;
+}
+
+.ds-stepper-digit.is-up {
+  animation: ds-roll-up var(--ds-dur) var(--ds-ease);
+}
+
+.ds-stepper-digit.is-down {
+  animation: ds-roll-down var(--ds-dur) var(--ds-ease);
+}
+
+@keyframes ds-roll-up {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+  }
+}
+
+@keyframes ds-roll-down {
+  from {
+    opacity: 0;
+    transform: translateY(-70%);
+  }
 }
 
 /* --- Dropdown — Figma 23:193 (Tipo) / 23:243 (Color) ---------------
@@ -326,13 +366,17 @@
   border: 0;
   background: var(--ds-accent-light);
   cursor: pointer;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
 }
 
-/* Sin radio: en 23:243 es un cuadrado, no la píldora de Swatch. */
+/* Sin radio: en 23:243 es un cuadrado, no la píldora de Swatch. El color
+   cambia fundiéndose y no de golpe: es lo último que se ve de la elección
+   que se acaba de hacer en el picker. */
 .ds-dropdown-swatch {
   flex: none;
   width: var(--ds-icon);
   height: var(--ds-icon);
+  transition: background-color var(--ds-dur) var(--ds-ease);
 }
 
 .ds-dropdown-value {
@@ -355,11 +399,20 @@
   width: var(--ds-icon);
   height: var(--ds-icon);
   color: var(--ds-black);
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-dropdown-arrow svg {
   width: var(--ds-icon);
   height: var(--ds-icon);
+}
+
+/* Al apretar, la flecha baja un poco: anticipa que la fila lleva a otra
+   pantalla, "hacia adentro". */
+.ds-dropdown:active .ds-dropdown-arrow {
+  transform: translateY(2px);
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
 }
 
 /* --- OptionPicker — Figma 26:279 (Tipo) / 26:425 (Color) -----------
@@ -379,6 +432,7 @@
   color: var(--ds-black);
   text-align: center;
   text-transform: uppercase;
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease) backwards;
 }
 
 .ds-option-grid {
@@ -408,7 +462,13 @@
   text-align: center;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), color 0.16s var(--ds-ease);
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
+  /* Las tarjetas llegan en cascada, en orden de lectura: el ojo las recorre
+     en el mismo orden en que aparecen. `--i` lo pone el componente. `backwards`
+     para que ninguna se vea antes de su turno. */
+  animation: ds-card-in var(--ds-dur) var(--ds-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 28ms);
 }
 
 .ds-option svg {
@@ -425,9 +485,37 @@
   color: var(--ds-white);
 }
 
+/* El ícono de la tarjeta que se acaba de elegir da un salto chico: confirma
+   el toque en el lugar exacto donde se hizo, antes de que el picker se
+   cierre. */
+.ds-option.is-selected > :first-child {
+  animation: ds-select var(--ds-dur-slow) var(--ds-spring);
+}
+
 /* Derivado: el archivo no dibuja el estado de paso. */
-.ds-option:hover:not(.is-selected) {
-  background: var(--ds-background);
+@media (hover: hover) {
+  .ds-option:hover:not(.is-selected) {
+    background: var(--ds-background);
+  }
+}
+
+@keyframes ds-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+@keyframes ds-select {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes ds-fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* El cuadradito de color de una tarjeta de Color — mismo dibujo que el del
@@ -488,7 +576,8 @@
   font: var(--ds-text-control);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ds-ease), border-color 0.16s var(--ds-ease);
+  transition: background var(--ds-dur-fast) var(--ds-ease),
+    border-color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 .ds-choice.is-selected {
@@ -497,8 +586,10 @@
 }
 
 /* Derivado. */
-.ds-choice:hover:not(.is-selected) {
-  background: var(--ds-accent-light);
+@media (hover: hover) {
+  .ds-choice:hover:not(.is-selected) {
+    background: var(--ds-accent-light);
+  }
 }
 
 /* --- Swatch — Figma 22:352 (un color) / 22:406 (la rueda) ---------- */
@@ -514,6 +605,7 @@
   border-radius: var(--ds-radius-pill);
   background: var(--ds-accent-light);
   cursor: pointer;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
 }
 
 /* El aro va por dentro y no como `border`: con un borde de verdad el círculo
@@ -596,8 +688,38 @@
   cursor: pointer;
 }
 
-.ds-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .ds-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* --- presión ---------------------------------------------------------
+   Derivado, como todos los estados: lo que se toca se hunde un poco y
+   vuelve con resorte al soltarlo. Se hunde rápido (`--ds-dur-press`, más
+   corto que cualquier toque) y vuelve lento y con rebote (la transición de
+   cada bloque de arriba). Es la diferencia entre un botón que responde y
+   uno que solo cambia de color cuando ya pasó todo.
+
+   Los anchos —la fila del Dropdown, las tarjetas del picker— se hunden
+   menos: el mismo porcentaje sobre trescientos píxeles se ve como un
+   salto. */
+
+.ds-button:active:not(:disabled),
+.ds-icon-button:active:not(:disabled),
+.ds-stepper button:active:not(:disabled),
+.ds-choice:active,
+.ds-swatch:active {
+  transform: scale(var(--ds-press));
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
+}
+
+.ds-dropdown:active,
+.ds-option:active {
+  transform: scale(var(--ds-press-wide));
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ds-ease);
 }
 
 /* --- foco -----------------------------------------------------------

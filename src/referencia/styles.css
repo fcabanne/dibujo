@@ -67,10 +67,14 @@ body {
   place-items: center;
   border: 2px dashed var(--ds-accent-dark);
   border-radius: var(--ds-radius-group);
-  background: rgb(246 244 255 / 0.82);
+  /* El fondo, un poco transparente: se sigue viendo que abajo hay una foto que
+     va a ser reemplazada. Del token y no un color suelto, que quedó viejo la
+     vez que cambió la paleta. */
+  background: color-mix(in srgb, var(--ds-background) 82%, transparent);
   color: var(--ds-accent-dark);
   font: var(--ds-text-control);
   pointer-events: none;
+  animation: ds-fade-in var(--ds-dur-fast) var(--ds-ease);
 }
 
 .stage.is-dragging {
@@ -122,6 +126,27 @@ body {
   font: var(--ds-text-control);
 }
 
+/* La primera vez que se abre, la pantalla se lee en orden: saludo, qué es,
+   qué hacer, y recién ahí el botón, que es la respuesta a todo lo anterior.
+   Cada parte llega un poco después que la de arriba. La barra de abajo
+   llega última: es de otra conversación. */
+.welcome-text > *,
+.welcome > .ds-button {
+  animation: ds-rise var(--ds-dur-slow) var(--ds-ease) backwards;
+}
+
+.welcome-text > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.welcome-text > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.welcome > .ds-button {
+  animation-delay: 240ms;
+}
+
 /* --- la barra de abajo, sin foto ------------------------------------
    Volver y "Dejame sugerencias" comparten la misma fila, flotando sobre la
    pantalla de inicio — la misma idea que la barra de abajo con foto puesta,
@@ -138,6 +163,7 @@ body {
   justify-content: space-between;
   padding: var(--ds-space-4);
   padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
 }
 
 /* --- la columna de escritorio ------------------------------------- */
@@ -217,8 +243,8 @@ body {
   display: flex;
   flex: none;
   flex-direction: column;
-  /* padding y gap de 16, como el Container 22:55. */
-  gap: var(--ds-space-5);
+  /* padding de 16, como el Container 22:55. El gap de 16 entre el panel y la
+     barra lo pone el cajón (ver abajo): así, cerrado, no queda un hueco. */
   align-items: center;
   padding: var(--ds-space-5) var(--ds-space-6);
   padding-bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
@@ -226,10 +252,26 @@ body {
   backdrop-filter: blur(16px);
 }
 
+.tab-drawer {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
+     en el acto no se vería bajar. Al abrir es al revés: visible desde el
+     primer cuadro. El lienzo de arriba se acomoda cuadro a cuadro mientras
+     tanto, así que la foto crece o se achica con el cajón en vez de saltar. */
+  transition: height var(--ds-dur-slow) var(--ds-ease),
+    visibility 0s linear var(--ds-dur-slow);
+}
+
+.tab-drawer.is-open {
+  height: calc(52vh + var(--ds-space-5));
+  visibility: visible;
+  transition: height var(--ds-dur-slow) var(--ds-ease), visibility 0s;
+}
+
 .tab-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-2);
   width: 100%;
   /* Fija, no un máximo: si el alto cambiara con el contenido —la grilla no
      mide lo mismo que Ajustes, y un picker no mide lo mismo que sus filas
@@ -238,8 +280,46 @@ body {
      navegar los controles, solo por lo que uno le hace con los dedos. Lo que
      sobra en una pestaña más baja queda vacío; lo que no entra, scrollea. */
   height: 52vh;
+  margin-bottom: var(--ds-space-5);
+  overflow-x: hidden;
   overflow-y: auto;
-  animation: ds-rise 0.22s var(--ds-ease);
+}
+
+/* Una vista del cajón: la de una pestaña, o la de su picker. Cómo entra lo
+   decide `Panel` según de dónde se viene — ver `viewMotion` ahí. */
+.panel-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  animation-duration: var(--ds-dur);
+  animation-timing-function: var(--ds-ease);
+  animation-fill-mode: backwards;
+}
+
+/* El cajón estaba cerrado: la vista sube un poco mientras él se abre. */
+.panel-view.is-rise {
+  animation-name: ds-rise;
+  animation-delay: 60ms;
+}
+
+/* Otra pestaña: entra del lado en que está su botón en la barra. */
+.panel-view.is-from-right {
+  animation-name: ds-from-right;
+}
+
+.panel-view.is-from-left {
+  animation-name: ds-from-left;
+}
+
+/* Se abrió un picker: la vista nueva está "más adentro" y crece hasta su
+   lugar. Se volvió a las filas: estaban "más afuera" y se asientan
+   achicándose. Es la misma idea que un zoom, en chico. */
+.panel-view.is-deeper {
+  animation-name: ds-deeper;
+}
+
+.panel-view.is-back {
+  animation-name: ds-back;
 }
 
 /* La píldora del diseño: contenedor claro, y el elegido en oscuro adentro.
@@ -252,6 +332,45 @@ body {
   padding: var(--ds-space-1);
   border-radius: var(--ds-radius-group);
   background: var(--ds-accent-light);
+}
+
+/* La pastilla de las pestañas lleva su marca oscura como un elemento aparte
+   que viaja de botón en botón (`--i` lo pone `Panel`); el botón elegido deja
+   de pintar su propio fondo para no tapar el viaje. El resorte hace que se
+   pase un poco y vuelva: se lee como algo que se desliza, no como algo que
+   se teletransporta. */
+.tabbar--tabs {
+  position: relative;
+}
+
+.tabbar--tabs .ds-icon-button {
+  position: relative;
+  z-index: 1;
+  transition-duration: var(--ds-dur);
+}
+
+.tabbar--tabs .ds-icon-button.is-selected {
+  background: none;
+}
+
+.tabbar-thumb {
+  position: absolute;
+  top: var(--ds-space-1);
+  left: var(--ds-space-1);
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  transform: translateX(calc(var(--i, 0) * (var(--ds-control-min) + var(--ds-space-1))));
+  transition: transform var(--ds-dur-slow) var(--ds-spring),
+    opacity var(--ds-dur-fast) var(--ds-ease), scale var(--ds-dur) var(--ds-spring);
+}
+
+/* Con el cajón cerrado no hay pestaña abierta: la marca se achica en el
+   lugar de la última, y vuelve a crecer desde ahí. */
+.tabbar-thumb.is-hidden {
+  opacity: 0;
+  scale: 0.6;
 }
 
 /* Volver, pestañas y descargar en una sola fila (Figma 22:45, Frame 18): ya
@@ -434,7 +553,13 @@ body {
   background: var(--ds-accent-dark);
   color: var(--ds-white);
   font: var(--ds-text-meta);
-  animation: ds-rise 0.3s var(--ds-spring);
+  animation: ds-rise var(--ds-dur-slow) var(--ds-spring);
+}
+
+/* El aviso se va por donde vino, en vez de desaparecer de un cuadro al otro:
+   si alguien lo estaba leyendo, lo ve irse. */
+.note.is-leaving {
+  animation: ds-sink var(--ds-dur) var(--ds-ease) forwards;
 }
 
 /* --- el diálogo de descarga ------------------------------------------- */
@@ -449,11 +574,16 @@ body {
 }
 
 .sheet::backdrop {
-  background: rgb(16 16 16 / 0.42);
+  background: color-mix(in srgb, var(--ds-black) 42%, transparent);
 }
 
 .sheet[open] {
-  animation: ds-pop 0.24s var(--ds-spring);
+  animation: ds-pop var(--ds-dur) var(--ds-spring);
+}
+
+/* El velo aparece junto con el diálogo en vez de caer de golpe. */
+.sheet[open]::backdrop {
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease);
 }
 
 .sheet-body {
@@ -486,6 +616,41 @@ body {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+
+@keyframes ds-sink {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes ds-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes ds-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes ds-deeper {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes ds-back {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
   }
 }
 

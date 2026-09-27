@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { copy, fill, formatNumber } from '../../shared/copy'
 import type { Reference } from '../../shared/referenceImage'
 import {
@@ -132,6 +132,25 @@ export function Panel({
   const [picker, setPicker] = useState<'tipo' | 'color' | 'ajustes' | null>(null)
   const { grid, paper, effects } = state
 
+  /**
+   * Cerrar un picker después de elegir, pero no en el acto: se deja un
+   * instante para que la tarjeta elegida se pinte y dé su salto (ver
+   * `.ds-option.is-selected` en el CSS). Sin esa pausa el picker se iba
+   * antes de que se viera qué se había tocado, y elegir se sentía como
+   * errarle al botón. La foto cambia en el acto igual: lo que espera es
+   * solo la vuelta a las filas.
+   */
+  const closeTimer = useRef(0)
+  const closePickerSoon = useCallback(() => {
+    window.clearTimeout(closeTimer.current)
+    closeTimer.current = window.setTimeout(() => setPicker(null), 180)
+  }, [])
+  useEffect(() => () => window.clearTimeout(closeTimer.current), [])
+
+  /** La última pestaña abierta: la que se sigue viendo mientras el cajón se cierra. */
+  const lastTab = useRef<string>('grilla')
+  if (openTab) lastTab.current = openTab
+
   // La miniatura sale del archivo original, no del lienzo: es la foto como entró.
   // La URL se revoca al cambiar de foto, si no cada carga deja una colgada.
   useEffect(() => {
@@ -154,6 +173,7 @@ export function Panel({
    */
   useEffect(() => {
     if (reference) {
+      window.clearTimeout(closeTimer.current)
       setOpenTab('grilla')
       setPicker(null)
     }
@@ -311,7 +331,7 @@ export function Panel({
             dispatch({ type: 'grid/patch', patch: { mode } })
             // "Ninguna" no vuelve a las filas: sin grilla no hay nada que ver
             // ahí, y lo más probable después de sacarla es elegir otro tipo.
-            if (mode !== 'none') setPicker(null)
+            if (mode !== 'none') closePickerSoon()
           }}
         />
       ) : picker === 'color' ? (
@@ -322,7 +342,7 @@ export function Panel({
           options={COLOR_OPTIONS}
           onChange={(color) => {
             dispatch({ type: 'grid/style', patch: { color } })
-            setPicker(null)
+            closePickerSoon()
           }}
           trailing={
             <CustomColorOption
@@ -413,7 +433,7 @@ export function Panel({
         options={ADJUST_OPTIONS}
         onChange={(mode) => {
           dispatch({ type: 'effects/mode', mode })
-          setPicker(null)
+          closePickerSoon()
         }}
       />
     ) : (
@@ -507,8 +527,21 @@ export function Panel({
     adjustSection,
   ]
 
+  // La píldora oscura de la pestaña abierta es un elemento propio que viaja
+  // de una pestaña a otra, y no el fondo de cada botón prendiéndose y
+  // apagándose: así se ve de dónde a dónde se fue. Con todo cerrado se
+  // achica en el lugar de la última pestaña, en vez de volver al principio.
+  const thumbIndex = Math.max(
+    0,
+    sections.findIndex((section) => section.id === (openTab ?? lastTab.current)),
+  )
   const tabBar = (
-    <nav className="tabbar">
+    <nav className="tabbar tabbar--tabs">
+      <span
+        className={'tabbar-thumb' + (openTab ? '' : ' is-hidden')}
+        style={{ '--i': thumbIndex } as CSSProperties}
+        aria-hidden="true"
+      />
       {sections.map((section) => (
         <IconButton
           key={section.id}
@@ -521,6 +554,36 @@ export function Panel({
       ))}
     </nav>
   )
+
+  /**
+   * Qué vista se ve en el cajón y cómo entra. Cada combinación de pestaña y
+   * picker es una vista; cuando cambia, la nueva entra desde donde tiene
+   * sentido: de costado si se cambió de pestaña (del lado de la pestaña
+   * nueva), "hacia adentro" si se abrió un picker, "hacia afuera" si se
+   * volvió a las filas, y de abajo si el cajón estaba cerrado. Se decide acá
+   * y no en cada vista porque es la única parte que sabe de dónde se viene.
+   */
+  const shown = sections.find((section) => section.id === (openTab ?? lastTab.current)) ?? null
+  const pickerPart = (id: string) =>
+    id === 'grilla' && (picker === 'tipo' || picker === 'color')
+      ? picker
+      : id === 'ajustes' && picker === 'ajustes'
+        ? 'picker'
+        : 'filas'
+  const viewKey = shown ? `${shown.id}:${pickerPart(shown.id)}` : ''
+  const previousView = useRef({ key: viewKey, open: openTab !== null })
+  const viewMotion = useRef('is-rise')
+  if (viewKey !== previousView.current.key || (openTab !== null) !== previousView.current.open) {
+    const [fromId, fromPart] = previousView.current.key.split(':')
+    const toId = shown?.id ?? ''
+    if (!previousView.current.open) viewMotion.current = 'is-rise'
+    else if (fromId !== toId) {
+      const from = sections.findIndex((section) => section.id === fromId)
+      const to = sections.findIndex((section) => section.id === toId)
+      viewMotion.current = to > from ? 'is-from-right' : 'is-from-left'
+    } else viewMotion.current = fromPart === 'filas' ? 'is-deeper' : 'is-back'
+    previousView.current = { key: viewKey, open: openTab !== null }
+  }
 
   // --- sin foto: volver y sugerencias, abajo y juntos ------------------------
   // El diseño de la pantalla de inicio (18:76) no lleva pestañas: no hay nada
@@ -549,14 +612,25 @@ export function Panel({
   // flanqueándolas — no una barra aparte. Eso también le deja el alto entero
   // a la foto, que es lo que la agranda contra la versión anterior.
   if (compact) {
-    const open = sections.find((section) => section.id === openTab) ?? null
+    // El cajón está siempre, y se abre y se cierra cambiando de alto. Al
+    // cerrarse sigue mostrando la última pestaña mientras baja, en vez de
+    // vaciarse de golpe y bajar vacío. Cerrado del todo queda `visibility:
+    // hidden` (ver el CSS), que es lo que lo saca del orden del teclado y del
+    // lector de pantalla.
     return (
       <div className="controls">
-        {open && (
-          <div className="tab-panel" key={open.id}>
-            {open.content}
-          </div>
-        )}
+        <div
+          className={'tab-drawer' + (openTab ? ' is-open' : '')}
+          aria-hidden={openTab ? undefined : true}
+        >
+          {shown && (
+            <div className="tab-panel">
+              <div className={'panel-view ' + viewMotion.current} key={viewKey}>
+                {shown.content}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="bottombar">
           <nav className="tabbar">
             <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>

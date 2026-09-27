@@ -114,9 +114,44 @@
   --ds-icon: 24px;
 
   /* --- movimiento ---------------------------------------------------
-     Derivados. Vienen del tema oscuro, donde ya se habían elegido. */
+     Derivados: el archivo no dibuja movimiento. Las dos curvas vienen del
+     tema oscuro, donde ya se habían elegido.
+
+     La regla es una sola: se mueve lo que cambia de lugar o de estado, y
+     el movimiento dice de dónde viene y a dónde va. Nada se anima para
+     adornar. `ease` para lo que llega y se queda; `spring` para lo que
+     vuelve a su lugar después de un gesto —soltar un botón, un indicador
+     que se acomoda—, que es donde un rebote chico se lee como materia y no
+     como efecto. */
   --ds-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ds-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Tres velocidades y no más. La de apretar tiene que ser más corta que
+     cualquier toque, si no el botón responde después del dedo. */
+  --ds-dur-press: 80ms;
+  --ds-dur-fast: 160ms;
+  --ds-dur: 240ms;
+  --ds-dur-slow: 360ms;
+
+  /* Cuánto se hunde algo al apretarlo. Los anchos —una fila entera, una
+     tarjeta de dos columnas— se hunden menos: el mismo porcentaje sobre
+     trescientos píxeles se ve como un salto, no como una presión. */
+  --ds-press: 0.94;
+  --ds-press-wide: 0.98;
+}
+
+/* Si el sistema pide menos movimiento, no hay movimiento: todo llega a su
+   estado final en el acto. `0.01ms` y no `0` para que los eventos de fin
+   de animación sigan disparando — hay código que espera `animationend`. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
 }
 
 /* ------------------------------------------------------------------

@@ -104,6 +104,10 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
 5. **`--ds-text-meta` es derivado**: es lo que acompaña a un control —el nombre del
    archivo, el aviso, la unidad— y el archivo no lo dibuja. Los demás escalones ya
    están medidos sobre un nodo, y el nodo está anotado al lado en `tokens.css`.
+5b. **El movimiento es derivado**, como los estados: el archivo no dibuja ninguno.
+   Las duraciones (`--ds-dur-press/fast/-/slow`), las curvas y cuánto se hunde algo
+   al apretarlo (`--ds-press`, `--ds-press-wide`) están en `tokens.css`, y todo se
+   apaga con `prefers-reduced-motion`.
 6. **El botón de elegir mide 40 y con un dedo queda chico.** Sube a 44 bajo
    `(pointer: coarse)`, que es una decisión del código: el archivo dibuja una sola
    medida.

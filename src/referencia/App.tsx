@@ -32,10 +32,14 @@ export function App() {
   // render lo haría re-suscribirse en cada cambio de estado.
   const closeDialog = useCallback(() => setDialog(false), [])
 
+  /** El aviso ya empezó a irse: sigue en pantalla solo lo que dura su salida. */
+  const [noteLeaving, setNoteLeaving] = useState(false)
+
   const notify = useCallback((text: string) => {
     setNote(text)
+    setNoteLeaving(false)
     window.clearTimeout(noteTimer.current)
-    noteTimer.current = window.setTimeout(() => setNote(null), 3600)
+    noteTimer.current = window.setTimeout(() => setNoteLeaving(true), 3600)
   }, [])
 
   // La foto guardada se lee de IndexedDB. Si no hay ninguna, se abre con la
@@ -172,7 +176,16 @@ export function App() {
         busy={busy}
       />
 
-      {note && <div className="note">{note}</div>}
+      {/* Se desmonta cuando termina de irse, no antes: la salida es una
+          animación de CSS y `animationend` avisa cuándo terminó. */}
+      {note && (
+        <div
+          className={'note' + (noteLeaving ? ' is-leaving' : '')}
+          onAnimationEnd={() => noteLeaving && setNote(null)}
+        >
+          {note}
+        </div>
+      )}
     </div>
   )
 }
