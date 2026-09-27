@@ -318,15 +318,24 @@ No hay botón de "Ajustar" — doble tap (o doble clic) recentra, y con el movim
 acotado no hace falta un botón aparte para volver.
 
 **La foto no se mueve por navegar los controles**, solo por lo que se le hace con los
-dedos. `.tab-panel` tiene un alto fijo (no un máximo) precisamente por esto: si el
-alto cambiara según qué pestaña está abierta —la grilla no mide lo mismo que
-Ajustes, y un picker no mide lo mismo que sus filas cerradas—, el lienzo de arriba se
-reencuadraría cada vez, y la foto parecería saltar sola al cambiar de pestaña.
-Colapsar el panel entero (tocar de nuevo la pestaña abierta) sí achica el lienzo a
-propósito: ese es un gesto explícito para ver más foto, no una navegación de paso.
-Ese alto fijo es el de la vista más alta y nada más (`--panel-height`, 213 px: un
-picker de dos filas de tarjetas); todo lo demás está hecho para entrar ahí. Antes
-era `52vh`, y en un celular común le robaba a la foto 200 px de aire vacío.
+dedos — ni siquiera al abrir o cerrar el cajón entero. `.stage` (el lienzo) mide
+siempre el alto entero de `.app` menos la barra de pestañas, una medida constante:
+`.controls` es su único hermano de flex, y lo que cambia de tamaño adentro suyo —el
+cajón (`.tab-drawer`)— está sacado del flujo (`position: absolute`, anclado con
+`bottom: 100%` al borde de arriba de `.controls`) para que no le cuente. El cajón
+**flota sobre la foto** en vez de empujarla: abierto, tapa con su propio fondo una
+franja de abajo, como una bandeja que se levanta encima; cerrado, no tapa nada y se
+ve la foto entera. Por eso puede medir lo que mide su contenido y nada más —Blanco y
+negro, una perilla, ocupa menos que Facetado, tres— sin que el lienzo se
+reencuadre nunca: cambiar de pestaña, abrir un picker o colapsar todo el panel son
+la misma clase de cambio para la foto, ninguno la mueve. `Panel.tsx` mide ese alto con
+`useDrawerHeight`: un `ResizeObserver` sobre la vista actual (`.panel-view`, no
+`.tab-panel`, que ya tiene un alto impuesto por el cajón) que sigue el contenido real
+—el de una perilla que aparece o desaparece, por ejemplo— y lo manda como
+`--content-height` a `.controls`, de donde `.tab-drawer.is-open` lo toma. Antes el
+cajón tenía un alto fijo, el de su vista más alta (`52vh` primero, después
+`--panel-height: 213px` fijo), y las vistas más chicas dejaban un vacío; ahora cada
+una mide lo justo.
 
 **El movimiento dice de dónde viene y a dónde va cada cosa**, y nada se anima para
 adornar. La barra de pestañas lleva una marca oscura que viaja de botón en botón; una

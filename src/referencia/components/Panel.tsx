@@ -51,6 +51,30 @@ interface Props {
  */
 const SHOW_PAPER: boolean = false
 
+/**
+ * El alto natural de la vista que se está mostrando, medido y no fijado: cada
+ * pestaña y cada picker mide lo que necesita su contenido, no el de la vista
+ * más alta de todas. Un `ResizeObserver` sobre el nodo pasado (`.panel-view`,
+ * no `.tab-panel`, que ya tiene un alto impuesto) sigue el contenido real —el
+ * de un slider que aparece o desaparece, por ejemplo— aunque no haya cambiado
+ * de vista. `.controls` ya no empuja el lienzo (ver su CSS): por eso este
+ * número puede cambiar libremente sin que la foto se reencuadre.
+ */
+function useDrawerHeight() {
+  const [height, setHeight] = useState<number | null>(null)
+  const observer = useRef<ResizeObserver | null>(null)
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    observer.current?.disconnect()
+    if (!node) return
+    const measure = () => setHeight(node.scrollHeight)
+    measure()
+    observer.current = new ResizeObserver(measure)
+    observer.current.observe(node)
+  }, [])
+  useEffect(() => () => observer.current?.disconnect(), [])
+  return { height, ref }
+}
+
 /** Cómo se llama el modo elegido, para la fila cerrada del Dropdown de Ajustes. */
 const ADJUST_NAMES: Record<EffectsMode, string> = {
   original: copy.adjust.original,
@@ -122,6 +146,7 @@ export function Panel({
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
+  const drawerHeight = useDrawerHeight()
   /**
    * Cuál picker está abierto, si alguno — el de Tipo/Color de la grilla
    * (Figma 26:279/26:425) o el de Ajustes. Sobrevive a cambiar de pestaña a
@@ -636,14 +661,21 @@ export function Panel({
     // hidden` (ver el CSS), que es lo que lo saca del orden del teclado y del
     // lector de pantalla.
     return (
-      <div className="controls">
+      <div
+        className="controls"
+        style={
+          drawerHeight.height
+            ? ({ '--content-height': `${drawerHeight.height}px` } as CSSProperties)
+            : undefined
+        }
+      >
         <div
           className={'tab-drawer' + (openTab ? ' is-open' : '')}
           aria-hidden={openTab ? undefined : true}
         >
           {shown && (
             <div className="tab-panel">
-              <div className={'panel-view ' + viewMotion.current} key={viewKey}>
+              <div className={'panel-view ' + viewMotion.current} key={viewKey} ref={drawerHeight.ref}>
                 {shown.content}
               </div>
             </div>
