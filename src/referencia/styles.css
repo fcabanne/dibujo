@@ -501,6 +501,8 @@ body {
   margin-bottom: var(--ds-space-2);
   font: var(--ds-text-field);
   color: var(--ds-black);
+  /* Como `.field-name` en el panel: las etiquetas de campo van en mayúscula. */
+  text-transform: uppercase;
 }
 
 /* Las opciones del diálogo ocupan la fila entera, no se apoyan en un nombre
@@ -627,7 +629,11 @@ body {
   color: var(--ds-black);
 }
 
-.sheet-body > .field + .field {
+/* La fila del interruptor de etiquetas es un `.field-row`, no un `.field`
+   —es una sola pregunta de sí/no, no una lista de opciones larga—, pero
+   necesita el mismo aire que separa a los `.field` entre sí. */
+.sheet-body > .field + .field,
+.sheet-body > .field + .field-row {
   margin-top: var(--ds-space-5);
 }
 

@@ -26,17 +26,16 @@ export const NEUTRAL_EFFECTS: Effects = {
 
 export const DEFAULT_STATE: AppState = {
   grid: {
-    mode: 'proportional',
+    mode: 'none',
     count: 4,
     subdivide: false,
     style: {
       color: '#ffffff',
       opacity: 0.75,
-      weight: 2,
-      labels: false,
+      weight: 4,
     },
   },
   effects: NEUTRAL_EFFECTS,
   paper: { id: 'none', w: 21, h: 29.7 },
-  export: { size: 'original', format: 'jpg' },
+  export: { size: 'original', format: 'jpg', labels: false },
 }

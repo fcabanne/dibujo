@@ -198,6 +198,68 @@
   cursor: default;
 }
 
+/* --- Switch — sin frame en Figma -----------------------------------
+   Misma familia que el Slider: relleno plano, sin píldora, nada de sombras.
+   Un rectángulo (el riel) con un cuadrado adentro (la manija) que se corre
+   de un lado al otro, más chico que cualquier otro control tocable —no
+   compite con el tamaño de fila de 32, porque no vive solo en una fila: va
+   al lado de un texto, como el Checkbox. */
+
+.ds-switch {
+  position: relative;
+  display: inline-flex;
+}
+
+/* El input sigue existiendo y sigue recibiendo el foco: lo que se esconde
+   es su dibujo, no él (mismo truco que `.ds-checkbox input`). */
+.ds-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.ds-switch label {
+  display: flex;
+  cursor: pointer;
+}
+
+.ds-switch-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--ds-accent-light);
+}
+
+.ds-switch-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 14px;
+  height: 14px;
+  background: var(--ds-accent-secondary);
+  transition: transform 0.16s var(--ds-spring), background-color 0.16s var(--ds-ease);
+}
+
+.ds-switch input:checked ~ label .ds-switch-thumb {
+  background: var(--ds-accent-dark);
+  /* 40 de riel, 14 de manija, 4 de margen de cada lado: al fondo le quedan
+     18px para correr. */
+  transform: translateX(18px);
+}
+
+.ds-switch input:focus-visible ~ label .ds-switch-track {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+}
+
+.ds-switch.is-disabled label {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* --- Slider — Figma 22:276 -----------------------------------------
    Sin manija: el relleno es el control y el valor va escrito encima. El
    `<input type="range">` está debajo, transparente y del tamaño de la

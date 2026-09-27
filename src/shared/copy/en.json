@@ -50,7 +50,7 @@
   "grid": {
     "tab": "Grid",
     "title": "Grid",
-    "type": "Type",
+    "type": "Grid",
     "proportional": "Proportional",
     "proportionalHint": "Divides the photo into equal parts",
     "square": "Square",
@@ -103,6 +103,7 @@
     "pdfHint": "Prints without rescaling",
     "jpg": "JPG",
     "jpgHint": "A plain image",
+    "labels": "Labels",
     "cancel": "Cancel",
     "working": "Preparing…",
     "fileSuffix": "reference"

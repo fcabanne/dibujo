@@ -19,8 +19,6 @@ export interface GridStyle {
    * pantalla sea la misma que sale en un export de 6000 px.
    */
   weight: number
-  /** Letras en las columnas y números en las filas. */
-  labels: boolean
 }
 
 export interface GridState {
@@ -94,6 +92,13 @@ export type ExportSize = 'original' | SheetId
 export interface ExportState {
   size: ExportSize
   format: 'pdf' | 'jpg'
+  /**
+   * Letras en las columnas y números en las filas — pero solo en el archivo que
+   * sale, nunca en la vista previa. Por eso vive acá y no en `grid.style`: es una
+   * pregunta del export, como el tamaño o el formato, no un ajuste de cómo se ve
+   * la grilla mientras se trabaja.
+   */
+  labels: boolean
 }
 
 export interface AppState {

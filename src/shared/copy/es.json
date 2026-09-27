@@ -50,7 +50,7 @@
   "grid": {
     "tab": "Grilla",
     "title": "Grilla",
-    "type": "Tipo",
+    "type": "Grilla",
     "proportional": "Proporcional",
     "proportionalHint": "Divide la foto en partes iguales",
     "square": "Cuadrada",
@@ -103,6 +103,7 @@
     "pdfHint": "Se imprime sin reescalar",
     "jpg": "JPG",
     "jpgHint": "Una imagen común",
+    "labels": "Etiquetas",
     "cancel": "Cancelar",
     "working": "Preparando…",
     "fileSuffix": "referencia"

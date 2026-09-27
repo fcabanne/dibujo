@@ -41,6 +41,7 @@ está la app; de eso se encarga `shared/copy`.
 | `Button.tsx` | `loud` · `quiet` · `transparent`, con ícono a izquierda o derecha |
 | `IconButton.tsx` | el de 48×48 con un ícono, y su estado marcado |
 | `Checkbox.tsx` | la casilla, con el cuadradito a la izquierda del texto |
+| `Switch.tsx` | el interruptor de sí/no: un cuadrado que se corre adentro de un riel |
 | `Slider.tsx` | la píldora que se llena, con el valor escrito en el medio |
 | `Stepper.tsx` | − número + , para lo que se elige de a uno |
 | `Choice.tsx` | los botones chicos de elegir una opción entre pocas |
@@ -120,3 +121,7 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
 8. **El picker de Ajustes no tiene frame en Figma todavía.** `ContrastIcon`,
    `EdgesIcon` y `FacetsIcon` son invención directa, con la métrica del set pero sin
    ningún nodo de referencia. Cuando se dibuje esa pantalla, se reemplazan los tres.
+9. **`Switch` no tiene frame en Figma.** Salió de una necesidad puntual —el
+   interruptor de etiquetas del diálogo de descarga— resuelto con tokens que ya
+   existen (`--ds-accent-light/secondary/dark`), sin inventar un color nuevo.
+   Cuando el archivo lo dibuje, se ajusta a eso.

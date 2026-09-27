@@ -170,13 +170,14 @@ cálculo y los comentarios siguen hablando de la grilla.
   que decía 2,5 cm sale de 2,3; un PDF con la hoja declarada en tamaño real se
   imprime 1:1 y la regla coincide. El JPEG entra tal cual con el filtro `DCTDecode`,
   así que elegir PDF no cuesta ninguna vuelta extra de compresión.
-- `src/referencia/components/DownloadDialog.tsx` — las dos preguntas del export (tamaño y
-  formato) preguntadas recién al exportar. Vivían abiertas en el panel y eran dos
-  controles que no se tocan mientras se trabaja, compitiendo por la atención con los
-  que sí.
+- `src/referencia/components/DownloadDialog.tsx` — las preguntas del export (tamaño,
+  formato y etiquetas) preguntadas recién al exportar. Vivían abiertas en el panel y
+  eran controles que no se tocan mientras se trabaja, compitiendo por la atención con
+  los que sí.
 
 **El espesor de las líneas y el paso del sobel se guardan relativos al ancho**, no en
 píxeles. Un valor fijo se vería fino en pantalla y grueso en el export, o al revés.
+Arranca en 4 (`grid.style.weight`, de 1 a 6).
 
 **Los dos modos comparten el mismo número** (`grid.count`, de 2 a 8 según
 `GRID_LIMITS`, arranca en 4). Es a propósito: cambiar de proporcional a cuadrada con
@@ -196,7 +197,20 @@ dos perillas independientes, y perder el valor de una al tocar la otra sería el
 de acoplamiento que rompe la confianza en un control. `computeGrid` devuelve `null`
 tanto en `mode === 'none'` como en opacidad cero — las dos siguen siendo formas
 válidas de no tener grilla, y cualquiera de las dos apaga también las etiquetas, las
-cotas y la línea de medidas del export.
+cotas y la línea de medidas del export. **Es el modo por defecto** (`DEFAULT_STATE`):
+la foto arranca sin grilla, y elegir Proporcional o Cuadrada es un paso que se da a
+propósito, no algo que ya viene puesto.
+
+**Las etiquetas son una pregunta del export, no de la grilla.** Viven en
+`state.export.labels` y se prenden con un interruptor (`Switch`) en el diálogo de
+descarga, no en el panel — y a propósito **no** en `grid.style`, aunque ahí vivían
+antes: ese objeto lo leen por igual la vista previa y el export (`paintScene`/
+`paintGrid`, la misma función para las dos), así que si las etiquetas fueran parte
+suyo prenderlas se vería también en la foto mientras se trabaja. En cambio
+`paintScene`/`paintGrid` reciben `labels` como parámetro aparte, con default `false`:
+el lienzo nunca lo pasa, y solo `exportFile` lo manda en `state.export.labels`. Así
+"solo se ven en la descarga" es una consecuencia de la firma de la función, no una
+convención que haya que acordarse de respetar.
 
 **El tamaño del dibujo está escondido, no borrado** (`SHOW_PAPER` en `Panel.tsx`).
 El estado, el dominio y los textos siguen enteros, que es lo que hace que las cotas en

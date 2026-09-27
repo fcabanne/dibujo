@@ -17,9 +17,11 @@ export function paintScene(
   photo: CanvasImageSource,
   state: AppState,
   aspect: number,
+  /** Ver `paintGrid`: acá sí puede venir en `true`, es lo único que la distingue. */
+  labels = false,
 ): void {
   ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
-  paintGrid(ctx, rect, state, aspect)
+  paintGrid(ctx, rect, state, aspect, labels)
 }
 
 /**
@@ -27,12 +29,17 @@ export function paintScene(
  * lienzo, que durante un cambio de grilla pinta la vieja y la nueva a la vez
  * con opacidades cruzadas. No es un segundo camino: `paintScene` la usa
  * tal cual, así que lo que se funde en pantalla es lo mismo que sale.
+ *
+ * `labels` por defecto en `false`: el lienzo nunca las pasa, así que las
+ * etiquetas quedan reservadas al export sin que el llamador tenga que
+ * acordarse de apagarlas.
  */
 export function paintGrid(
   ctx: CanvasRenderingContext2D,
   rect: Rect,
   state: AppState,
   aspect: number,
+  labels = false,
 ): void {
   const lines = computeGrid(state.grid, aspect)
   if (!lines) return
@@ -46,6 +53,7 @@ export function paintGrid(
     lines,
     state.grid.style,
     area ? { w: lines.cellW * area.w, h: lines.cellH * area.h } : null,
+    labels,
   )
 }
 
