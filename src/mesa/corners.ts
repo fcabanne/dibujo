@@ -21,19 +21,26 @@ export interface Point {
 export type Quad = [Point, Point, Point, Point]
 
 /**
- * Margen de seguridad de la foto encajada: pegada al borde, caería justo donde la
- * lente deforma y donde la mano entra a la escena.
+ * Cuánto lugar se le deja a la foto encajada, en píxeles.
+ *
+ * Abajo va la barra de controles, y la foto no puede empezar debajo de ella: las
+ * esquinas de abajo quedarían tapadas justo donde hay que agarrarlas. Además cada
+ * esquina tiene su manija un poco afuera, así que alrededor hace falta aire. Y
+ * pegada al borde, la foto caería justo donde la lente deforma.
  */
-const MARGIN = 0.05
+const INSET = { top: 64, side: 48, bottom: 150 }
 
-/** La foto entera y centrada, con su proporción, en fracciones de la pantalla. */
+/** La foto entera y centrada en el lugar libre, en fracciones de la pantalla. */
 export function fitQuad(photo: { w: number; h: number }, stage: { w: number; h: number }): Quad {
-  const room = { w: stage.w * (1 - 2 * MARGIN), h: stage.h * (1 - 2 * MARGIN) }
+  const room = {
+    w: Math.max(1, stage.w - 2 * INSET.side),
+    h: Math.max(1, stage.h - INSET.top - INSET.bottom),
+  }
   const scale = Math.min(room.w / photo.w, room.h / photo.h)
   const w = (photo.w * scale) / stage.w
   const h = (photo.h * scale) / stage.h
   const left = (1 - w) / 2
-  const top = (1 - h) / 2
+  const top = (INSET.top + (room.h - photo.h * scale) / 2) / stage.h
   return [
     { x: left, y: top },
     { x: left + w, y: top },

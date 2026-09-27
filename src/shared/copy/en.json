@@ -130,16 +130,13 @@
 
   "mesa": {
     "name": "Light table",
-    "intro": "Set your phone on a tripod facing the sheet, upload the photo and trace over the screen.",
-    "upload": "Upload photo",
+    "intro": "With this tool you can lay your reference image over the paper to copy it or spot the differences.",
+    "hint": "Start by setting your phone on a tripod or something steady, then upload your reference.",
     "change": "Change photo",
     "opacity": "How much of the photo shows",
     "opacityValue": "{n}%",
-    "corners": "Adjust corners",
-    "cornersHint": "Bring each corner to its mark on the sheet. Drag the photo to move it whole.",
     "corner": "Corner {n}",
     "reset": "Reset",
-    "done": "Done",
     "insecure": "The camera needs the published site: browsers won't lend it to a file opened with a double click.",
     "openSite": "Open the light table",
     "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",

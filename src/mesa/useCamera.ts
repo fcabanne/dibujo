@@ -9,21 +9,26 @@ export type CameraStatus = 'pidiendo' | 'lista' | 'denegada' | 'sin-camara' | 'i
 /**
  * Prende la cámara trasera y la deja corriendo en el `<video>`.
  *
- * El permiso no se pregunta dos veces ni se explica: se llama a `getUserMedia` al
- * abrir y el que pregunta es el navegador, con su cartel de siempre. Cualquier
- * intermediario nuestro sería una pantalla más entre la foto y el papel.
+ * El permiso no se pregunta dos veces ni se explica: se llama a `getUserMedia`
+ * recién cuando hay una foto (`enabled`) y el que pregunta es el navegador, con su
+ * cartel de siempre. Antes de la foto no: la pantalla de inicio es para decir qué
+ * es esto, y un cartel de cámara encima la taparía antes de que nadie la lea.
  *
  * `getUserMedia` solo existe en contexto seguro (https o localhost). Abierta como
  * archivo suelto, `file://`, no hay cámara y no es algo que se arregle desde acá:
  * por eso `insegura` es un estado con su propio mensaje.
  */
-export function useCamera(video: RefObject<HTMLVideoElement>) {
+export function useCamera(video: RefObject<HTMLVideoElement>, enabled: boolean) {
   const [status, setStatus] = useState<CameraStatus>('pidiendo')
   const [attempt, setAttempt] = useState(0)
 
   const retry = useCallback(() => setAttempt((n) => n + 1), [])
 
   useEffect(() => {
+    if (!enabled) {
+      setStatus('pidiendo')
+      return
+    }
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setStatus('insegura')
       return
@@ -64,7 +69,7 @@ export function useCamera(video: RefObject<HTMLVideoElement>) {
       // Sin esto la luz de la cámara queda prendida después de cerrar.
       stream?.getTracks().forEach((track) => track.stop())
     }
-  }, [attempt, video])
+  }, [attempt, video, enabled])
 
   return { status, retry }
 }

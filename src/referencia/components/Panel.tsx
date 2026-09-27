@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { copy, fill, formatNumber } from '../../shared/copy'
 import type { Reference } from '../../shared/referenceImage'
+import { openInstagram } from '../../shared/suggestions'
 import {
   BackIcon,
   Button,
@@ -204,28 +205,7 @@ export function Panel({
     }
   }, [reference])
 
-  /**
-   * Abre Instagram en la app y no en el navegador. Un `<a href>` normal deja
-   * la decisión en manos del sistema, y ahí perdía: abría siempre el
-   * navegador. El esquema `instagram://` sí dispara la app cuando está
-   * instalada — a la página no le llega ningún aviso de que "funcionó", así
-   * que el fallback a la web es la ausencia de una señal (`visibilitychange`)
-   * en vez de una confirmación.
-   */
-  const openSuggestions = (e: React.MouseEvent) => {
-    e.preventDefault()
-    const url = copy.welcome.suggestionsUrl
-    const username = new URL(url).pathname.replace(/\//g, '')
-    let fellBack = false
-    const fallback = () => {
-      if (fellBack || document.hidden) return
-      fellBack = true
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
-    document.addEventListener('visibilitychange', fallback, { once: true })
-    window.setTimeout(fallback, 900)
-    window.location.href = `instagram://user?username=${username}`
-  }
+  const openSuggestions = (e: React.MouseEvent) => openInstagram(e, copy.welcome.suggestionsUrl)
 
   const photoSection: PanelSection = {
     id: 'foto',

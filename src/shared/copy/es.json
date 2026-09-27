@@ -130,16 +130,13 @@
 
   "mesa": {
     "name": "Mesa de luz",
-    "intro": "Apoyá el celu en un trípode mirando la hoja, subí la foto y calcá sobre la pantalla.",
-    "upload": "Subir foto",
+    "intro": "Con esta herramienta podés superponer tu imagen de referencia sobre el papel para copiarla o ver las diferencias.",
+    "hint": "Empezá poniendo el celu en un trípode o algo fijo y subí tu referencia.",
     "change": "Cambiar foto",
     "opacity": "Cuánto se ve la foto",
     "opacityValue": "{n}%",
-    "corners": "Ajustar esquinas",
-    "cornersHint": "Llevá cada esquina a su marca en la hoja. Arrastrando la foto se mueve entera.",
     "corner": "Esquina {n}",
     "reset": "Restablecer",
-    "done": "Listo",
     "insecure": "La cámara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
     "openSite": "Abrir la mesa de luz",
     "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",

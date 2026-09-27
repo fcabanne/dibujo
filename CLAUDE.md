@@ -402,49 +402,57 @@ Es la más chica de las tres: no hay render propio, solo un `<video>` y un `<img
 apilados, y el único cálculo es el de las esquinas (`corners.ts`). Todo el diseño
 está en lo que **no** hay.
 
-**Se ve como Referencia.** Mismo sistema de diseño, mismos textos en `copy` (sección
-`mesa`), mismo botón de volver arriba a la izquierda. Lo único propio es que acá todo
-flota sobre la cámara y no sobre el fondo claro, así que cada cosa que se toca va en
-su propia tarjeta (`.card`, `.chip`, `.dock`), que es la que le pone el fondo.
+**Se ve como Referencia.** Mismo sistema de diseño y mismos textos en `copy` (sección
+`mesa`). Lo único propio es que con foto todo flota sobre la cámara y no sobre el
+fondo claro, así que cada cosa que se toca va en su propia pastilla (`.pill`), que es
+la que le pone el fondo.
 
 **Es solo para celular.** No hay acomodo de escritorio: la herramienta es un teléfono
 en un trípode.
 
-**Abajo, una sola píldora con tres cosas**: cambiar la foto, cuánto se ve, y ajustar
-las esquinas. Sin foto, en su lugar hay una tarjeta de bienvenida con una frase y el
-botón de subir — la misma idea que el inicio de Referencia. Y como allá, `App`
-espera a IndexedDB (`ready`) antes de mostrarla. El permiso de cámara lo pide el
-navegador con su propio cartel, y no se antepone ninguna pantalla nuestra
-explicándolo: agregarla sería pedir permiso para pedir permiso.
+**Sin foto, la pantalla de inicio de Referencia, igual**: el saludo, dos frases, el
+botón de subir al medio, y abajo volver y "Dejame sugerencias" (que abre la app de
+Instagram con `openInstagram`, de `shared/suggestions.ts`). Como allá, `App` espera
+a IndexedDB (`ready`) antes de mostrarla.
 
-**La foto entra encajada con un 5% de margen, y se calza con las esquinas.** El
-margen es de seguridad: pegada al borde, la foto cae justo donde la lente deforma. El
-encuadre grueso se sigue haciendo moviendo el teléfono; las esquinas son para lo que
-el teléfono no arregla. Un trípode casi nunca queda perpendicular a la hoja, la
-cámara la ve como un trapecio, y una foto derecha no calza nunca. Llevando cada
-esquina de la foto a su marca en el papel, la foto toma la misma perspectiva que la
-cámara (`perspective` en `corners.ts`, un `matrix3d` y no triángulos: con triángulos
-una recta que cruza la diagonal sale doblada).
+**La cámara se pide recién con la foto puesta** (`useCamera(video, enabled)`). Antes
+no: un cartel del navegador encima de la bienvenida la taparía antes de que nadie la
+lea. El permiso lo pide el navegador con su propio cartel, y no se antepone ninguna
+pantalla nuestra explicándolo: sería pedir permiso para pedir permiso.
 
-- **Es un modo, no un gesto suelto.** Fuera del ajuste la foto no recibe toques: todo
-  gesto sobre la pantalla compite con la mano que dibuja. Adentro, cada esquina se
-  arrastra de su manija y arrastrar la foto la mueve entera.
+**Abajo, volver a la izquierda y la foto a la derecha**, en dos pastillas separadas:
+son de conversaciones distintas y no se tienen que tocar una por otra. La de la foto
+tiene cambiarla y cuánto se ve.
+
+**La foto arranca encajada en el lugar libre** (`INSET` en `corners.ts`): sin
+meterse abajo de la barra, con aire alrededor para las manijas y lejos del borde,
+donde la lente deforma.
+
+**Las esquinas están siempre, sin modo y sin "Listo".** Un trípode casi nunca queda
+perpendicular a la hoja: la cámara la ve como un trapecio y una foto derecha no calza
+nunca. Llevando cada esquina de la foto a su marca en el papel, la foto toma la misma
+perspectiva que la cámara (`perspective` en `corners.ts`, un `matrix3d` y no
+triángulos: con triángulos una recta que cruza la diagonal sale doblada).
+
 - **La manija va afuera de la esquina**, en diagonal, unida por un hilo. Encima, el
   dedo taparía justo el punto que se está calzando. El arrastre es relativo: la
   esquina se corre lo que se corre el dedo, sin saltar a donde apoyó.
+- **Arrastrar la foto la mueve entera.**
 - **Una esquina no puede dar vuelta la foto** (`isConvex`): si el movimiento la
   cruzaría, se queda donde estaba.
-- **La frase de ayuda va arriba**, al lado de volver, y solo mientras se ajusta. Abajo
-  taparía las esquinas de abajo de la foto.
+- **"Restablecer" aparece solo si se movió algo.** Un botón que no cambiaría nada es
+  un botón que hay que leer para nada.
+- **No hay textos de ayuda.** Se probó una frase mientras se ajustaba y sobraba:
+  además de ser texto de más, tapaba las manijas.
 - **Las esquinas se guardan en fracciones de la pantalla**, junto con la opacidad: el
   trípode no se mueve de un día para el otro. Una foto nueva las vuelve a cero, porque
-  trae otra proporción. "Restablecer" hace lo mismo a mano.
+  trae otra proporción.
 
 **Los controles se van solos** (`useIdle`) y vuelven con un toque en cualquier lado.
 Abajo de esa pantalla hay una hoja de papel: todo lo que quede dibujado encima es
 papel que no se ve. Mientras están escondidos no reciben toques — el primero
 despierta la interfaz y no mueve nada, que es lo que uno quiere cuando toca a ciegas.
-Ajustando no se van: sería sacarle las manijas de abajo del dedo.
+Las manijas de las esquinas se van con ellos.
 
 **La pantalla se mantiene prendida** (`useWakeLock`). Dibujar es justamente no tocar
 el teléfono; sin esto se apaga a los treinta segundos y hay que soltar el lápiz. El

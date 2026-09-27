@@ -9,7 +9,6 @@ interface Props {
   corners: Quad | null
   /** El tamaño de la pantalla, en píxeles. */
   stage: { w: number; h: number }
-  adjusting: boolean
   onChange: (corners: Quad) => void
 }
 
@@ -33,11 +32,13 @@ type Drag =
 /**
  * La foto encima de la cámara, deformada a sus cuatro esquinas.
  *
- * Fuera del modo de ajuste es una imagen y nada más: no recibe toques, porque
- * cualquier gesto sobre la pantalla compite con la mano que dibuja. Adentro del
- * modo aparecen las manijas, y arrastrar la foto la mueve entera.
+ * Las manijas están siempre, sin un modo que haya que abrir y cerrar: calzar la
+ * foto es lo primero que se hace y se retoca cada vez que se mueve la hoja. Se van
+ * con el resto de la interfaz cuando nadie toca la pantalla (ver `.handles` en el
+ * CSS), y ahí la foto vuelve a ser solo una imagen. Arrastrar la foto la mueve
+ * entera.
  */
-export function Overlay({ src, opacity, corners, stage, adjusting, onChange }: Props) {
+export function Overlay({ src, opacity, corners, stage, onChange }: Props) {
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const drag = useRef<Drag | null>(null)
   const [active, setActive] = useState<number | 'move' | null>(null)
@@ -115,7 +116,7 @@ export function Overlay({ src, opacity, corners, stage, adjusting, onChange }: P
         }
       />
 
-      {adjusting && px && quad && (
+      {px && quad && (
         <svg
           className="handles"
           width={stage.w}

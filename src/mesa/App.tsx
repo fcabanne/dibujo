@@ -2,15 +2,8 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { copy, fill } from '../shared/copy'
 import { loadArtworkFile } from '../shared/imageFile'
 import { loadArtwork, saveArtwork } from '../shared/imageStore'
-import {
-  BackIcon,
-  Button,
-  CornersIcon,
-  IconButton,
-  PhotoIcon,
-  Slider,
-  UploadIcon,
-} from '../shared/ui'
+import { openInstagram } from '../shared/suggestions'
+import { BackIcon, Button, IconButton, PhotoIcon, Slider, UploadIcon } from '../shared/ui'
 import type { Quad } from './corners'
 import { Overlay } from './Overlay'
 import { loadSession, saveSession } from './persistence'
@@ -22,12 +15,14 @@ import { useWakeLock } from './useWakeLock'
 /** Lo que tarda en irse la interfaz cuando nadie toca la pantalla. */
 const IDLE_MS = 3500
 
+const goBack = () => (window.location.href = '../')
+
 /**
  * La mesa de luz: la cámara de atrás mirando el papel y la foto encima, translúcida.
  *
- * Abajo, una sola píldora con lo que se toca: cambiar la foto, cuánto se ve, y
- * ajustar dónde cae. Arriba, volver. El permiso de cámara lo pide el navegador con
- * su propio cartel; del trípode se encarga el dibujante.
+ * Sin foto, la misma pantalla de inicio que Referencia. Con foto, la cámara, las
+ * cuatro esquinas para calzarla sobre la hoja y, abajo, volver por un lado y la
+ * foto por el otro: cambiarla y cuánto se ve.
  */
 export function App() {
   const app = useRef<HTMLDivElement>(null)
@@ -37,14 +32,13 @@ export function App() {
   /** Lo mismo que en Referencia: sin esperar a IndexedDB parpadea el inicio. */
   const [ready, setReady] = useState(false)
   const [session, setSession] = useState(loadSession)
-  const [adjusting, setAdjusting] = useState(false)
-  const camera = useCamera(video)
+  // La cámara se pide recién con la foto puesta: primero se dice qué es esto.
+  const camera = useCamera(video, photo !== null)
   const stage = useStageSize(app)
 
   useWakeLock(camera.status === 'lista')
-  // Sin foto no hay nada abajo de los controles que valga la pena destapar. Y
-  // ajustando, que se vayan sería sacarle las manijas de abajo del dedo.
-  const idle = useIdle(IDLE_MS, photo !== null && !adjusting)
+  // Sin foto no hay nada abajo de los controles que valga la pena destapar.
+  const idle = useIdle(IDLE_MS, photo !== null)
 
   useEffect(() => {
     let cancelled = false
@@ -74,7 +68,6 @@ export function App() {
       setPhoto(src)
       // Otra foto trae otra proporción: las esquinas de la anterior la deformarían.
       setSession((s) => ({ ...s, corners: null }))
-      setAdjusting(false)
       void saveArtwork('mesa', src)
     } catch {
       // Un archivo que no se puede abrir no rompe nada: queda la foto de antes.
@@ -91,91 +84,95 @@ export function App() {
   return (
     <div
       ref={app}
-      className="app ds"
+      className={'app ds' + (photo ? ' has-photo' : '')}
       data-idle={idle || undefined}
-      data-adjusting={adjusting || undefined}
     >
-      {/* muted + playsInline: sin los dos, el celular se niega a arrancar solo. */}
-      <video className="camera" ref={video} autoPlay muted playsInline />
+      <h1 className="ds-sr">{copy.mesa.name}</h1>
 
-      {photo && stage && (
-        <Overlay
-          src={photo}
-          opacity={session.opacity}
-          corners={session.corners}
-          stage={stage}
-          adjusting={adjusting}
-          onChange={setCorners}
-        />
-      )}
+      {photo ? (
+        <>
+          {/* muted + playsInline: sin los dos, el celular se niega a arrancar solo. */}
+          <video className="camera" ref={video} autoPlay muted playsInline />
 
-      <header className="topbar">
-        <span className="chip">
-          <IconButton label={copy.app.back} onClick={() => (window.location.href = '../')}>
-            <BackIcon />
-          </IconButton>
-        </span>
-        <h1 className="ds-sr">{copy.mesa.name}</h1>
-        {/* Lo único que se explica, y solo mientras hace falta. Va arriba y no con
-            los botones de abajo: ahí taparía las esquinas de abajo de la foto. */}
-        {adjusting && <p className="card hint">{copy.mesa.cornersHint}</p>}
-      </header>
-
-      {trouble ? (
-        <Trouble status={camera.status} onRetry={camera.retry} />
-      ) : (
-        ready &&
-        !photo && (
-          <div className="card welcome">
-            <h2>{copy.mesa.name}</h2>
-            <p>{copy.mesa.intro}</p>
-            <Button variant="loud" icon={<UploadIcon />} onClick={pickFile}>
-              {copy.mesa.upload}
-            </Button>
-          </div>
-        )
-      )}
-
-      {photo && (
-        <div className="controls">
-          {/* Ajustando, arriba de la píldora: volver a empezar y terminar. */}
-          {adjusting && (
-            <div className="card adjust">
-              <Button
-                variant="quiet"
-                onClick={() => setCorners(null)}
-                disabled={session.corners === null}
-              >
-                {copy.mesa.reset}
-              </Button>
-              <Button variant="loud" onClick={() => setAdjusting(false)}>
-                {copy.mesa.done}
-              </Button>
-            </div>
+          {stage && (
+            <Overlay
+              src={photo}
+              opacity={session.opacity}
+              corners={session.corners}
+              stage={stage}
+              onChange={setCorners}
+            />
           )}
 
-          <nav className="dock">
-            <IconButton label={copy.mesa.change} onClick={pickFile}>
-              <PhotoIcon />
-            </IconButton>
-            <Slider
-              label={copy.mesa.opacity}
-              value={Math.round(session.opacity * 100)}
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) => setSession((s) => ({ ...s, opacity: v / 100 }))}
-              format={(v) => fill(copy.mesa.opacityValue, { n: v })}
-            />
-            <IconButton
-              label={copy.mesa.corners}
-              selected={adjusting}
-              onClick={() => setAdjusting((on) => !on)}
-            >
-              <CornersIcon />
-            </IconButton>
-          </nav>
-        </div>
+          {trouble && <Trouble status={camera.status} onRetry={camera.retry} />}
+
+          <div className="controls">
+            {/* Solo si hay algo que deshacer: un botón que no cambiaría nada es un
+                botón que hay que leer para nada. */}
+            {session.corners && (
+              <div className="reset">
+                <Button variant="quiet" onClick={() => setCorners(null)}>
+                  {copy.mesa.reset}
+                </Button>
+              </div>
+            )}
+
+            {/* Volver por un lado, la foto por el otro: son de dos conversaciones
+                distintas y no se tocan por error una por la otra. */}
+            <div className="bottombar">
+              <nav className="pill">
+                <IconButton label={copy.app.back} onClick={goBack}>
+                  <BackIcon />
+                </IconButton>
+              </nav>
+              <nav className="pill dock">
+                <IconButton label={copy.mesa.change} onClick={pickFile}>
+                  <PhotoIcon />
+                </IconButton>
+                <Slider
+                  label={copy.mesa.opacity}
+                  value={Math.round(session.opacity * 100)}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) => setSession((s) => ({ ...s, opacity: v / 100 }))}
+                  format={(v) => fill(copy.mesa.opacityValue, { n: v })}
+                />
+              </nav>
+            </div>
+          </div>
+        </>
+      ) : (
+        ready && (
+          <>
+            {/* La pantalla de inicio de Referencia, con el texto de la mesa. */}
+            <div className="welcome">
+              <div className="welcome-text">
+                <h2>{copy.welcome.greeting}</h2>
+                <p>{copy.mesa.intro}</p>
+                <p>{copy.mesa.hint}</p>
+              </div>
+              <Button variant="loud" icon={<UploadIcon />} onClick={pickFile}>
+                {copy.welcome.upload}
+              </Button>
+            </div>
+
+            <div className="welcome-bottombar">
+              <nav className="tabbar">
+                <IconButton label={copy.app.back} onClick={goBack}>
+                  <BackIcon />
+                </IconButton>
+              </nav>
+              <a
+                className="ds-link"
+                href={copy.welcome.suggestionsUrl}
+                onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+              >
+                {copy.welcome.suggestions}
+              </a>
+            </div>
+          </>
+        )
       )}
 
       {/* Uno solo: lo usan la bienvenida y el botón de cambiar foto. */}
@@ -185,8 +182,8 @@ export function App() {
 }
 
 /**
- * Lo único que se explica sin que nadie lo pida, y solo cuando no hay imagen: qué
- * pasó con la cámara. Una pantalla negra sin motivo es peor que un cartel.
+ * Lo único que se explica sin que nadie lo pida: qué pasó con la cámara. Una
+ * pantalla negra sin motivo es peor que un cartel.
  */
 function Trouble({ status, onRetry }: { status: CameraStatus; onRetry: () => void }) {
   if (status === 'insegura') {
