@@ -297,6 +297,29 @@ body {
   animation-delay: 240ms;
 }
 
+/* El aviso de escritorio: el QR y la dirección, en el lugar del botón de subir. */
+.qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  border-radius: var(--ds-radius-group);
+  animation: ds-rise var(--ds-dur-slow) var(--ds-ease) 200ms backwards;
+}
+
+.welcome-url {
+  margin: calc(var(--ds-space-4) * -1) 0 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+  animation: ds-rise var(--ds-dur-slow) var(--ds-ease) 260ms backwards;
+}
+
+/* La dirección se puede seleccionar y copiar, aunque el resto no. */
+.welcome-url span {
+  -webkit-user-select: text;
+  user-select: text;
+  color: var(--ds-accent-dark);
+}
+
 .welcome-bottombar {
   position: absolute;
   right: 0;

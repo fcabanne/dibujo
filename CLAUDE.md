@@ -636,7 +636,16 @@ fondo claro, así que cada cosa que se toca va en su propia pastilla (`.pill`), 
 la que le pone el fondo.
 
 **Es solo para celular.** No hay acomodo de escritorio: la herramienta es un teléfono
-en un trípode.
+en un trípode. Con un puntero que pasa por encima y fino (`isDesktop` / `useDesktop`, en
+`shared/desktop.ts`: `(hover: hover) and (pointer: fine)`) la mesa no arranca: `App` muestra
+`DesktopNotice` —la pantalla de inicio de siempre, con un QR a la dirección publicada— y
+ni se llega a pedir la cámara, aunque haya una foto guardada. Es la misma pregunta del
+puntero que en Enmarcado y no el ancho: una ventana angosta de escritorio sigue siendo
+una compu, y un iPad no lo es. El QR (`shared/qr.ts`) es un generador propio, sin
+librerías: modo bytes, corrección M, versiones 1 a 6. Apunta a `copy.mesa.siteUrl` y no
+a la dirección actual porque el celular no ve el `localhost` de la compu. La portada
+avisa en la tarjeta ("Es para usar desde el celu") solo con mouse, y en Referencia el
+botón "Llevar a la mesa de luz" no aparece en una compu.
 
 **Sin foto, la pantalla de inicio de Referencia, igual**: el saludo, dos frases, el
 botón de subir al medio, y abajo volver y "Dejame sugerencias" (que abre la app de

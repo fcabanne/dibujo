@@ -88,6 +88,18 @@ body {
   color: var(--ds-accent-dark);
 }
 
+/* Solo se ve con mouse: en el celular la mesa ya está donde tiene que estar. */
+.tool-note {
+  display: none;
+  color: var(--ds-accent-dark);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tool-note {
+    display: block;
+  }
+}
+
 .tool:focus-visible {
   outline: 2px solid var(--ds-accent-dark);
   outline-offset: 3px;

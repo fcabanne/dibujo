@@ -146,7 +146,14 @@
     "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
     "denied": "La cámara está bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
     "noCamera": "No se encontró ninguna cámara.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "desktop": {
+      "title": "Esta va en el celu",
+      "intro": "La mesa de luz es un celular en un trípode mirando tu papel, con la foto encima de lo que ve la cámara. En la compu no tiene con qué funcionar.",
+      "scan": "Escaneá este código con el celu para abrirla ahí.",
+      "qr": "Código QR que abre la mesa de luz",
+      "link": "O escribí esta dirección:"
+    }
   },
 
   "marco": {

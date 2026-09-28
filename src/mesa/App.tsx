@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { copy, fill } from '../shared/copy'
 import { loadArtworkFile } from '../shared/imageFile'
 import { loadArtwork, saveArtwork } from '../shared/imageStore'
+import { useDesktop } from '../shared/desktop'
 import { openInstagram } from '../shared/suggestions'
 import {
   BackIcon,
@@ -15,6 +16,7 @@ import {
 import type { Quad } from './corners'
 import { Overlay } from './Overlay'
 import { loadSession, photoKey, saveSession } from './persistence'
+import { QrCode } from './QrCode'
 import { useCamera, type CameraStatus } from './useCamera'
 import { useIdle } from './useIdle'
 import { useStageSize } from './useStageSize'
@@ -26,13 +28,22 @@ const IDLE_MS = 3500
 const goBack = () => (window.location.href = '../')
 
 /**
+ * En una compu, el aviso; en el celular, la mesa. Van separados —y no un `if` adentro de
+ * la mesa— para que en una compu ni se llegue a pedir la cámara, aunque haya una foto
+ * guardada de otra vez.
+ */
+export function App() {
+  return useDesktop() ? <DesktopNotice /> : <LightTable />
+}
+
+/**
  * La mesa de luz: la cámara de atrás mirando el papel y la foto encima, translúcida.
  *
  * Sin foto, la misma pantalla de inicio que Referencia. Con foto, la cámara, las
  * cuatro esquinas para calzarla sobre la hoja y, abajo, volver por un lado y la
  * foto por el otro: cambiarla y cuánto se ve.
  */
-export function App() {
+function LightTable() {
   const app = useRef<HTMLDivElement>(null)
   const video = useRef<HTMLVideoElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -231,6 +242,51 @@ function Trouble({ status, onRetry }: { status: CameraStatus; onRetry: () => voi
       <Button variant="quiet" onClick={onRetry}>
         {copy.mesa.retry}
       </Button>
+    </div>
+  )
+}
+
+/**
+ * La mesa de luz es un celular en un trípode: en una compu no hay nada que hacer, y
+ * ponerla a andar con la webcam sería inventar una herramienta que nadie pidió. Así que
+ * se dice, con la misma pantalla de inicio de siempre, y se ofrece lo que sí sirve: pasarla
+ * al celular. El QR lleva a la dirección publicada —no a esta— porque el celular no ve
+ * el `localhost` de la compu, y la cámara pide https igual.
+ */
+function DesktopNotice() {
+  const url = copy.mesa.siteUrl
+  return (
+    <div className="app ds">
+      <h1 className="ds-sr">{copy.mesa.name}</h1>
+
+      <div className="welcome">
+        <div className="welcome-text">
+          <h2>{copy.mesa.desktop.title}</h2>
+          <p>{copy.mesa.desktop.intro}</p>
+          <p>{copy.mesa.desktop.scan}</p>
+        </div>
+        <QrCode value={url} label={copy.mesa.desktop.qr} />
+        <p className="welcome-url">
+          {copy.mesa.desktop.link}
+          <br />
+          <span>{url.replace(/^https:\/\//, '')}</span>
+        </p>
+      </div>
+
+      <div className="welcome-bottombar">
+        <nav className="tabbar">
+          <IconButton label={copy.app.back} onClick={goBack}>
+            <BackIcon />
+          </IconButton>
+        </nav>
+        <a
+          className="ds-link"
+          href={copy.welcome.suggestionsUrl}
+          onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+        >
+          {copy.welcome.suggestions}
+        </a>
+      </div>
     </div>
   )
 }

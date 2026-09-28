@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { copy, fill } from '../../shared/copy'
+import { isDesktop } from '../../shared/desktop'
 import { Button, ChoiceGroup, CloseIcon, IconButton, Switch, type ChoiceOption } from '../../shared/ui'
 import { PRINT_SHEETS, sheetName } from '../domain/paper'
 import { Field, Row } from './controls'
@@ -31,8 +32,11 @@ const SIZES: ChoiceOption<ExportSize>[] = [
  * del navegador. Abierta como archivo suelto (`file://`, la versión que se manda
  * por mail) no hay mesa al lado a la cual llevarla — y la mesa ni siquiera anda
  * así, porque la cámara pide https.
+ *
+ * Tampoco en una compu: la mesa de luz es un celular en un trípode y ahí solo muestra un
+ * aviso, así que llevarle la foto sería mandarla a una pantalla que no la usa.
  */
-const CAN_REACH_LIGHT_TABLE = window.location.protocol !== 'file:'
+const CAN_REACH_LIGHT_TABLE = window.location.protocol !== 'file:' && !isDesktop()
 
 /**
  * Las dos preguntas del export, recién cuando se va a exportar.

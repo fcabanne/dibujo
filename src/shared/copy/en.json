@@ -146,7 +146,14 @@
     "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
     "denied": "The camera is blocked for this site. Allow it from the padlock in the address bar.",
     "noCamera": "No camera was found.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "desktop": {
+      "title": "This one is for your phone",
+      "intro": "The light table is a phone on a tripod looking at your paper, with the photo laid over what the camera sees. On a computer it has nothing to work with.",
+      "scan": "Scan this code with your phone to open it there.",
+      "qr": "QR code that opens the light table",
+      "link": "Or type this address:"
+    }
   },
 
   "marco": {
