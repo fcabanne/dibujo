@@ -76,6 +76,9 @@ No hace falta ninguna librería para eso: lo hace TypeScript solo.
 
 ## Lo que todavía no pasa por acá
 
-Referencia sí, entera. **Cuadros, Mesa de luz y la portada todavía no**: sus textos
-siguen escritos adentro de sus componentes. Cuando les toque, se suman con sus
-propias secciones a estos mismos archivos.
+Referencia y Mesa de luz sí, enteras. **Cuadros, a medias**: su capa de celular
+(`src/marco/components/mobile/`) lee la sección `marco`, pero la de escritorio todavía
+tiene sus textos adentro de los componentes. Los nombres de los colores, acabados y
+perfiles ("Nogal", "Caveta") tampoco pasan por acá: son vocabulario de taller, viven en
+`src/marco/domain/palettes.ts` y los usan las dos capas. **La portada todavía no.**
+Cuando les toque, se suman con sus propias secciones a estos mismos archivos.

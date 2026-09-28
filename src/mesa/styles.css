@@ -1,14 +1,16 @@
-@import '../shared/tokens.css';
-
 /* ------------------------------------------------------------------
-   Mesa de luz. Acá no hay panel ni lienzo: hay una hoja de papel abajo
-   del teléfono y una foto encima de lo que la cámara ve. Todo lo que se
-   dibuje en la pantalla le tapa el papel a alguien, así que son dos
-   controles, sin rótulos ni ayudas, y se van solos a los pocos segundos.
+   Mesa de luz.
 
-   El mismo vidrio oscuro y el mismo acento cálido que las otras
-   herramientas, sobre negro en vez de sobre la pared iluminada: lo que
-   manda la imagen acá es la cámara.
+   Acá no hay panel ni lienzo: hay una hoja de papel abajo del teléfono y
+   una foto encima de lo que la cámara ve. Todo lo que se dibuje en la
+   pantalla le tapa el papel a alguien, así que lo que se toca va abajo
+   —volver por un lado, la foto por el otro— y, con las manijas de las
+   esquinas, se va solo a los pocos segundos.
+
+   Color, tipografía y componentes son los del sistema de diseño
+   (`shared/ui`), los mismos de Referencia. Lo único propio es que acá
+   las superficies flotan sobre la cámara y no sobre el fondo claro: cada
+   cosa que se toca va en su propia tarjeta, que es la que le da el fondo.
    ------------------------------------------------------------------ */
 
 html,
@@ -18,10 +20,11 @@ body,
 }
 
 body {
+  margin: 0;
   overflow: hidden;
   /* Que arrastrar el dedo no tironee la página ni recargue de un tirón. */
   overscroll-behavior: none;
-  background: #000;
+  background: var(--ds-background);
 }
 
 .app {
@@ -30,11 +33,20 @@ body {
   /* dvh y no vh: con la barra del navegador a la vista, vh se pasa de largo. */
   height: 100dvh;
   overflow: hidden;
-  background: #000;
+  background: var(--ds-background);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Con foto, lo que se ve mientras la cámara arranca. Negro y no el fondo
+   claro: un destello blanco en la cara antes de cada sesión no es una
+   bienvenida. Y los gestos son nuestros: las esquinas se arrastran, y sin
+   esto arrastrar scrollea la página o, con dos dedos, hace zoom. */
+.app.has-photo {
+  background: var(--ds-black);
+  touch-action: none;
 }
 
 /* --- lo que ve la cámara ------------------------------------------ */
@@ -46,198 +58,316 @@ body {
   height: 100%;
   /* cover y no contain: bandas negras al costado serían papel que no se ve. */
   object-fit: cover;
-  background: #000;
+  background: var(--ds-black);
 }
 
 /* --- la foto encima ----------------------------------------------- */
 
 /*
-  Entra completa y centrada, con un margen de seguridad del 5%. Pegada al borde
-  quedaría justo donde la lente deforma y donde la mano entra a la escena; y el
-  encuadre fino se hace moviendo el teléfono, que es lo que tiene un trípode.
+  Va a su tamaño natural, clavada arriba a la izquierda, y la lleva a su lugar
+  un `matrix3d` (ver `corners.ts`). El tamaño natural no es capricho: la
+  transformación se calcula en los píxeles de la foto, y cualquier otro ancho
+  la deformaría de más.
 */
 .overlay {
   position: absolute;
-  top: 5%;
-  left: 5%;
-  width: 90%;
-  height: 90%;
-  object-fit: contain;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  will-change: transform;
   /* Los toques son para los controles y para despertar la interfaz. */
   pointer-events: none;
 }
 
-/* --- los dos controles -------------------------------------------- */
+/* --- las manijas de las esquinas ----------------------------------- */
+
+.handles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  /* Blanco con sombra oscura: se lee igual sobre una hoja blanca que sobre
+     la mesa de madera de al lado. */
+  filter: drop-shadow(0 0 1.5px rgb(16 16 16 / 0.7));
+  transition: opacity 0.28s var(--ds-ease);
+  animation: ds-fade 0.22s var(--ds-ease);
+}
+
+/* Sin nadie tocando se van con el resto de la interfaz, y no reciben toques:
+   el primero despierta y no mueve ninguna esquina. */
+.app[data-idle] .handles {
+  opacity: 0;
+}
+
+.app[data-idle] .handles * {
+  pointer-events: none;
+}
+
+.handles-body {
+  fill: transparent;
+  stroke: var(--ds-white);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+  pointer-events: all;
+  cursor: move;
+}
+
+.handle {
+  pointer-events: all;
+  cursor: grab;
+}
+
+.handle line {
+  stroke: var(--ds-white);
+  stroke-width: 1.5;
+}
+
+.handle-aim {
+  stroke: var(--ds-white);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* El área que se toca es más grande que el dibujo: medio dedo de radio. */
+.handle-hit {
+  fill: transparent;
+}
+
+.handle-knob {
+  fill: var(--ds-background);
+  stroke: var(--ds-accent-dark);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.18s var(--ds-spring), fill 0.16s var(--ds-ease);
+}
+
+/* La que está en la mano crece y se pinta: se sabe cuál se está moviendo
+   aunque el dedo esté encima. */
+.handle.is-active .handle-knob {
+  fill: var(--ds-accent-dark);
+  transform: scale(1.25);
+}
+
+.handle.is-active {
+  cursor: grabbing;
+}
+
+/* --- las superficies ---------------------------------------------- */
+
+/* Una tarjeta del fondo claro del sistema, flotando sobre la cámara. */
+.card {
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
+}
+
+/* --- los controles de abajo --------------------------------------- */
 
 .controls {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
+  z-index: 2;
   display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
   align-items: center;
-  gap: 16px;
-  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-  /* Un degradado para que los controles se lean sobre una foto clara. */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-  transition:
-    opacity 420ms var(--ease),
-    transform 420ms var(--ease);
-}
-
-/* Sin foto todavía no hay nada que tapar: el botón va al medio y se queda. */
-.controls[data-empty] {
-  top: 0;
-  justify-content: center;
-  padding: 0;
-  background: none;
-}
-
-.app[data-idle] .controls {
-  opacity: 0;
-  transform: translateY(14px);
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
   pointer-events: none;
+  transition: opacity 0.28s var(--ds-ease), transform 0.28s var(--ds-ease);
 }
 
-.load {
-  display: inline-flex;
+.controls > * {
+  width: min(480px, 100%);
+}
+
+.controls > * > * {
+  pointer-events: auto;
+}
+
+/* Volver a la izquierda, solo; la foto a la derecha, con lo que queda. */
+.bottombar {
+  display: flex;
+  gap: var(--ds-space-2);
   align-items: center;
-  gap: 10px;
+}
+
+/* La pastilla de la barra de Referencia, sobre su propio fondo: allá se apoya
+   en el fondo claro, acá en lo que sea que esté mirando la cámara. */
+.pill {
+  display: flex;
   flex: none;
-  padding: 12px 18px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: var(--hud-bg);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--shadow-hud);
-  font-size: 14px;
-  cursor: pointer;
+  gap: var(--ds-space-1);
+  align-items: center;
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
 }
 
-.load:active {
-  transform: scale(0.97);
-}
-
-/* Con foto el botón se achica: el slider es lo que se toca seguido. */
-.controls:not([data-empty]) .load {
-  padding: 11px 13px;
-}
-
-.controls:not([data-empty]) .load span {
-  /* Queda para el lector de pantalla, no para la pantalla. */
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
-.load svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.load input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* --- cuánto se ve la foto ----------------------------------------- */
-
-.opacity {
+.dock {
   flex: 1;
   min-width: 0;
-  /* La barra es fina, pero el control mide un dedo de alto. */
-  height: 44px;
+}
+
+/* Restablecer, arriba de la barra y al medio. Aparece solo cuando hay algo
+   que deshacer. */
+.reset {
+  display: flex;
+  justify-content: center;
+  animation: ds-rise 0.22s var(--ds-ease);
+}
+
+.reset .ds-button {
+  box-shadow: 0 6px 18px rgb(16 16 16 / 0.22);
+}
+
+/* Sin nadie tocando, la interfaz se va y deja el papel. Mientras está
+   escondida no recibe toques: el primero despierta y no mueve nada. */
+.app[data-idle] .controls {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+.app[data-idle] .controls > * > * {
+  pointer-events: none;
+}
+
+/* --- la pantalla de inicio -----------------------------------------
+   La de Referencia, igual: mismas medidas, mismo orden de llegada. */
+
+.welcome {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-7);
+  align-items: center;
+  width: 290px;
+  max-width: calc(100% - var(--ds-space-7));
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: 100%;
+}
+
+.welcome-text h2 {
   margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  background: none;
-  cursor: pointer;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
 }
 
-.opacity::-webkit-slider-runnable-track {
-  height: 6px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+.welcome-text p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
 }
 
-.opacity::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  /* Centrado sobre el riel de 8px con borde: (8 - 30) / 2. */
-  margin-top: -11px;
-  border: 2px solid rgba(0, 0, 0, 0.45);
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: var(--shadow-hud);
+.welcome .ds-button {
+  font: var(--ds-text-control);
 }
 
-.opacity::-moz-range-track {
-  height: 6px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+.welcome-text > *,
+.welcome > .ds-button {
+  animation: ds-rise var(--ds-dur-slow) var(--ds-ease) backwards;
 }
 
-.opacity::-moz-range-thumb {
-  width: 26px;
-  height: 26px;
-  border: 2px solid rgba(0, 0, 0, 0.45);
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: var(--shadow-hud);
+.welcome-text > :nth-child(2) {
+  animation-delay: 70ms;
 }
 
-/* --- cuando no hay cámara ----------------------------------------- */
+.welcome-text > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.welcome > .ds-button {
+  animation-delay: 240ms;
+}
+
+.welcome-bottombar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
+}
+
+.tabbar {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-accent-light);
+}
+
+/* --- cuando la cámara no anda --------------------------------------- */
 
 .trouble {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  z-index: 1;
   display: flex;
   flex-direction: column;
+  gap: var(--ds-space-5);
   align-items: center;
-  gap: 16px;
-  width: min(330px, calc(100% - 48px));
-  margin: 0;
-  padding: 22px 24px;
-  border: 1px solid var(--hud-border);
-  border-radius: 18px;
-  background: var(--hud-bg-solid);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--shadow-hud);
-  color: var(--hud-dim);
-  font-size: 14px;
-  line-height: 1.5;
+  width: min(320px, calc(100% - 32px));
+  padding: var(--ds-space-6);
   text-align: center;
+  transform: translate(-50%, -50%);
+  animation: ds-pop-centered 0.28s var(--ds-spring);
 }
 
-.trouble button,
-.trouble a {
-  padding: 9px 18px;
-  border: 1px solid var(--hud-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--hud-text);
-  font-size: 13px;
+.trouble p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+}
+
+.trouble .ds-button {
+  width: 100%;
+  font: var(--ds-text-control);
   text-decoration: none;
-  cursor: pointer;
 }
 
-/* Con el cartel a la vista, el botón de cargar molesta abajo de todo. */
-.trouble ~ .controls[data-empty] {
-  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-  top: auto;
+/* --- movimiento ---------------------------------------------------- */
+
+@keyframes ds-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes ds-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ds-pop-centered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.97);
+  }
 }

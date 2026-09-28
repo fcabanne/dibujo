@@ -1,0 +1,828 @@
+/* ------------------------------------------------------------------
+   Cuadros en el celular.
+
+   El escritorio no se toca: todo lo de acá cuelga de `.is-compact` o de
+   clases `m-` que solo usa la capa del celular (`components/mobile/`).
+
+   Color, tipografía, medidas y movimiento salen del sistema de diseño
+   (`shared/ui/tokens.css`), los mismos de Referencia y Mesa de luz. Como
+   en la mesa, las superficies flotan sobre una imagen —acá la pared con
+   el cuadro— y cada cosa que se toca va en su pastilla del fondo claro,
+   que es la que le pone el fondo.
+
+   Los únicos colores sueltos son los de las muestras de vidrio: imitan lo
+   que cada vidrio le hace a la obra, y son contenido, no tema — como el
+   espectro de la muestra de "otro color".
+   ------------------------------------------------------------------ */
+
+.app.is-compact {
+  overscroll-behavior: none;
+  /* Sin el doble toque que acerca la página: los botones responden en el acto, y
+     el doble toque sobre el cuadro es nuestro. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Los campos sí se seleccionan: es donde se escribe. */
+.app.is-compact input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.m-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Lo que ocupa la muesca de arriba, para que el lienzo no encaje el cuadro
+   debajo de ella. Se mide, no se ve. */
+.m-safe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: calc(env(safe-area-inset-top, 0px) + var(--ds-space-2));
+  visibility: hidden;
+}
+
+/* --- la cartela ---------------------------------------------------
+   La de escritorio, colgada abajo del cuadro en vez de al costado, con las
+   letras del sistema. Se va mientras hay un cajón abierto —no hay lugar— y
+   vuelve subiendo apenas cuando se cierra. */
+
+.m-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition: opacity var(--ds-dur-slow) var(--ds-ease);
+}
+
+.m-label.is-shown {
+  opacity: 1;
+}
+
+.m-label .wall-label {
+  top: 0;
+  bottom: auto;
+  left: -124px;
+  width: 248px;
+  transform: translateY(8px);
+  transition: transform var(--ds-dur-slow) var(--ds-ease);
+}
+
+.m-label.is-shown .wall-label {
+  transform: none;
+}
+
+/* Acostado va al costado, apoyada en la esquina de abajo como en escritorio. */
+.m-label[data-side='true'] .wall-label {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  width: 210px;
+}
+
+.is-compact .wall-label h2 {
+  margin: 0 0 var(--ds-space-2);
+  font: 700 14px/1.2 var(--ds-font-display);
+  letter-spacing: 0.08em;
+}
+
+.is-compact .wall-label dl {
+  gap: 1px;
+}
+
+.is-compact .wall-label dt {
+  font: 700 10px/1.5 var(--ds-font-mono);
+  letter-spacing: 0.04em;
+}
+
+.is-compact .wall-label dd {
+  font: 400 11px/1.5 var(--ds-font-mono);
+}
+
+/* --- las cotas sobre el cuadro --------------------------------------
+   Las de escritorio. Sin el dedo encima aparecen solas un rato —al abrir la
+   pestaña de la moldura o del passe-partout, o al mover su ancho— y dicen
+   que esa banda se estira; ahí va sin el contorno punteado, que es de cuando
+   se la está agarrando. */
+
+.m-gizmo .gizmo-band {
+  transition: opacity var(--ds-dur-fast) var(--ds-ease);
+}
+
+.m-gizmo:not(.is-pressed) .gizmo-band {
+  opacity: 0;
+}
+
+.m-gizmo {
+  transition: opacity var(--ds-dur) var(--ds-ease);
+}
+
+.m-gizmo .gizmo-value {
+  padding: var(--ds-space-1) var(--ds-space-4);
+  border-radius: var(--ds-radius-small);
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
+  font: var(--ds-text-field);
+  box-shadow: 0 6px 18px rgb(16 16 16 / 0.3);
+}
+
+/* --- lo de abajo ----------------------------------------------------- */
+
+.m-dock {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--ds-space-4) calc(var(--ds-space-4) + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.m-dock > * {
+  width: min(520px, 100%);
+  pointer-events: auto;
+}
+
+/* --- el cajón -------------------------------------------------------
+   Una tarjeta que flota sobre la escena y mide lo que mide su contenido
+   (`--content-height`, lo pone `MobileUI`). Se despliega hacia arriba desde
+   la barra, y el cuadro sube y se achica con ella: el lienzo mide dónde
+   está el cajón en cada cuadro de la transición. */
+
+.m-drawer {
+  position: relative;
+  height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  visibility: hidden;
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 18px 44px rgb(16 16 16 / 0.3), 0 2px 8px rgb(16 16 16 / 0.12);
+  /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
+     en el acto no se vería bajar. Al abrir es al revés. */
+  transition: height var(--ds-dur-slow) var(--ds-ease),
+    margin-bottom var(--ds-dur-slow) var(--ds-ease), visibility 0s linear var(--ds-dur-slow);
+}
+
+.m-drawer.is-open {
+  height: calc(var(--content-height, 220px) + var(--ds-space-5) * 2);
+  /* Salvavidas para una pantalla bajita: el cuadro siempre conserva un lugar
+     arriba, y lo que no entra en el cajón se corre adentro de él. */
+  max-height: calc(100dvh - 200px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  margin-bottom: var(--ds-space-2);
+  visibility: visible;
+  transition: height var(--ds-dur-slow) var(--ds-ease),
+    margin-bottom var(--ds-dur-slow) var(--ds-ease), visibility 0s;
+}
+
+.m-drawer-scroll {
+  height: 100%;
+  padding: var(--ds-space-5);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Una vista del cajón: la de una pestaña, o la de su picker. Cómo entra lo
+   decide `MobileUI` según de dónde se viene, como en Referencia. */
+.m-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  animation-duration: var(--ds-dur);
+  animation-timing-function: var(--ds-ease);
+  animation-fill-mode: backwards;
+}
+
+.m-view.is-rise {
+  animation-name: m-rise;
+  animation-delay: 60ms;
+}
+
+.m-view.is-from-right {
+  animation-name: m-from-right;
+}
+
+.m-view.is-from-left {
+  animation-name: m-from-left;
+}
+
+.m-view.is-deeper {
+  animation-name: m-deeper;
+}
+
+.m-view.is-back {
+  animation-name: m-back;
+}
+
+/* --- la barra -------------------------------------------------------- */
+
+.m-bar {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* La pastilla de Mesa de luz: la de la barra de Referencia, con su propio
+   fondo porque abajo no hay fondo claro sino la pared. */
+.m-pill {
+  position: relative;
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
+}
+
+/* Los íconos propios de Cuadros se dibujaron con un trazo de 1,7. En la barra
+   van con el del sistema, para que se lean de la misma familia que volver. */
+.m-bar .ds-icon-button svg {
+  stroke-width: 2;
+}
+
+/* La marca oscura viaja de pestaña en pestaña (`--i`) en vez de prenderse y
+   apagarse en cada botón: así se ve de dónde a dónde se fue. */
+.m-tabs .ds-icon-button {
+  position: relative;
+  z-index: 1;
+  transition-duration: var(--ds-dur);
+}
+
+.m-tabs .ds-icon-button.is-selected {
+  background: none;
+}
+
+.m-tabs-thumb {
+  position: absolute;
+  top: var(--ds-space-1);
+  left: var(--ds-space-1);
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  transform: translateX(calc(var(--i, 0) * (var(--ds-control-min) + var(--ds-space-1))));
+  transition: transform var(--ds-dur-slow) var(--ds-spring),
+    opacity var(--ds-dur-fast) var(--ds-ease), scale var(--ds-dur) var(--ds-spring);
+}
+
+.m-tabs-thumb.is-hidden {
+  opacity: 0;
+  scale: 0.6;
+}
+
+/* --- las piezas del cajón -------------------------------------------- */
+
+.m-heading {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: baseline;
+  min-width: 0;
+  margin: 0;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Lo elegido, al lado del nombre del grupo. Entra fundiéndose cada vez que
+   cambia: es lo último que se ve de lo que se acaba de tocar. */
+.m-heading em {
+  overflow: hidden;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ds-accent-dark);
+  text-overflow: ellipsis;
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease);
+}
+
+.m-heading em::before {
+  content: '· ';
+}
+
+.m-row {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  min-height: var(--ds-control-field);
+  transition: opacity var(--ds-dur-fast) var(--ds-ease);
+}
+
+.m-row-name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Sin marco, el acabado y el espesor no tienen a qué aplicarse. */
+.m-row.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* La tira de muestras llega hasta los bordes del cajón y se corre de costado.
+   El borde derecho se desvanece: dice que hay más, sin decirlo. */
+.m-strip {
+  display: flex;
+  gap: var(--ds-space-2);
+  margin: 0 calc(var(--ds-space-5) * -1);
+  padding: 2px var(--ds-space-5);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding: 0 var(--ds-space-5);
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--ds-space-4),
+    #000 calc(100% - 44px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--ds-space-4),
+    #000 calc(100% - 44px),
+    transparent
+  );
+}
+
+.m-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.m-strip > * {
+  flex: none;
+  scroll-snap-align: center;
+}
+
+/* La moldura pintada adentro del círculo del sistema. */
+.m-swatch-molding > span {
+  overflow: hidden;
+}
+
+.m-chip {
+  display: block;
+  border-radius: var(--ds-radius-pill);
+}
+
+/* "Sin": el círculo vacío, cruzado. */
+.m-swatch-none > span {
+  border: 2px solid var(--ds-muted);
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    var(--ds-muted) calc(50% - 1px),
+    var(--ds-muted) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+/* --- la obra --------------------------------------------------------- */
+
+.m-size {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+}
+
+.m-size .m-unit {
+  flex: 1;
+}
+
+.m-times {
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+}
+
+.m-unit {
+  position: relative;
+  min-width: 0;
+}
+
+.m-unit::after {
+  position: absolute;
+  top: 50%;
+  right: var(--ds-space-3);
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+  content: attr(data-unit);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* El campo de Referencia: borde de la casilla, letra de los controles. A 16 px
+   a propósito: con menos, Safari acerca la página entera al tocarlo. */
+.m-field {
+  width: 100%;
+  min-width: 0;
+  height: var(--ds-control-row);
+  padding: 0 34px 0 var(--ds-space-4);
+  border: 2px solid var(--ds-muted);
+  border-radius: var(--ds-radius-check);
+  background: none;
+  color: var(--ds-black);
+  font: var(--ds-text-control);
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.m-field:focus {
+  border-color: var(--ds-accent-dark);
+  outline: none;
+}
+
+.m-field::placeholder {
+  color: var(--ds-accent-dark);
+  opacity: 0.55;
+}
+
+/* Parece un campo pero es un botón: lleva al editor a pantalla completa. */
+.m-field-button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: text;
+}
+
+/* Un título largo termina en puntos suspensivos en vez de cortarse a la mitad de
+   una letra. Va en su propio `span`: sobre el botón, que es flex, no funciona. */
+.m-field-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-field-button.is-placeholder {
+  color: var(--ds-accent-dark);
+  opacity: 0.55;
+}
+
+.m-row > .m-unit {
+  flex: 1 1 0;
+}
+
+.m-row .m-field-button {
+  height: 40px;
+  padding-right: var(--ds-space-4);
+}
+
+.m-actions {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+}
+
+.m-actions .ds-button {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--ds-space-4);
+  font: var(--ds-text-control);
+}
+
+.m-actions .ds-icon-button {
+  background: var(--ds-accent-light);
+}
+
+/* --- el vidrio ------------------------------------------------------- */
+
+.m-glass {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ds-radius-pill);
+}
+
+.m-glass[data-glass='none'] {
+  border: 2px dashed currentColor;
+  opacity: 0.6;
+}
+
+.m-glass[data-glass='clear'] {
+  background: linear-gradient(
+    128deg,
+    #7c878d 0%,
+    #7c878d 30%,
+    #ffffff 40%,
+    rgb(255 255 255 / 0.55) 50%,
+    #7c878d 58%,
+    #7c878d 100%
+  );
+}
+
+.m-glass[data-glass='antireflective'] {
+  background: linear-gradient(150deg, #8a949a, #737d84);
+}
+
+.m-glass[data-glass='matte'] {
+  background: radial-gradient(circle at 34% 30%, #c4cbcf, #7d878d 78%);
+  filter: blur(0.6px);
+}
+
+/* --- la pared -------------------------------------------------------- */
+
+/* Un pedazo de pared en la tarjeta de su textura. Rectangular y no redondo: es
+   una pared, y en un círculo chico la textura no tiene dónde verse. */
+.m-wall-chip {
+  display: block;
+  border-radius: var(--ds-radius-check);
+  box-shadow: inset 0 0 0 1px rgb(16 16 16 / 0.08);
+}
+
+/* --- escribir a pantalla completa --------------------------------------
+   El campo arriba de todo, lejos de donde sube el teclado, y "Listo" al lado
+   del título: en el teclado numérico del iPhone no hay tecla de aceptar. */
+
+.m-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: calc(env(safe-area-inset-top, 0px) + var(--ds-space-5)) var(--ds-space-5)
+    var(--ds-space-5);
+  background: var(--ds-background);
+  /* La capa del celular deja pasar los toques al lienzo; el editor no. */
+  pointer-events: auto;
+  animation: m-rise var(--ds-dur) var(--ds-ease);
+}
+
+.m-editor-header {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ds-space-2);
+}
+
+.m-editor-header h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.m-editor-header .ds-button {
+  font: var(--ds-text-control);
+}
+
+.m-editor-title {
+  height: var(--ds-control-min);
+  padding-right: var(--ds-space-4);
+  font: var(--ds-text-title);
+}
+
+.m-editor-row {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+  min-height: var(--ds-control-min);
+}
+
+.m-editor-row > span:first-child {
+  flex: 0 0 96px;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-transform: uppercase;
+}
+
+.m-editor-row > .m-unit {
+  flex: 1;
+}
+
+/* La casilla de sí/no va contra el borde, con el nombre ocupando el resto. */
+.m-editor-row--switch > span:first-child {
+  flex: 1;
+}
+
+.m-editor-row .m-field {
+  height: var(--ds-control-min);
+}
+
+.m-editor-meta {
+  margin: var(--ds-space-2) 0 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+}
+
+/* --- la pantalla de inicio ---------------------------------------------
+   La de Referencia y la mesa de luz, igual: mismas medidas, mismo orden de
+   llegada. */
+
+.m-welcome-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ds-background);
+}
+
+.m-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-7);
+  align-items: center;
+  width: 290px;
+  max-width: calc(100% - var(--ds-space-7));
+  text-align: center;
+}
+
+.m-welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: 100%;
+}
+
+.m-welcome-text h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.m-welcome-text p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+}
+
+.m-welcome .ds-button {
+  font: var(--ds-text-control);
+}
+
+/* Se lee en orden: saludo, qué es, qué hacer, y el botón que responde a todo
+   lo anterior. La barra de abajo llega última: es de otra conversación. */
+.m-welcome-text > *,
+.m-welcome > .ds-button {
+  animation: m-rise var(--ds-dur-slow) var(--ds-ease) backwards;
+}
+
+.m-welcome-text > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.m-welcome-text > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.m-welcome > .ds-button {
+  animation-delay: 240ms;
+}
+
+.m-welcome-note {
+  margin: calc(var(--ds-space-5) * -1) 0 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+}
+
+.m-welcome-bottombar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom, 0px));
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
+}
+
+/* La pastilla de la barra sobre el fondo claro, como en Referencia: sin sombra,
+   porque no flota sobre nada. */
+.m-tray {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-accent-light);
+}
+
+/* --- el aviso -------------------------------------------------------- */
+
+.m-note {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + var(--ds-space-4));
+  right: var(--ds-space-5);
+  left: var(--ds-space-5);
+  z-index: 4;
+  padding: var(--ds-space-3) var(--ds-space-5);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
+  font: var(--ds-text-meta);
+  text-align: center;
+  animation: m-drop var(--ds-dur-slow) var(--ds-spring);
+}
+
+/* --- acostado y bajito -----------------------------------------------
+   Un teléfono acostado no tiene alto para un cajón abajo y un cuadro arriba.
+   El cajón pasa a la derecha, y el cuadro se encaja a su izquierda. */
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .m-dock > .m-bar {
+    width: 100%;
+  }
+
+  .m-dock > .m-drawer {
+    position: absolute;
+    right: var(--ds-space-4);
+    bottom: calc(100% + var(--ds-space-2));
+    width: min(360px, 46vw);
+    margin: 0;
+  }
+
+  .m-drawer.is-open {
+    max-height: calc(100dvh - 96px - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* --- el celular más angosto ------------------------------------------ */
+
+/* "Cambiar dibujo" comparte la fila con girar y quitar: en un teléfono angosto el
+   ícono se va y queda la palabra, que es la que dice qué hace. */
+@media (max-width: 380px) {
+  .m-actions .ds-button svg {
+    display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .m-bar .ds-icon-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+  }
+
+  .m-tabs-thumb {
+    width: 42px;
+    height: 42px;
+    transform: translateX(calc(var(--i, 0) * (42px + var(--ds-space-1))));
+  }
+}
+
+/* --- movimiento ------------------------------------------------------ */
+
+@keyframes m-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes m-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes m-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes m-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes m-deeper {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes m-back {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}

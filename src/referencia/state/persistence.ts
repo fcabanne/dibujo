@@ -1,5 +1,5 @@
 import type { AppState } from '../types'
-import { DEFAULT_STATE } from './defaults'
+import { DEFAULT_STATE, EFFECT_MODES } from './defaults'
 
 const KEY = 'referencia:session:v1'
 
@@ -21,29 +21,30 @@ export function loadSession(): AppState {
     const raw = localStorage.getItem(KEY) ?? adoptRenamed()
     if (!raw) return DEFAULT_STATE
     const parsed = JSON.parse(raw) as Partial<AppState>
-    // La grilla tuvo un modo "ninguna" hasta que el diseño lo sacó: ahora la
-    // grilla se saca bajándole la opacidad. Una sesión guardada con ese modo se
-    // traduce a lo que significaba, para que al abrir se vea lo mismo que se
-    // dejó y no aparezca una grilla que nadie pidió.
-    const hadNoGrid = (parsed.grid?.mode as string | undefined) === 'none'
 
     // Merge contra los defaults: una versión vieja guardada no debe romper la app.
     return {
       grid: {
         ...DEFAULT_STATE.grid,
         ...parsed.grid,
-        mode: hadNoGrid ? DEFAULT_STATE.grid.mode : parsed.grid?.mode ?? DEFAULT_STATE.grid.mode,
         style: {
           ...DEFAULT_STATE.grid.style,
           ...parsed.grid?.style,
-          ...(hadNoGrid ? { opacity: 0 } : null),
           // El espesor cambió de escala entre versiones. Sin redondear, una sesión
           // vieja dibujaría 1,4 mientras el slider marca 1: el control diciendo una
           // cosa y el lienzo otra.
           weight: Math.min(6, Math.max(1, Math.round(parsed.grid?.style?.weight ?? DEFAULT_STATE.grid.style.weight))),
         },
       },
-      effects: { ...DEFAULT_STATE.effects, ...parsed.effects },
+      effects: {
+        ...DEFAULT_STATE.effects,
+        ...parsed.effects,
+        // `bw` dejó de ser independiente del modo: una sesión vieja pudo guardarlo
+        // suelto (Bordes en color, por ejemplo, que ya no puede pasar). Se
+        // recalcula siempre desde el modo final y nunca se lee del storage.
+        bw: (EFFECT_MODES[parsed.effects?.mode ?? DEFAULT_STATE.effects.mode] ?? EFFECT_MODES.original)
+          .bw,
+      },
       paper: { ...DEFAULT_STATE.paper, ...parsed.paper },
       export: { ...DEFAULT_STATE.export, ...parsed.export },
     }

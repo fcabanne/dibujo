@@ -51,6 +51,22 @@ export const MOLDING_TYPES: MoldingType[] = [
   { id: 'pulido', label: 'Pulido', material: 'metal', finish: 'gloss' },
 ]
 
+/**
+ * Las tres familias que se piden de verdad en una casa de cuadros: madera, pintada y
+ * metal. Las siete de arriba se distinguen mirando de cerca —veteado o lisa, mate o
+ * satinado—, pero en el cuadro terminado la diferencia casi no se ve, y elegir entre
+ * siete para ver lo mismo es trabajo de más. Las usa el celular; el escritorio sigue
+ * con la lista entera.
+ *
+ * Se elige la familia por el material: un marco que venga con otro acabado de la
+ * misma familia —"Laca", armado en escritorio— se reconoce como "Pintado".
+ */
+export const MOLDING_FAMILIES: MoldingType[] = [
+  { id: 'madera', label: 'Madera', material: 'wood', finish: 'grained' },
+  { id: 'pintado', label: 'Pintado', material: 'painted', finish: 'satin' },
+  { id: 'metal', label: 'Metal', material: 'metal', finish: 'satin' },
+]
+
 export interface MatPreset {
   id: string
   label: string

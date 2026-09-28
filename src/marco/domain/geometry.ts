@@ -98,12 +98,14 @@ export function composeRects(
   view: Viewport,
   pxPerCm: number,
   parallax: { x: number; y: number },
+  /** Centro del cuadro, si no es el de siempre. Lo usa el celular. */
+  anchor?: { x: number; y: number },
 ): SceneRects {
   // Centrado: la cartela cuelga a un costado pero no corre el cuadro, que es lo
   // que se está mirando. El paralaje lo desplaza apenas, en contra del puntero.
-  const cx = view.width / 2 - parallax.x * 1.3
+  const cx = (anchor?.x ?? view.width / 2) - parallax.x * 1.3
   // Apenas por encima del centro: así cuelga un cuadro a la altura de la vista.
-  const cy = view.height * 0.45 - parallax.y * 0.9
+  const cy = (anchor?.y ?? view.height * 0.45) - parallax.y * 0.9
 
   return {
     outer: centeredRect(layout.outer, cx, cy, pxPerCm),

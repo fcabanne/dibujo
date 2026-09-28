@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { copy } from '../../shared/copy'
-import { Swatch, SwatchPicker } from '../../shared/ui'
 
 /**
  * Cómo se **acomodan** los controles en este panel. Los controles en sí no
@@ -53,49 +52,51 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 /**
- * Los colores que de verdad se usan encima de una foto, en el orden del
- * diseño (Figma 22:341), más la rueda para cualquier otro.
- *
- * Cada uno con su nombre: un círculo de color no dice nada para quien no lo
- * ve, y un hexadecimal tampoco.
+ * Los colores con nombre, en el orden del picker nuevo (Figma 26:425): Blanco,
+ * Negro, Rosa, Celeste, Amarillo. "Otro" no está acá — lleva su propio input
+ * de color y se agrega aparte, como `trailing` del `OptionPicker`.
  */
-const COLORS = [
+export const NAMED_COLORS = [
   { value: '#ffffff', name: copy.grid.colors.white },
   { value: '#111111', name: copy.grid.colors.black },
-  { value: '#ff3b30', name: copy.grid.colors.red },
+  { value: '#ff2d95', name: copy.grid.colors.pink },
   { value: '#00e5ff', name: copy.grid.colors.cyan },
   { value: '#ffd60a', name: copy.grid.colors.yellow },
-  { value: '#ff2d95', name: copy.grid.colors.pink },
 ]
 
-export function ColorRow({
+/**
+ * La tarjeta "Otro" (26:495): mismo dibujo que el resto del `OptionPicker`
+ * pero con un `<input type="color">` invisible encima en vez de un valor
+ * cerrado — el mismo truco que ya usaba `SwatchPicker`.
+ */
+export function CustomColorOption({
   value,
+  selected,
   onChange,
+  onClose,
 }: {
   value: string
+  selected: boolean
   onChange: (color: string) => void
+  /**
+   * Al perder el foco y no al elegir: el diálogo nativo del color dispara
+   * `onChange` de a poco mientras se arrastra adentro de él, y cerrar esta
+   * pantalla a mitad de eso le sacaría del medio al `<input>` que lo sostiene.
+   */
+  onClose: () => void
 }) {
-  const current = value.toLowerCase()
-  const custom = !COLORS.some((color) => color.value === current)
-
   return (
-    <div className="swatches" role="group" aria-label={copy.grid.color}>
-      {COLORS.map((color) => (
-        <Swatch
-          key={color.value}
-          color={color.value}
-          label={color.name}
-          selected={color.value === current}
-          onSelect={() => onChange(color.value)}
-        />
-      ))}
-      <SwatchPicker
+    <label className={'ds-option ds-option--any' + (selected ? ' is-selected' : '')}>
+      <span className="ds-option-swatch ds-option-swatch--any" />
+      <span>{copy.grid.customColor}</span>
+      <input
+        type="color"
         value={value}
-        selected={custom}
-        label={copy.grid.customColor}
-        onChange={onChange}
+        aria-label={copy.grid.customColor}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onClose}
       />
-    </div>
+    </label>
   )
 }
 

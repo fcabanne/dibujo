@@ -19,7 +19,6 @@
 
   "canvas": {
     "drop": "Drop your reference photo here",
-    "fit": "Fit",
     "alt": "Reference photo"
   },
 
@@ -51,29 +50,28 @@
   "grid": {
     "tab": "Grid",
     "title": "Grid",
-    "type": "Type",
+    "type": "Grid",
     "proportional": "Proportional",
     "proportionalHint": "Divides the photo into equal parts",
     "square": "Square",
     "squareHint": "Exact squares starting from the top left",
-    "divisions": "Divisions",
-    "fewer": "Fewer divisions",
-    "more": "More divisions",
+    "none": "None",
+    "noneHint": "No grid",
+    "divisions": "Amount",
+    "fewer": "Fewer",
+    "more": "More",
     "color": "Colour",
-    "customColor": "Another colour",
+    "customColor": "Other",
     "colors": {
       "white": "White",
       "black": "Black",
-      "red": "Red",
       "cyan": "Cyan",
       "yellow": "Yellow",
       "pink": "Pink"
     },
     "weight": "Thickness",
     "opacity": "Opacity",
-    "opacityValue": "{n}%",
-    "labels": "Show labels",
-    "subdivide": "Subdivide"
+    "opacityValue": "{n}%"
   },
 
   "adjust": {
@@ -105,7 +103,9 @@
     "pdfHint": "Prints without rescaling",
     "jpg": "JPG",
     "jpgHint": "A plain image",
-    "cancel": "Cancel",
+    "labels": "Labels",
+    "close": "Close",
+    "lightTable": "Take to the light table",
     "working": "Preparing…",
     "fileSuffix": "reference"
   },
@@ -121,11 +121,76 @@
     "shared": "Shared",
     "loadFailed": "Couldn't load the image",
     "downloadFailed": "Couldn't download",
+    "lightTableFailed": "Couldn't take the photo to the light table",
     "notAnImage": "That file isn't an image",
     "unreadable": "Couldn't read the image",
     "unprocessable": "Couldn't process the image",
     "unopenable": "Couldn't open the image",
     "canvasFailed": "Couldn't prepare the export canvas",
     "outOfMemory": "This device ran out of memory for a file that size. Try a smaller sheet."
+  },
+
+  "mesa": {
+    "name": "Light table",
+    "intro": "With this tool you can lay your reference image over the paper to copy it or spot the differences.",
+    "hint": "Start by setting your phone on a tripod or something steady, then upload your reference.",
+    "change": "Change photo",
+    "opacity": "How much of the photo shows",
+    "opacityValue": "{n}%",
+    "corner": "Corner {n}",
+    "reset": "Reset",
+    "torchOn": "Turn on the flashlight",
+    "torchOff": "Turn off the flashlight",
+    "insecure": "The camera needs the published site: browsers won't lend it to a file opened with a double click.",
+    "openSite": "Open the light table",
+    "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
+    "denied": "The camera is blocked for this site. Allow it from the padlock in the address bar.",
+    "noCamera": "No camera was found.",
+    "retry": "Try again"
+  },
+
+  "marco": {
+    "name": "Frames",
+    "tabs": {
+      "artwork": "Artwork",
+      "frame": "Frame",
+      "mat": "Mat",
+      "glass": "Glass",
+      "wall": "Wall"
+    },
+    "upload": "Upload drawing",
+    "change": "Change drawing",
+    "rotate": "Rotate the frame",
+    "size": "Real size",
+    "width": "Artwork width",
+    "height": "Artwork height",
+    "lockOn": "Ratio locked: the other side follows",
+    "lockOff": "Ratio free: each side on its own",
+    "title": "Title",
+    "titlePlaceholder": "Untitled",
+    "color": "Color",
+    "customColor": "Other color",
+    "custom": "Custom",
+    "finish": "Finish",
+    "profile": "Profile",
+    "frameWidth": "Width",
+    "depth": "Depth",
+    "matWidth": "Width",
+    "noFrame": "No frame",
+    "noMat": "No mat",
+    "glass": "Glass",
+    "texture": "Texture",
+    "cm": "{n} cm",
+    "unit": "cm",
+    "intro": "I made this little tool so you can try frames, mats and glass on your drawing before taking it to the framer.",
+    "hint": "Upload a photo of the drawing, play with the framing and take the measurements with you.",
+    "remove": "Remove the drawing",
+    "done": "Done",
+    "widthShort": "Width",
+    "heightShort": "Height",
+    "keepRatio": "Keep ratio",
+    "finished": "The finished piece measures {width} × {height} cm",
+    "noMatShort": "No mat",
+    "loadFailed": "Couldn't load the image"
   }
 }

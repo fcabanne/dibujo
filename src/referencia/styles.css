@@ -60,21 +60,6 @@ body {
   height: 100%;
 }
 
-.stage .fit {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  padding: var(--ds-space-2) var(--ds-space-5);
-  border: 0;
-  border-radius: var(--ds-radius-control);
-  background: var(--ds-accent-light);
-  color: var(--ds-accent-dark);
-  font: var(--ds-text-meta);
-  cursor: pointer;
-  transform: translateX(-50%);
-  animation: ds-rise-centered 0.28s var(--ds-spring);
-}
-
 .stage .drop {
   position: absolute;
   display: grid;
@@ -82,10 +67,14 @@ body {
   place-items: center;
   border: 2px dashed var(--ds-accent-dark);
   border-radius: var(--ds-radius-group);
-  background: rgb(246 244 255 / 0.82);
+  /* El fondo, un poco transparente: se sigue viendo que abajo hay una foto que
+     va a ser reemplazada. Del token y no un color suelto, que quedó viejo la
+     vez que cambió la paleta. */
+  background: color-mix(in srgb, var(--ds-background) 82%, transparent);
   color: var(--ds-accent-dark);
   font: var(--ds-text-control);
   pointer-events: none;
+  animation: ds-fade-in var(--ds-dur-fast) var(--ds-ease);
 }
 
 .stage.is-dragging {
@@ -137,39 +126,44 @@ body {
   font: var(--ds-text-control);
 }
 
-/* Abajo de todo, no pegado al botón: es de otra conversación. */
-.welcome-link {
-  position: absolute;
-  bottom: calc(40px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
+/* La primera vez que se abre, la pantalla se lee en orden: saludo, qué es,
+   qué hacer, y recién ahí el botón, que es la respuesta a todo lo anterior.
+   Cada parte llega un poco después que la de arriba. La barra de abajo
+   llega última: es de otra conversación. */
+.welcome-text > *,
+.welcome > .ds-button {
+  animation: ds-rise var(--ds-dur-slow) var(--ds-ease) backwards;
 }
 
-/* --- la barra de arriba ------------------------------------------- */
+.welcome-text > :nth-child(2) {
+  animation-delay: 70ms;
+}
 
-.topbar {
+.welcome-text > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.welcome > .ds-button {
+  animation-delay: 240ms;
+}
+
+/* --- la barra de abajo, sin foto ------------------------------------
+   Volver y "Dejame sugerencias" comparten la misma fila, flotando sobre la
+   pantalla de inicio — la misma idea que la barra de abajo con foto puesta,
+   solo que acá no hay pestañas en el medio. */
+
+.welcome-bottombar {
   position: absolute;
-  top: 0;
   right: 0;
+  bottom: 0;
   left: 0;
   z-index: 2;
   display: flex;
-  gap: var(--ds-space-3);
   align-items: center;
-  padding: var(--ds-space-3) var(--ds-space-4);
-  padding-top: calc(var(--ds-space-3) + env(safe-area-inset-top));
-  /* La barra no roba el gesto: arrastrar sobre el aire mueve la foto. */
-  pointer-events: none;
-}
-
-.topbar > * {
-  pointer-events: auto;
-}
-
-/* El lugar donde el diseño no pone nada (18:88, 22:63). Empuja lo que venga
-   después contra el borde derecho. */
-.topbar-gap {
-  flex: 1;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
 }
 
 /* --- la columna de escritorio ------------------------------------- */
@@ -178,9 +172,6 @@ body {
   display: flex;
   flex: none;
   flex-direction: column;
-  /* Lo que necesita la fila más ancha. No es "Tipo" con sus dos botones, que
-     entran en menos: son los siete círculos de color, que miden 44 fijos y no
-     se achican. Contando el relleno y la barra de scroll, 360. */
   width: 360px;
   border-left: 1px solid var(--ds-accent-light);
   background: var(--ds-background);
@@ -246,40 +237,177 @@ body {
 
 /* --- los controles de abajo, en pantalla angosta ------------------- */
 
+/* En el flujo, como antes: su alto propio es constante (relleno + la barra de
+   pestañas), porque el cajón —lo único que cambia de tamaño— ya no cuenta
+   para ese alto (ver `.tab-drawer`). Eso es lo que hace que el lienzo de
+   arriba (`.stage`, `flex:1`) mida siempre lo mismo sin importar qué pestaña
+   o qué picker esté abierto. */
 .controls {
   position: relative;
   z-index: 2;
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: var(--ds-space-2);
+  /* padding de 16, como el Container 22:55. El gap de 16 entre el panel y la
+     barra lo pone el cajón (ver abajo): así, cerrado, no queda un hueco. */
   align-items: center;
-  padding: var(--ds-space-2) 0;
-  padding-bottom: calc(var(--ds-space-2) + env(safe-area-inset-bottom));
+  padding: var(--ds-space-5) var(--ds-space-6);
+  padding-bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
   background: var(--ds-background);
   backdrop-filter: blur(16px);
 }
 
+/* El cajón mide lo que mide su contenido, y ni un píxel más: `Panel` lo
+   calcula (`useDrawerHeight`) y lo manda acá como `--content-height`. Antes
+   tenía un alto fijo —el de la vista más alta, para que la foto de arriba no
+   se reencuadrara al cambiar de pestaña—, y las vistas más bajas dejaban un
+   vacío. Ahora crece hacia arriba **flotando sobre la foto** (`position:
+   absolute`, anclado al borde de arriba de `.controls`) en vez de empujar el
+   lienzo: por eso puede achicarse y agrandarse libremente sin que la foto se
+   reencuadre — abierto, tapa una franja de la foto, como una bandeja que se
+   levanta encima; cerrado, no tapa nada. Necesita su propio fondo —el de
+   `.controls` no alcanza hasta acá arriba— para leerse como la misma
+   bandeja continua. */
+.tab-drawer {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Ya no es hijo de flujo de `.controls`, así que no hereda su padding: se
+     repite acá el mismo espacio —16 arriba, 16 a los costados, como el
+     Container 22:55—, para que su contenido caiga en el mismo lugar que
+     antes. `border-box` para que ese padding entre en el alto medido y no se
+     sume aparte. */
+  padding: var(--ds-space-5) var(--ds-space-6) 0;
+  box-sizing: border-box;
+  background: var(--ds-background);
+  backdrop-filter: blur(16px);
+  /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
+     en el acto no se vería bajar. Al abrir es al revés: visible desde el
+     primer cuadro. */
+  transition: height var(--ds-dur-slow) var(--ds-ease),
+    visibility 0s linear var(--ds-dur-slow);
+}
+
+/* El `+ space-5` es el padding-top de acá arriba, no un espacio aparte: con
+   `border-box`, ese margen entra en el alto en vez de sumarse a él, y la
+   caja de contenido le queda exactamente `--content-height` a `.tab-panel`.
+   La franja debajo del cajón, antes de llegar a las pestañas, la pone el
+   padding-top de `.controls` (ver arriba) — ya no hace falta repetirla acá. */
+.tab-drawer.is-open {
+  height: calc(var(--content-height, 213px) + var(--ds-space-5));
+  visibility: visible;
+  transition: height var(--ds-dur-slow) var(--ds-ease), visibility 0s;
+}
+
 .tab-panel {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  /* Salvavidas: nada limita cuánto puede crecer `--content-height` contra el
+     alto real de la pantalla, así que en el peor de los casos (una ventana
+     bajísima) esto scrollea en vez de tapar la barra de abajo. */
+  overflow-y: auto;
+}
+
+/* Una vista del cajón: la de una pestaña, o la de su picker. Cómo entra lo
+   decide `Panel` según de dónde se viene — ver `viewMotion` ahí. */
+.panel-view {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-2);
-  width: 100%;
-  /* Lo que mide la pestaña más alta —la grilla, con sus siete filas— en un
-     celular común. Más arriba se comería la foto; más abajo scrollearía siempre. */
-  max-height: 52vh;
-  padding: 0 var(--ds-space-6);
-  overflow-y: auto;
-  animation: ds-rise 0.22s var(--ds-ease);
+  animation-duration: var(--ds-dur);
+  animation-timing-function: var(--ds-ease);
+  animation-fill-mode: backwards;
 }
 
-/* La píldora del diseño: contenedor claro, y el elegido en violeta adentro. */
+/* El cajón estaba cerrado: la vista sube un poco mientras él se abre. */
+.panel-view.is-rise {
+  animation-name: ds-rise;
+  animation-delay: 60ms;
+}
+
+/* Otra pestaña: entra del lado en que está su botón en la barra. */
+.panel-view.is-from-right {
+  animation-name: ds-from-right;
+}
+
+.panel-view.is-from-left {
+  animation-name: ds-from-left;
+}
+
+/* Se abrió un picker: la vista nueva está "más adentro" y crece hasta su
+   lugar. Se volvió a las filas: estaban "más afuera" y se asientan
+   achicándose. Es la misma idea que un zoom, en chico. */
+.panel-view.is-deeper {
+  animation-name: ds-deeper;
+}
+
+.panel-view.is-back {
+  animation-name: ds-back;
+}
+
+/* La píldora del diseño: contenedor claro, y el elegido en oscuro adentro.
+   Se usa tres veces en la misma fila —volver, pestañas, descargar— y por eso
+   no tiene ancho propio: cada una mide lo que necesitan sus botones. */
 .tabbar {
   display: flex;
+  flex: none;
   gap: var(--ds-space-1);
   padding: var(--ds-space-1);
   border-radius: var(--ds-radius-group);
   background: var(--ds-accent-light);
+}
+
+/* La pastilla de las pestañas lleva su marca oscura como un elemento aparte
+   que viaja de botón en botón (`--i` lo pone `Panel`); el botón elegido deja
+   de pintar su propio fondo para no tapar el viaje. El resorte hace que se
+   pase un poco y vuelva: se lee como algo que se desliza, no como algo que
+   se teletransporta. */
+.tabbar--tabs {
+  position: relative;
+}
+
+.tabbar--tabs .ds-icon-button {
+  position: relative;
+  z-index: 1;
+  transition-duration: var(--ds-dur);
+}
+
+.tabbar--tabs .ds-icon-button.is-selected {
+  background: none;
+}
+
+.tabbar-thumb {
+  position: absolute;
+  top: var(--ds-space-1);
+  left: var(--ds-space-1);
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  transform: translateX(calc(var(--i, 0) * (var(--ds-control-min) + var(--ds-space-1))));
+  transition: transform var(--ds-dur-slow) var(--ds-spring),
+    opacity var(--ds-dur-fast) var(--ds-ease), scale var(--ds-dur) var(--ds-spring);
+}
+
+/* Con el cajón cerrado no hay pestaña abierta: la marca se achica en el
+   lugar de la última, y vuelve a crecer desde ahí. */
+.tabbar-thumb.is-hidden {
+  opacity: 0;
+  scale: 0.6;
+}
+
+/* Volver, pestañas y descargar en una sola fila (Figma 22:45, Frame 18): ya
+   no hay una barra flotante arriba con volver y descargar por su cuenta. */
+.bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 /* --- la fila nombre–control --------------------------------------- */
@@ -288,7 +416,7 @@ body {
   display: flex;
   gap: var(--ds-space-2);
   align-items: center;
-  min-height: var(--ds-control-row);
+  min-height: var(--ds-control-field);
 }
 
 /* Basis 0 y crece: el control se lleva la mitad y el nombre la otra, como en
@@ -297,30 +425,22 @@ body {
 .field-name {
   flex: 1 1 0;
   min-width: 0;
+  overflow: hidden;
   font: var(--ds-text-field);
   color: var(--ds-black);
-}
-
-/* --- las muestras de color ---------------------------------------- */
-
-/* Sin separación propia a lo ancho: el reparto lo hace `space-between`, como
-   en el diseño. Con un `gap` además, los siete círculos necesitan 332 px y en
-   un celular de 375 hay 327 — se pasa por cinco y cae uno a la línea de
-   abajo. El de las filas queda por si aparece una pantalla todavía más
-   angosta. */
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ds-space-1) 0;
-  justify-content: space-between;
-  min-height: var(--ds-control-row);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* --- la foto en su pestaña ---------------------------------------- */
 
 .thumb {
   position: relative;
-  height: 132px;
+  /* Ya no comparte presupuesto con las demás pestañas (ver `.tab-drawer`):
+     cada una mide lo que necesita su contenido, así que esta puede volver a
+     un alto cómodo en vez del que dejaba libre un panel de altura fija. */
+  height: 200px;
   overflow: hidden;
   border-radius: var(--ds-radius-control);
   /* A cuadros: sin él, una foto con transparencia se confunde con el fondo. */
@@ -381,6 +501,8 @@ body {
   margin-bottom: var(--ds-space-2);
   font: var(--ds-text-field);
   color: var(--ds-black);
+  /* Como `.field-name` en el panel: las etiquetas de campo van en mayúscula. */
+  text-transform: uppercase;
 }
 
 /* Las opciones del diálogo ocupan la fila entera, no se apoyan en un nombre
@@ -464,7 +586,13 @@ body {
   background: var(--ds-accent-dark);
   color: var(--ds-white);
   font: var(--ds-text-meta);
-  animation: ds-rise 0.3s var(--ds-spring);
+  animation: ds-rise var(--ds-dur-slow) var(--ds-spring);
+}
+
+/* El aviso se va por donde vino, en vez de desaparecer de un cuadro al otro:
+   si alguien lo estaba leyendo, lo ve irse. */
+.note.is-leaving {
+  animation: ds-sink var(--ds-dur) var(--ds-ease) forwards;
 }
 
 /* --- el diálogo de descarga ------------------------------------------- */
@@ -479,29 +607,48 @@ body {
 }
 
 .sheet::backdrop {
-  background: rgb(16 16 16 / 0.42);
+  background: color-mix(in srgb, var(--ds-black) 42%, transparent);
 }
 
 .sheet[open] {
-  animation: ds-pop 0.24s var(--ds-spring);
+  animation: ds-pop var(--ds-dur) var(--ds-spring);
+}
+
+/* El velo aparece junto con el diálogo en vez de caer de golpe. */
+.sheet[open]::backdrop {
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease);
 }
 
 .sheet-body {
   padding: var(--ds-space-5);
 }
 
+.sheet-header {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  justify-content: space-between;
+  /* La X mide 48 y el título 25: sin esto el aire de abajo crecería con ella. */
+  margin: calc(var(--ds-space-3) * -1) calc(var(--ds-space-3) * -1) var(--ds-space-4) 0;
+}
+
 .sheet-body h2 {
-  margin: 0 0 var(--ds-space-5);
+  margin: 0;
   font: var(--ds-text-title);
   color: var(--ds-black);
 }
 
-.sheet-body > .field + .field {
+/* La fila del interruptor de etiquetas es un `.field-row`, no un `.field`
+   —es una sola pregunta de sí/no, no una lista de opciones larga—, pero
+   necesita el mismo aire que separa a los `.field` entre sí. */
+.sheet-body > .field + .field,
+.sheet-body > .field + .field-row {
   margin-top: var(--ds-space-5);
 }
 
 .sheet-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--ds-space-2);
   margin-top: var(--ds-space-7);
 }
@@ -519,14 +666,38 @@ body {
   }
 }
 
-@keyframes ds-rise-centered {
+@keyframes ds-sink {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes ds-from-right {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    transform: translateX(24px);
   }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
+}
+
+@keyframes ds-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes ds-deeper {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes ds-back {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
   }
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import {
   clamp,
   computeLayout,
@@ -8,8 +8,17 @@ import {
   type SceneRects,
 } from '../domain/geometry'
 import { loadArtworkFile } from '../../shared/imageFile'
-import { draggableTarget, grabDistance, hitZone, type Zone } from '../interaction/zones'
+import { easeOut } from '../../shared/motion'
+import {
+  draggableTarget,
+  grabDistance,
+  hitZone,
+  touchZone,
+  type Point,
+  type Zone,
+} from '../interaction/zones'
 import { useImage } from '../hooks/useImage'
+import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
@@ -33,6 +42,27 @@ export interface SceneSnapshot {
   wallLuma: number
   /** El puntero estuvo activo hace poco: gobierna si el HUD se muestra. */
   awake: boolean
+  /**
+   * Celular: dónde va la cartela, o `null` si no hay lugar para ella. Abajo del
+   * cuadro el punto es el medio de su borde de arriba; al costado, su esquina de
+   * abajo a la izquierda, como en el escritorio.
+   */
+  label?: { x: number; y: number; side: boolean } | null
+}
+
+/** Qué parte del cuadro tocó el dedo, para abrir lo que la edita. */
+export type Part = 'frame' | 'mat' | 'art' | 'wall'
+
+/**
+ * El lugar que le queda al cuadro en el celular, en px del lienzo: lo que no tapan
+ * los controles. `label` dice dónde entra la cartela, si entra.
+ */
+export interface FreeArea {
+  x: number
+  y: number
+  w: number
+  h: number
+  label: 'below' | 'side' | null
 }
 
 interface Props {
@@ -42,6 +72,12 @@ interface Props {
   onLayout: (layout: Layout) => void
   onArtworkDropped: (src: string, aspect: number) => void
   onAwakeChange: (awake: boolean) => void
+  /** Celular: gestos de dedo, encuadre en el lugar libre, inclinación del teléfono. */
+  compact?: boolean
+  /** Celular: cómo medir el lugar libre. Lo registra la capa de controles. */
+  freeArea?: MutableRefObject<(() => FreeArea | null) | null>
+  /** Celular: un toque corto sobre una parte del cuadro. */
+  onPartTap?: (part: Part) => void
 }
 
 /**
@@ -55,12 +91,100 @@ const IDLE_MS = 2000
 /** Cuánto deja alejar y acercar la rueda. */
 const VIEW_ZOOM = { min: 0.45, max: 2.2 }
 
+/**
+ * Celular: cuánto se acerca con los dedos. Por debajo del encuadre no hace falta —el
+ * cuadro ya entra entero—, y el mínimo de `pinch` deja pasarse un poco para que
+ * soltar lo devuelva a su lugar en vez de frenar en seco.
+ */
+const TOUCH_ZOOM = { pinch: 0.85, max: 3 }
+/** Por encima de esto se está mirando de cerca: un dedo corre la vista en vez de la luz. */
+const ZOOMED = 1.04
+/** Lo que se reserva para la cartela: abajo del cuadro, o al costado. */
+const LABEL_BELOW = 132
+const LABEL_SIDE = 250
+/** Un toque es poco movimiento en poco tiempo; dos seguidos en el mismo lugar, uno doble. */
+const TAP = { px: 8, ms: 350 }
+const DOUBLE_TAP = { px: 30, ms: 320 }
+/** Cuánto dura el fundido entre un material y otro. */
+const FADE_MS = 240
+
 interface DragState {
   target: 'frame' | 'mat'
   startWidth: number
   startDist: number
   /** Escala congelada: si se reajustara al crecer, el cuadro se escapa del cursor. */
   frozenScale: number
+}
+
+type Gesture = 'idle' | 'band' | 'look' | 'pan' | 'pinch'
+
+/** Con qué se pintó el último cuadro: si nada de esto cambió, no hay que repintar. */
+interface Painted {
+  state: AppState
+  image: HTMLImageElement | null
+  scale: number
+  x: number
+  y: number
+  px: number
+  py: number
+}
+
+interface TouchState {
+  mode: Gesture
+  pointers: Map<number, Point>
+  /** Dónde y cuándo apoyó el primer dedo, y sobre qué parte. */
+  down: { x: number; y: number; time: number; zone: Zone } | null
+  moved: boolean
+  /** El pellizco se mide contra el movimiento anterior, no contra el inicio. */
+  spread: number
+  mid: Point
+}
+
+/**
+ * Lo que cambia de un toque sin mover nada de lugar: color, acabado, perfil, vidrio,
+ * pared. Esos cambios se funden en el celular. Los que cambian medidas no, porque el
+ * cuadro viejo y el nuevo no coinciden y el fundido se vería doble.
+ */
+function looksKey(s: AppState): string {
+  const f = s.frame
+  const m = s.mats[0]
+  return [f.color, f.material, f.finish, f.profile, m?.color, s.glass, s.wall.color, s.wall.pattern].join(
+    '|',
+  )
+}
+
+function partOf(zone: Zone): Part {
+  if (zone === 'frame' || zone === 'frame-ghost') return 'frame'
+  if (zone === 'mat' || zone === 'mat-ghost') return 'mat'
+  if (zone === 'art') return 'art'
+  return 'wall'
+}
+
+/**
+ * El ancho nuevo de la banda que se está arrastrando. Lo comparten el mouse y el
+ * dedo: es la misma cota, y el mismo imán al medio centímetro.
+ */
+function dragWidth(
+  drag: DragState,
+  p: Point,
+  rects: SceneRects,
+  dispatch: (action: Action) => void,
+) {
+  const dist = grabDistance(p, rects)
+  const delta = (dist - drag.startDist) / drag.frozenScale
+  const raw = drag.startWidth + delta
+
+  if (drag.target === 'frame') {
+    const width = clamp(snap(raw, LIMITS.frameWidth.step), LIMITS.frameWidth.min, LIMITS.frameWidth.max)
+    dispatch({ type: 'frame/patch', patch: { width } })
+  } else {
+    // Por debajo del mínimo el passe-partout no se encoge: se apaga.
+    const width = clamp(snap(raw, LIMITS.matWidth.step), 0, LIMITS.matWidth.max)
+    dispatch({
+      type: 'mat/patch',
+      patch: width < LIMITS.matWidth.min ? { enabled: false } : { enabled: true, width },
+    })
+  }
 }
 
 export function Canvas({
@@ -70,6 +194,9 @@ export function Canvas({
   onLayout,
   onArtworkDropped,
   onAwakeChange,
+  compact = false,
+  freeArea,
+  onPartTap,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -90,16 +217,47 @@ export function Canvas({
    */
   const viewZoomRef = useRef(1)
 
+  // --- solo en el celular ---------------------------------------------------
+  const tilt = useTilt(compact)
+  /** La cámara que piden los dedos: cuánto se acercó y cuánto se corrió del centro. */
+  const camRef = useRef({ zoom: 1, x: 0, y: 0 })
+  /** Dónde se ve el centro del cuadro ahora; persigue al pedido, como la escala. */
+  const anchorRef = useRef<Point | null>(null)
+  /** El centro del lugar libre, sin corrimiento. El pellizco se mide contra él. */
+  const baseRef = useRef<Point>({ x: 0, y: 0 })
+  /** El dedo arrastrando sobre la pared corre la luz, como el mouse en escritorio. */
+  const lookRef = useRef<Point | null>(null)
+  const touchRef = useRef<TouchState>({
+    mode: 'idle',
+    pointers: new Map(),
+    down: null,
+    moved: false,
+    spread: 0,
+    mid: { x: 0, y: 0 },
+  })
+  const lastTapRef = useRef({ time: 0, x: 0, y: 0 })
+  /** El cuadro de antes de un cambio de material, fundiéndose sobre el nuevo. */
+  const fadeRef = useRef<{ canvas: HTMLCanvasElement; start: number } | null>(null)
+  const looksRef = useRef('')
+  /** Lo último que se pintó: si nada cambió desde entonces, no se vuelve a pintar. */
+  const paintedRef = useRef<Painted | null>(null)
+
   const stateRef = useRef(state)
   const imageRef = useRef(image)
   const onLayoutRef = useRef(onLayout)
   const onAwakeRef = useRef(onAwakeChange)
   const dispatchRef = useRef(dispatch)
+  const compactRef = useRef(compact)
+  const freeAreaRef = useRef(freeArea)
+  const onPartTapRef = useRef(onPartTap)
   stateRef.current = state
   imageRef.current = image
   onLayoutRef.current = onLayout
   onAwakeRef.current = onAwakeChange
   dispatchRef.current = dispatch
+  compactRef.current = compact
+  freeAreaRef.current = freeArea
+  onPartTapRef.current = onPartTap
 
   // --- loop de render -------------------------------------------------------
   useEffect(() => {
@@ -121,51 +279,188 @@ export function Canvas({
         const dpr = Math.min(2, window.devicePixelRatio || 1)
         const dw = Math.round(box.width * dpr)
         const dh = Math.round(box.height * dpr)
+        let resized = false
         if (canvas.width !== dw || canvas.height !== dh) {
           canvas.width = dw
           canvas.height = dh
+          resized = true
         }
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
         const current = stateRef.current
         const layout = computeLayout(current)
-
-        // Escala: persigue el encaje, salvo mientras arrastrás.
+        const touch = compactRef.current
         const drag = dragRef.current
-        const target = drag
-          ? drag.frozenScale
-          : fitScale(layout.outer, box.width, box.height) * viewZoomRef.current
+        const k = 1 - Math.exp(-dt / 70)
 
-        if (scaleRef.current === null) scaleRef.current = target
-        else {
-          const k = 1 - Math.exp(-dt / 70)
-          scaleRef.current += (target - scaleRef.current) * k
-          if (Math.abs(target - scaleRef.current) < 0.01) scaleRef.current = target
+        let labelMode: FreeArea['label'] = null
+
+        if (touch) {
+          // El cuadro se encaja en lo que dejan libre los controles, y los persigue
+          // cuadro a cuadro: cuando el cajón sube, el cuadro sube y se achica con él.
+          const free = freeAreaRef.current?.current?.() ?? {
+            x: 0,
+            y: 0,
+            w: box.width,
+            h: box.height,
+            label: null,
+          }
+          const cam = camRef.current
+          labelMode = cam.zoom > ZOOMED ? null : free.label
+          const margin = clamp(Math.min(free.w, free.h) * 0.07, 16, 40)
+          const usableW = Math.max(40, free.w - margin * 2 - (labelMode === 'side' ? LABEL_SIDE : 0))
+          const usableH = Math.max(40, free.h - margin * 2 - (labelMode === 'below' ? LABEL_BELOW : 0))
+          const fit = Math.min(usableW / layout.outer.w, usableH / layout.outer.h)
+          const base = { x: free.x + margin + usableW / 2, y: free.y + margin + usableH / 2 }
+          baseRef.current = base
+
+          // Como en Referencia: la vista solo se corre hacia donde sobra cuadro.
+          const s = fit * cam.zoom
+          const spareX = Math.max(0, (layout.outer.w * s - usableW) / 2 + margin)
+          const spareY = Math.max(0, (layout.outer.h * s - usableH) / 2 + margin)
+          cam.x = clamp(cam.x, -spareX, spareX)
+          cam.y = clamp(cam.y, -spareY, spareY)
+
+          const targetScale = drag ? drag.frozenScale : s
+          const targetAnchor = { x: base.x + cam.x, y: base.y + cam.y }
+          // Con los dedos encima la vista va pegada a ellos; si no, llega con la curva.
+          const follow = touchRef.current.mode === 'pinch' || touchRef.current.mode === 'pan'
+
+          if (scaleRef.current === null || anchorRef.current === null || follow) {
+            scaleRef.current = targetScale
+            anchorRef.current = targetAnchor
+          } else {
+            const a = anchorRef.current
+            scaleRef.current += (targetScale - scaleRef.current) * k
+            a.x += (targetAnchor.x - a.x) * k
+            a.y += (targetAnchor.y - a.y) * k
+            if (Math.abs(targetScale - scaleRef.current) < 0.01) scaleRef.current = targetScale
+            if (Math.abs(targetAnchor.x - a.x) < 0.1) a.x = targetAnchor.x
+            if (Math.abs(targetAnchor.y - a.y) < 0.1) a.y = targetAnchor.y
+          }
+        } else {
+          // Escala: persigue el encaje, salvo mientras arrastrás.
+          const target = drag
+            ? drag.frozenScale
+            : fitScale(layout.outer, box.width, box.height) * viewZoomRef.current
+
+          if (scaleRef.current === null) scaleRef.current = target
+          else {
+            scaleRef.current += (target - scaleRef.current) * k
+            if (Math.abs(target - scaleRef.current) < 0.01) scaleRef.current = target
+          }
         }
 
-        // Paralaje: el puntero normalizado a -1..1, suavizado. Al salir vuelve al centro.
+        // Paralaje: -1..1, suavizado. En escritorio es el puntero; en el celular, el
+        // dedo arrastrando sobre la pared o, si no hay dedo, la inclinación del
+        // teléfono. Sin ninguno de los dos vuelve al centro.
         const p = pointerRef.current
-        const aimX = p.inside ? clamp((p.x / box.width) * 2 - 1, -1, 1) : 0
-        const aimY = p.inside ? clamp((p.y / box.height) * 2 - 1, -1, 1) : 0
+        let aimX = 0
+        let aimY = 0
+        if (touch) {
+          const look = lookRef.current
+          const t = tilt.current
+          if (look) {
+            aimX = look.x
+            aimY = look.y
+          } else if (t.active) {
+            aimX = t.x
+            aimY = t.y
+          }
+        } else if (p.inside) {
+          aimX = clamp((p.x / box.width) * 2 - 1, -1, 1)
+          aimY = clamp((p.y / box.height) * 2 - 1, -1, 1)
+        }
         const kp = 1 - Math.exp(-dt / 130)
-        parallaxRef.current.x += (aimX - parallaxRef.current.x) * kp
-        parallaxRef.current.y += (aimY - parallaxRef.current.y) * kp
+        const par = parallaxRef.current
+        par.x += (aimX - par.x) * kp
+        par.y += (aimY - par.y) * kp
+
+        if (touch) {
+          // Llega y se queda quieto, en vez de acercarse para siempre sin llegar: es
+          // lo que deja reconocer que no hay nada nuevo que pintar.
+          if (Math.abs(aimX - par.x) < 0.001) par.x = aimX
+          if (Math.abs(aimY - par.y) < 0.001) par.y = aimY
+
+          // Un material nuevo se funde sobre el anterior en vez de saltar: se copia
+          // lo último que se pintó y se lo va apagando encima de la escena nueva.
+          const looks = looksKey(current)
+          if (looks !== looksRef.current) {
+            if (looksRef.current && !resized) fadeRef.current = snapshot(canvas, now)
+            looksRef.current = looks
+          }
+
+          // Nada se movió y nada cambió desde el último cuadro pintado: la escena de
+          // la pantalla ya es la correcta. En un teléfono, pintar sesenta veces por
+          // segundo una imagen quieta es gastar batería mirando una pared.
+          const painted = paintedRef.current
+          const anchor = anchorRef.current
+          if (
+            painted &&
+            anchor &&
+            !resized &&
+            !drag &&
+            !fadeRef.current &&
+            painted.state === current &&
+            painted.image === imageRef.current &&
+            painted.scale === scaleRef.current &&
+            painted.x === anchor.x &&
+            painted.y === anchor.y &&
+            painted.px === par.x &&
+            painted.py === par.y
+          ) {
+            frame = requestAnimationFrame(loop)
+            return
+          }
+        }
 
         const { layout: drawn, rects, light } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
           height: box.height,
           pxPerCm: scaleRef.current,
           dpr,
-          parallax: parallaxRef.current,
+          parallax: par,
+          anchor: touch && anchorRef.current ? anchorRef.current : undefined,
         })
+
+        if (touch) {
+          const fade = fadeRef.current
+          if (fade) {
+            const t = (now - fade.start) / FADE_MS
+            if (t >= 1) fadeRef.current = null
+            else {
+              ctx.save()
+              ctx.setTransform(1, 0, 0, 1, 0, 0)
+              ctx.globalAlpha = 1 - easeOut(t)
+              ctx.drawImage(fade.canvas, 0, 0)
+              ctx.restore()
+            }
+          }
+          paintedRef.current = {
+            state: current,
+            image: imageRef.current,
+            scale: scaleRef.current,
+            x: anchorRef.current?.x ?? 0,
+            y: anchorRef.current?.y ?? 0,
+            px: par.x,
+            py: par.y,
+          }
+        }
 
         const hasFrame = current.frame.width > 0
         const hasMat = Boolean(current.mats[0]?.enabled)
-        const zone = p.inside ? hitZone(p, rects, hasFrame, hasMat) : 'wall'
+        const zone = !touch && p.inside ? hitZone(p, rects, hasFrame, hasMat) : 'wall'
+
+        const label =
+          labelMode === 'below'
+            ? { x: rects.outer.x + rects.outer.w / 2, y: rects.outer.y + rects.outer.h + 24, side: false }
+            : labelMode === 'side'
+              ? { x: rects.outer.x + rects.outer.w + 34, y: rects.outer.y + rects.outer.h, side: true }
+              : null
 
         wallLumaRef.current = wallLumaAt(
-          rects.outer.x + rects.outer.w + 110,
-          rects.outer.y + rects.outer.h * 0.4,
+          label ? (label.side ? label.x + 100 : label.x) : rects.outer.x + rects.outer.w + 110,
+          label ? (label.side ? label.y - 50 : label.y + 50) : rects.outer.y + rects.outer.h * 0.4,
           rects.outer,
           light,
           luminance(current.wall.color),
@@ -187,6 +482,7 @@ export function Canvas({
           hasMat,
           wallLuma: wallLumaRef.current,
           awake: sceneRef.current.awake,
+          label,
         }
         onLayoutRef.current(drawn)
       }
@@ -196,11 +492,15 @@ export function Canvas({
 
     frame = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(frame)
-  }, [sceneRef])
+  }, [sceneRef, tilt])
 
   // --- puntero --------------------------------------------------------------
   // A nivel ventana para que el paralaje no se congele al pasar por una burbuja.
+  // Es del escritorio: en el celular no hay un puntero que pase por encima, y los
+  // dedos los atienden los manejadores de más abajo.
   useEffect(() => {
+    if (compact) return
+
     const sleepAfter = (ms: number) => {
       window.clearTimeout(sleepRef.current)
       sleepRef.current = window.setTimeout(() => {
@@ -229,29 +529,7 @@ export function Canvas({
       const drag = dragRef.current
       const rects = sceneRef.current.rects
       if (!drag || !rects) return
-
-      const dist = grabDistance({ x, y }, rects)
-      const delta = (dist - drag.startDist) / drag.frozenScale
-      const raw = drag.startWidth + delta
-
-      if (drag.target === 'frame') {
-        const width = clamp(
-          snap(raw, LIMITS.frameWidth.step),
-          LIMITS.frameWidth.min,
-          LIMITS.frameWidth.max,
-        )
-        dispatchRef.current({ type: 'frame/patch', patch: { width } })
-      } else {
-        // Por debajo del mínimo el passe-partout no se encoge: se apaga.
-        const width = clamp(snap(raw, LIMITS.matWidth.step), 0, LIMITS.matWidth.max)
-        dispatchRef.current({
-          type: 'mat/patch',
-          patch:
-            width < LIMITS.matWidth.min
-              ? { enabled: false }
-              : { enabled: true, width },
-        })
-      }
+      dragWidth(drag, { x, y }, rects, dispatchRef.current)
     }
 
     const onUp = () => {
@@ -278,7 +556,7 @@ export function Canvas({
       window.removeEventListener('blur', onBlur)
       window.clearTimeout(sleepRef.current)
     }
-  }, [sceneRef])
+  }, [sceneRef, compact])
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -314,10 +592,180 @@ export function Canvas({
     [sceneRef],
   )
 
+  // --- dedos ----------------------------------------------------------------
+  // Un dedo sobre la moldura o el passe-partout los ensancha, igual que el mouse.
+  // Sobre la pared o la obra corre la luz —o la vista, si se está mirando de
+  // cerca—. Dos dedos acercan, anclados al medio de los dedos. Un toque corto abre
+  // lo que edita la parte tocada, y un doble toque, de cerca, vuelve al encuadre.
+
+  const local = (e: React.PointerEvent): Point | null => {
+    const box = wrapRef.current?.getBoundingClientRect()
+    return box ? { x: e.clientX - box.left, y: e.clientY - box.top } : null
+  }
+
+  const onTouchDown = useCallback(
+    (e: React.PointerEvent) => {
+      const p = local(e)
+      if (!p) return
+      const g = touchRef.current
+      g.pointers.set(e.pointerId, p)
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Un toque muy corto puede dejar de existir antes de capturarlo.
+      }
+
+      if (g.pointers.size === 1) {
+        const rects = sceneRef.current.rects
+        const current = stateRef.current
+        const hasMat = Boolean(current.mats[0]?.enabled)
+        const zone = rects ? touchZone(p, rects, current.frame.width > 0, hasMat) : 'wall'
+        g.down = { x: p.x, y: p.y, time: performance.now(), zone }
+        g.moved = false
+
+        const target = draggableTarget(zone)
+        if (target && rects && scaleRef.current) {
+          dragRef.current = {
+            target,
+            startWidth:
+              target === 'frame' ? current.frame.width : hasMat ? current.mats[0].width : 0,
+            startDist: grabDistance(p, rects),
+            frozenScale: scaleRef.current,
+          }
+          sceneRef.current.dragging = target
+          g.mode = 'band'
+        } else {
+          g.mode = camRef.current.zoom > ZOOMED ? 'pan' : 'look'
+        }
+      } else if (g.pointers.size === 2 && g.mode !== 'band') {
+        const [a, b] = [...g.pointers.values()]
+        g.mode = 'pinch'
+        g.moved = true
+        g.spread = Math.hypot(a.x - b.x, a.y - b.y)
+        g.mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+        lookRef.current = null
+      }
+      e.preventDefault()
+    },
+    [sceneRef],
+  )
+
+  const onTouchMove = useCallback(
+    (e: React.PointerEvent) => {
+      const g = touchRef.current
+      const previous = g.pointers.get(e.pointerId)
+      const p = local(e)
+      if (!previous || !p) return
+      g.pointers.set(e.pointerId, p)
+
+      const down = g.down
+      if (down && Math.hypot(p.x - down.x, p.y - down.y) > TAP.px) g.moved = true
+
+      const cam = camRef.current
+      if (g.mode === 'band') {
+        const drag = dragRef.current
+        const rects = sceneRef.current.rects
+        if (drag && rects) dragWidth(drag, p, rects, dispatchRef.current)
+      } else if (g.mode === 'look') {
+        // Relativo a donde apoyó: la luz arranca quieta y se corre con el dedo, en
+        // vez de saltar hacia el lugar de la pantalla donde cayó el toque.
+        const box = wrapRef.current?.getBoundingClientRect()
+        if (g.moved && down && box) {
+          const reach = Math.min(box.width, box.height) * 0.42
+          lookRef.current = {
+            x: clamp((p.x - down.x) / reach, -1, 1),
+            y: clamp((p.y - down.y) / reach, -1, 1),
+          }
+        }
+      } else if (g.mode === 'pan') {
+        cam.x += p.x - previous.x
+        cam.y += p.y - previous.y
+      } else if (g.mode === 'pinch' && g.pointers.size >= 2) {
+        const [a, b] = [...g.pointers.values()]
+        const spread = Math.hypot(a.x - b.x, a.y - b.y)
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+        const anchor = anchorRef.current
+        const scale = scaleRef.current
+        if (g.spread > 0 && anchor && scale) {
+          // Lo que estaba bajo el medio de los dedos sigue bajo el medio de los dedos.
+          const zoom = clamp((cam.zoom * spread) / g.spread, TOUCH_ZOOM.pinch, TOUCH_ZOOM.max)
+          const f = zoom / cam.zoom
+          const next = { x: mid.x - (g.mid.x - anchor.x) * f, y: mid.y - (g.mid.y - anchor.y) * f }
+          cam.zoom = zoom
+          cam.x = next.x - baseRef.current.x
+          cam.y = next.y - baseRef.current.y
+          anchorRef.current = next
+          scaleRef.current = scale * f
+        }
+        g.spread = spread
+        g.mid = mid
+      }
+    },
+    [sceneRef],
+  )
+
+  const onTouchEnd = useCallback(
+    (e: React.PointerEvent, cancelled = false) => {
+      const g = touchRef.current
+      if (!g.pointers.delete(e.pointerId)) return
+
+      if (g.mode === 'band' && g.pointers.size === 0) {
+        dragRef.current = null
+        sceneRef.current.dragging = null
+        sceneRef.current.dragCm = null
+      }
+
+      if (g.pointers.size > 0) {
+        // Queda un dedo de un pellizco: sigue moviendo la vista, sin salto.
+        if (g.mode === 'pinch') g.mode = camRef.current.zoom > ZOOMED ? 'pan' : 'idle'
+        return
+      }
+
+      const down = g.down
+      const now = performance.now()
+      const cam = camRef.current
+      if (!cancelled && down && !g.moved && now - down.time < TAP.ms) {
+        const lastTap = lastTapRef.current
+        const double =
+          now - lastTap.time < DOUBLE_TAP.ms &&
+          Math.hypot(down.x - lastTap.x, down.y - lastTap.y) < DOUBLE_TAP.px
+        lastTapRef.current = double ? { time: 0, x: 0, y: 0 } : { time: now, x: down.x, y: down.y }
+
+        if (cam.zoom > ZOOMED) {
+          if (double) {
+            cam.zoom = 1
+            cam.x = 0
+            cam.y = 0
+          }
+        } else {
+          onPartTapRef.current?.(partOf(down.zone))
+        }
+      }
+
+      // Soltar por debajo del encuadre, o apenas por encima, vuelve solo a su lugar.
+      if (cam.zoom < ZOOMED) {
+        cam.zoom = 1
+        cam.x = 0
+        cam.y = 0
+      }
+      lookRef.current = null
+      g.mode = 'idle'
+      g.down = null
+      askTiltPermission()
+    },
+    [sceneRef],
+  )
+
   // La rueda acerca y aleja la escena. Mientras arrastrás no hace nada: la escala
   // está congelada a propósito para que el cuadro no se escape del cursor.
   const onWheel = useCallback((e: React.WheelEvent) => {
     if (dragRef.current) return
+    if (compactRef.current) {
+      // Una tableta con trackpad: acerca como el pellizco, contra el centro.
+      const cam = camRef.current
+      cam.zoom = clamp(cam.zoom * Math.exp(-e.deltaY * 0.0011), 1, TOUCH_ZOOM.max)
+      return
+    }
     viewZoomRef.current = clamp(
       viewZoomRef.current * Math.exp(-e.deltaY * 0.0011),
       VIEW_ZOOM.min,
@@ -340,18 +788,24 @@ export function Canvas({
   )
 
   const zone = sceneRef.current.zone
-  const cursor = dragRef.current
-    ? 'grabbing'
-    : draggableTarget(zone)
-      ? 'grab'
-      : 'default'
+  const cursor = compact
+    ? undefined
+    : dragRef.current
+      ? 'grabbing'
+      : draggableTarget(zone)
+        ? 'grab'
+        : 'default'
 
   return (
     <div
       ref={wrapRef}
       className={'canvas-wrap' + (dragOver ? ' is-dragging' : '')}
       style={{ cursor }}
-      onPointerDown={onPointerDown}
+      onPointerDown={compact ? onTouchDown : onPointerDown}
+      onPointerMove={compact ? onTouchMove : undefined}
+      onPointerUp={compact ? (e) => onTouchEnd(e) : undefined}
+      onPointerCancel={compact ? (e) => onTouchEnd(e, true) : undefined}
+      onClick={compact ? askTiltPermission : undefined}
       onWheel={onWheel}
       onDragOver={(e) => {
         e.preventDefault()
@@ -374,4 +828,19 @@ export function Canvas({
       {error && <div className="canvas-error">{error}</div>}
     </div>
   )
+}
+
+/** Una copia de lo que hay pintado ahora, para fundirla sobre lo que venga. */
+let fadeCanvas: HTMLCanvasElement | null = null
+
+function snapshot(canvas: HTMLCanvasElement, start: number) {
+  if (!fadeCanvas) fadeCanvas = document.createElement('canvas')
+  if (fadeCanvas.width !== canvas.width || fadeCanvas.height !== canvas.height) {
+    fadeCanvas.width = canvas.width
+    fadeCanvas.height = canvas.height
+  }
+  const ctx = fadeCanvas.getContext('2d')
+  ctx?.clearRect(0, 0, fadeCanvas.width, fadeCanvas.height)
+  ctx?.drawImage(canvas, 0, 0)
+  return { canvas: fadeCanvas, start }
 }

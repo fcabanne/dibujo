@@ -16,10 +16,13 @@ import './components.css'
 export { Button, type ButtonProps, type ButtonVariant } from './Button'
 export { IconButton, type IconButtonProps } from './IconButton'
 export { Checkbox, type CheckboxProps } from './Checkbox'
+export { Switch, type SwitchProps } from './Switch'
 export { Slider, type SliderProps } from './Slider'
 export { Stepper, type StepperProps } from './Stepper'
 export { ChoiceGroup, type ChoiceGroupProps, type ChoiceOption } from './Choice'
 export { Swatch, SwatchPicker, type SwatchProps, type SwatchPickerProps } from './Swatch'
+export { Dropdown, type DropdownProps } from './Dropdown'
+export { OptionPicker, type OptionPickerProps, type PickerOption } from './OptionPicker'
 
 export {
   UploadIcon,
@@ -32,5 +35,12 @@ export {
   MinusIcon,
   PlusIcon,
   CloseIcon,
+  FlashlightIcon,
+  ChevronDownIcon,
+  ProportionalIcon,
+  SquareIcon,
+  ContrastIcon,
+  EdgesIcon,
+  FacetsIcon,
   type IconProps,
 } from './icons'

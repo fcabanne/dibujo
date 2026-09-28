@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { MinusIcon, PlusIcon } from './icons'
 
 export interface StepperProps {
@@ -31,6 +32,18 @@ export function Stepper({
   decrementLabel,
   incrementLabel,
 }: StepperProps) {
+  // Hacia dónde se movió el número la última vez que cambió: decide si el
+  // nuevo entra rodando desde abajo o desde arriba. Se guarda junto al valor
+  // y no se recalcula en cada render, así un render que no cambia el número
+  // —cualquier otra perilla del panel— no le corta la animación a la mitad.
+  // En el primer render no hay dirección y el número aparece quieto.
+  const previous = useRef(value)
+  const direction = useRef('')
+  if (value !== previous.current) {
+    direction.current = value > previous.current ? 'is-up' : 'is-down'
+    previous.current = value
+  }
+
   return (
     <div className="ds-stepper" role="group" aria-label={label}>
       <button
@@ -45,7 +58,11 @@ export function Stepper({
       {/* `aria-live` para que al tocar ± el lector de pantalla cante el número
           nuevo: el foco se queda en el botón y sin esto el cambio pasa mudo. */}
       <span className="ds-stepper-value" aria-live="polite">
-        {value}
+        {/* `key` para que cada número sea un elemento nuevo y su animación de
+            entrada corra de nuevo. */}
+        <span key={value} className={'ds-stepper-digit ' + direction.current}>
+          {value}
+        </span>
       </span>
       <button
         type="button"
