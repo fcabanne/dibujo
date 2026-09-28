@@ -53,6 +53,38 @@ export interface ProfileStop {
   spec: number
 }
 
+/** Qué tan concentrado es el reflejo: más alto, más chico y más intenso. */
+const SPEC_EXP = 26
+
+type Normal = { x: number; y: number; z: number }
+
+const normalsCache = new Map<string, Normal[]>()
+
+/**
+ * La normal de la superficie en cada punto de la sección, para un lado. Se inclina
+ * según la pendiente del perfil: la componente en pantalla apunta según la
+ * pendiente y la z es lo que mira al observador.
+ */
+function sectionNormals(side: Side, profile: FrameProfile): Normal[] {
+  const key = side + profile
+  const cached = normalsCache.get(key)
+  if (cached) return cached
+
+  const height = SHAPES[profile] ?? SHAPES.scoop
+  const n = SIDE_NORMAL[side]
+  const normals: Normal[] = []
+  for (let i = 0; i < SAMPLES; i++) {
+    const t = i / (SAMPLES - 1)
+    const d = 0.02
+    const slope = (height(Math.min(1, t + d)) - height(Math.max(0, t - d))) / (2 * d)
+    const s = slope * RELIEF
+    const len = Math.hypot(n.x * s, n.y * s, 1) || 1
+    normals.push({ x: (n.x * s) / len, y: (n.y * s) / len, z: 1 / len })
+  }
+  normalsCache.set(key, normals)
+  return normals
+}
+
 /**
  * Ilumina el perfil para un lado concreto. La normal se inclina según la pendiente
  * de la sección en cada punto, y de ahí sale el difuso y el especular.
@@ -63,39 +95,35 @@ export function shadeProfile(
   gloss: number,
   profile: FrameProfile,
 ): ProfileStop[] {
-  const height = SHAPES[profile] ?? SHAPES.scoop
-  const n = SIDE_NORMAL[side]
-  const stops: ProfileStop[] = []
-
   // Vector intermedio entre la luz y el observador, para el especular.
   const hx = light.x
   const hy = light.y
   const hz = light.z + 1
   const hLen = Math.hypot(hx, hy, hz) || 1
 
-  for (let i = 0; i < SAMPLES; i++) {
-    const t = i / (SAMPLES - 1)
-    const d = 0.02
-    const slope = (height(Math.min(1, t + d)) - height(Math.max(0, t - d))) / (2 * d)
-
-    // Normal de la superficie: la componente en pantalla apunta según la pendiente,
-    // la componente z es lo que mira al observador.
-    const s = slope * RELIEF
-    const nx = n.x * s
-    const ny = n.y * s
-    const len = Math.hypot(nx, ny, 1) || 1
-
-    const diffuse = (nx * light.x + ny * light.y + light.z) / len
-    const specDot = Math.max(0, (nx * hx + ny * hy + hz) / (len * hLen))
-
-    stops.push({
-      t,
+  return sectionNormals(side, profile).map((nrm, i) => {
+    const diffuse = nrm.x * light.x + nrm.y * light.y + nrm.z * light.z
+    const specDot = Math.max(0, (nrm.x * hx + nrm.y * hy + nrm.z * hz) / hLen)
+    return {
+      t: i / (SAMPLES - 1),
       shade: Math.max(-1, Math.min(1, (diffuse - 0.42) * 1.9)),
-      spec: Math.pow(specDot, 26) * gloss,
-    })
-  }
+      spec: Math.pow(specDot, SPEC_EXP) * gloss,
+    }
+  })
+}
 
-  return stops
+/**
+ * El reflejo más fuerte que da la sección de un lado para un vector intermedio `h`
+ * (normalizado, z hacia el observador), sin el acabado. Es lo que dice cuánto brilla
+ * un punto del listón cuando la luz y el ojo ya no están en el infinito: ver
+ * `drawGlint` en `frame.ts`.
+ */
+export function specPeak(side: Side, profile: FrameProfile, h: Normal): number {
+  let best = 0
+  for (const n of sectionNormals(side, profile)) {
+    best = Math.max(best, n.x * h.x + n.y * h.y + n.z * h.z)
+  }
+  return Math.pow(best, SPEC_EXP)
 }
 
 /** Cuán marcado es el reflejo según el acabado. */

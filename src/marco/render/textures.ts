@@ -1,6 +1,7 @@
 import type { FrameFinish, FrameMaterial, Rect, WallPattern } from '../types'
 import { grainTile, rand1, tileableFbm } from './noise'
 import { shade } from './light'
+import { drawWood } from './wood'
 
 const patternCache = new Map<string, CanvasPattern>()
 
@@ -284,12 +285,16 @@ export function drawMaterial(
   material: FrameMaterial,
   finish: FrameFinish,
   seed: number,
+  pxPerCm: number,
 ) {
   ctx.fillStyle = color
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h)
 
   if (material === 'wood') {
-    drawWoodGrain(ctx, bounds, alongX, color, finish === 'grained' ? 1 : 0.45, seed)
+    const contrast = finish === 'grained' ? 1 : 0.45
+    if (!drawWood(ctx, bounds, alongX, color, contrast, seed, pxPerCm)) {
+      drawWoodGrain(ctx, bounds, alongX, color, contrast, seed)
+    }
   } else if (material === 'metal' && finish !== 'gloss') {
     drawBrushed(ctx, bounds, alongX, seed)
   }
@@ -305,7 +310,11 @@ export function drawMaterial(
   }
 }
 
-/** Vetas: líneas paralelas al eje de la pieza, con desvío y grosor variables. */
+/**
+ * Vetas dibujadas: líneas paralelas al eje de la pieza, con desvío y grosor
+ * variables. Es el respaldo de `drawWood` para un navegador que no sabe escalar un
+ * patrón.
+ */
 function drawWoodGrain(
   ctx: CanvasRenderingContext2D,
   bounds: Rect,

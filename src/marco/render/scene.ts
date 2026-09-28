@@ -53,7 +53,7 @@ export function renderScene(
 
   // 2. Sombra proyectada. Se desplaza más que el cuadro: esa diferencia es la
   //    señal de profundidad más barata que hay.
-  drawCastShadow(ctx, outer, layout.depth, pxPerCm, light)
+  drawCastShadow(ctx, outer, layout.depth, pxPerCm, state.wall.color)
 
   const hasFrame = state.frame.width > 0
   const mat = state.mats[0]
@@ -61,7 +61,7 @@ export function renderScene(
 
   // 3. Marco, con su cara lateral asomando según el puntero
   if (hasFrame) {
-    drawFrame(ctx, outer, glass, state.frame, light, depthPx, parallax)
+    drawFrame(ctx, outer, glass, state.frame, light, depthPx, parallax, pxPerCm)
   }
 
   // 4. Obra y 5. passe-partout por encima de su borde
@@ -73,7 +73,7 @@ export function renderScene(
 
   // 7. Sombra del rebaje, o el canto del vidrio y los ganchitos si no hay marco
   if (hasFrame) {
-    drawRebateShadow(ctx, glass, depthPx, light)
+    drawRebateShadow(ctx, glass, depthPx, light, hasMat ? mat.color : null)
   } else {
     if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, light)
     drawGlassClips(ctx, glass, pxPerCm, light)

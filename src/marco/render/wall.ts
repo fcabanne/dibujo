@@ -1,5 +1,5 @@
 import type { Rect, WallState } from '../types'
-import type { Light } from './light'
+import { luminance, rgba, scaleHex, shadowTint, type Light } from './light'
 import { blotchField } from './noise'
 import { wallStructure } from './textures'
 
@@ -42,7 +42,7 @@ export function drawWall(
     ctx.restore()
   }
 
-  drawSpotlight(ctx, w, h, light, focus)
+  drawSpotlight(ctx, w, h, light, focus, wall.color)
 }
 
 /**
@@ -56,16 +56,26 @@ function drawSpotlight(
   h: number,
   light: Light,
   focus: Rect,
+  color: string,
 ) {
   const { cx, cy, reach } = spotOf(focus, light)
 
-  // Penumbra: todo lo que está lejos del foco se apaga.
+  // Penumbra: todo lo que está lejos del foco se apaga, y lo que se apaga conserva
+  // su color, como la sombra del cuadro: lejos del foco la pared es la misma pared con
+  // menos luz, no una pared más gris. Es una sola pasada que multiplica —oscurece y
+  // satura a la vez— con la misma caída que tenía el negro de antes.
+  const tint = shadowTint(color)
+  const deep = scaleHex(tint, PENUMBRA)
+  const keep = 1 - luminance(deep)
   const falloff = ctx.createRadialGradient(cx, cy, reach * 0.3, cx, cy, reach * 1.5)
-  falloff.addColorStop(0, 'rgba(0, 0, 0, 0)')
-  falloff.addColorStop(0.55, 'rgba(0, 0, 0, 0.42)')
-  falloff.addColorStop(1, 'rgba(6, 6, 10, 0.86)')
+  falloff.addColorStop(0, rgba(deep, 0))
+  falloff.addColorStop(0.55, rgba(deep, Math.min(1, 0.42 / keep)))
+  falloff.addColorStop(1, rgba(deep, Math.min(1, 0.86 / keep)))
+  ctx.save()
+  ctx.globalCompositeOperation = 'multiply'
   ctx.fillStyle = falloff
   ctx.fillRect(0, 0, w, h)
+  ctx.restore()
 
   // Pozo cálido sobre el cuadro.
   const pool = ctx.createRadialGradient(cx, cy, 0, cx, cy, reach * 0.92)
@@ -85,6 +95,9 @@ function drawSpotlight(
   ctx.fillStyle = bounce
   ctx.fillRect(0, h * 0.72, w, h * 0.28)
 }
+
+/** Cuánta luz queda en el rincón más oscuro de la pared, respecto del centro del foco. */
+const PENUMBRA = 0.17
 
 /**
  * Dónde cae el foco: apenas por encima del medio del cuadro y corrido hacia la

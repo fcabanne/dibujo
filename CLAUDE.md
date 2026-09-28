@@ -173,6 +173,37 @@ porque es el mismo render:
   las agranda como a todo lo demás. Las baldosas empalman sin costura: el ruido grande
   da la vuelta en el borde (`tileableFbm`) y lo que cae en un borde se pinta también
   del otro lado.
+- **Las sombras tienen el color de lo que tapan** (`shadowTint` en `light.ts`). Una
+  sombra es la misma superficie con menos luz: más saturada, porque la pared se
+  ilumina con su propio rebote, y apenas más fría, porque lo que se tapa es el foco
+  cálido. En negro semitransparente una pared crema salía gris sucio y una terracota,
+  marrón. Vale para la sombra del cuadro, la penumbra de la pared y la sombra del
+  marco sobre el passe-partout. La penumbra es una sola pasada que multiplica —ocupa
+  la pantalla entera, y una pasada más ahí se paga en cada cuadro—; la sombra del
+  cuadro son dos, la negra de siempre y el color encima, porque en una sola el color
+  no llegaba a la parte suave, que es la que más se ve.
+- **La sombra del cuadro es una cuña** (`shadow.ts`). Un cuadro colgado de un alambre
+  se inclina: el canto de arriba se despega de la pared uno o dos centímetros
+  (`standoff`) y el de abajo apoya. La sombra es ancha arriba, se afina hacia abajo y
+  es más nítida donde apoya. Y la luz es un foco con posición (`spotPosition`), no el
+  sol: cada esquina tira su sombra alejándose de él. El largo en el centro es el de
+  antes; lo nuevo es la forma.
+- **El brillo recorre la moldura** (`drawGlint` en `frame.ts`). Con la luz y el ojo en
+  el infinito, cada listón brillaba igual de punta a punta, como un perfil extruido.
+  Con el foco en un lugar y el ojo en otro, en cada punto del listón la luz llega de
+  otro ángulo: el brillo es fuerte donde se compensan y se apaga hacia las puntas. El
+  puntero —o la inclinación del teléfono— corre el ojo, y el brillo viaja por la
+  moldura. La sección (dónde cae el brillo a lo ancho) sigue saliendo de
+  `shadeProfile`; lo que se agregó es cuánto brilla a lo largo (`specPeak`).
+- **La madera es una tabla** (`render/wood.ts`). Antes la veta eran líneas onduladas.
+  Ahora son los anillos de un tronco cortados por la cara de la pieza: paralelos donde
+  la cara pasa cerca de la médula y abiertos en catedrales donde se aleja, con poros
+  en el roble y rayas finas en el nogal. La especie se deduce del color (claros, pino;
+  medios, roble; oscuros, nogal), porque el color se elige aparte del material. Se
+  hornea una vez por especie en centímetros —unos 70 ms, con un hash de enteros
+  (`stripNoise`) porque el seno se llevaba casi todo el tiempo— y se pinta anclada a
+  cada listón con un patrón transformado. Un navegador que no sepa transformar un
+  patrón se queda con las líneas de antes.
 - **La sombra y el vidrio mate andan en Safari** (`render/blur.ts`). `ctx.filter` está
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar

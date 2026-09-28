@@ -34,7 +34,8 @@ export function canvasFilterSupported(): boolean {
 }
 
 /**
- * Un rectángulo desenfocado, con `blur` como radio del filtro CSS.
+ * Un polígono desenfocado, con `blur` como radio del filtro CSS. Es un polígono y no
+ * un rectángulo porque la sombra del cuadro es una cuña.
  *
  * El respaldo es el truco de siempre con `shadowBlur`: la forma se dibuja lejos,
  * afuera de todo lo visible, y se desplaza solo su sombra hasta el lugar. El radio
@@ -45,27 +46,33 @@ export function canvasFilterSupported(): boolean {
  * píxeles del dispositivo y la forma en los del contexto, y con una escala de por
  * medio la sombra caería en otro lado.
  */
-export function fillBlurredRect(
+export function fillBlurredPath(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
+  points: { x: number; y: number }[],
   blur: number,
   color: string,
 ) {
+  const trace = (dx: number) => {
+    ctx.beginPath()
+    points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x - dx, p.y) : ctx.lineTo(p.x - dx, p.y)))
+    ctx.closePath()
+  }
+
   ctx.save()
   if (canvasFilterSupported()) {
     ctx.filter = 'blur(' + blur.toFixed(1) + 'px)'
     ctx.fillStyle = color
-    ctx.fillRect(x, y, w, h)
+    trace(0)
+    ctx.fill()
   } else {
-    const away = ctx.canvas.width + w + blur * 6
+    const xs = points.map((p) => p.x)
+    const away = ctx.canvas.width + Math.max(...xs) - Math.min(...xs) + blur * 6
     ctx.shadowColor = color
     ctx.shadowBlur = blur * 2
     ctx.shadowOffsetX = away
     ctx.fillStyle = '#000'
-    ctx.fillRect(x - away, y, w, h)
+    trace(away)
+    ctx.fill()
   }
   ctx.restore()
 }
