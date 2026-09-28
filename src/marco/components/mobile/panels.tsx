@@ -1,8 +1,7 @@
-import type { CSSProperties } from 'react'
-import { copy, fill, formatNumber } from '../../../shared/copy'
+import { copy, fill, formatDecimal, formatNumber } from '../../../shared/copy'
 import {
   Button,
-  ChoiceGroup,
+  CloseIcon,
   Dropdown,
   IconButton,
   OptionPicker,
@@ -12,25 +11,44 @@ import {
   UploadIcon,
   type PickerOption,
 } from '../../../shared/ui'
-import { clamp, LIMITS } from '../../domain/geometry'
+import { LIMITS } from '../../domain/geometry'
 import {
   FRAME_PRESETS,
   FRAME_PROFILES,
   GLASS_TYPES,
   MAT_PRESETS,
-  MOLDING_TYPES,
+  MOLDING_FAMILIES,
   WALL_PATTERNS,
   WALL_PRESETS,
 } from '../../domain/palettes'
 import type { Action } from '../../state/reducer'
 import type { AppState, FrameProfile, GlassType, WallPattern } from '../../types'
 import { LinkIcon, RotateIcon, UnlinkIcon } from '../hud/icons'
-import { CmField, Heading, MoldingChip, MoldingSwatch, NoneSwatch, Row, Strip } from './controls'
+import type { Editing } from './FieldEditor'
+import {
+  FieldButton,
+  Heading,
+  MoldingChip,
+  MoldingSwatch,
+  NoneSwatch,
+  Row,
+  Strip,
+  WallChip,
+} from './controls'
 
 /** Lo que tiene cada cajón para trabajar. */
 interface PanelProps {
   state: AppState
   dispatch: (action: Action) => void
+}
+
+/** Las pantallas de tarjetas a las que llevan las filas cerradas (`Dropdown`). */
+export type Picker = 'finish' | 'profile' | 'texture'
+
+interface PickerProps {
+  picker: Picker | null
+  /** Abrir un picker, o cerrarlo; `soon` deja ver la tarjeta elegida antes de irse. */
+  onPicker: (picker: Picker | null, soon?: boolean) => void
 }
 
 /** Medio centímetro, siempre con su decimal: es la precisión con que se encarga. */
@@ -47,53 +65,53 @@ function nameOf(color: string, presets: { color: string; label: string }[]): str
 // ---------------------------------------------------------------------- obra
 
 /**
- * La obra: cuánto mide de verdad, cómo se llama, cambiarla y girarla.
+ * La obra: cómo se llama, cuánto mide de verdad, y cambiarla, girarla o quitarla.
  *
- * El tamaño va arriba de todo porque es lo que convierte el juego en medidas que se
- * pueden encargar, y es lo que se viene a completar después de subir un dibujo. Los
- * campos muestran la medida como cuelga: con el cuadro girado, los lados cambiados,
- * igual que en la cartela.
+ * El título arriba y las medidas abajo, como en la cartela. Ninguno de los dos se
+ * escribe acá: tocarlos abre el editor a pantalla completa, porque con el teclado
+ * encima del cajón el campo quedaba tapado. Las medidas se muestran como cuelga el
+ * cuadro: girado, con los lados cambiados.
  */
 export function ArtworkPanel({
   state,
   dispatch,
-  placeholder,
+  onEdit,
   onPick,
-}: PanelProps & { placeholder: boolean; onPick: () => void }) {
+  onRemove,
+}: PanelProps & { onEdit: (field: Editing) => void; onPick: () => void; onRemove: () => void }) {
   const { artwork } = state
   const rotated = artwork.rotation === 90 || artwork.rotation === 270
   const shown = rotated
     ? { w: artwork.size.h, h: artwork.size.w }
     : { w: artwork.size.w, h: artwork.size.h }
 
-  const commit = (side: 'w' | 'h', value: number) =>
-    dispatch({
-      type: 'artwork/resize',
-      side,
-      value:
-        Number.isFinite(value) && value > 0
-          ? clamp(value, LIMITS.artSide.min, LIMITS.artSide.max)
-          : LIMITS.artSide.min,
-    })
-
   return (
     <>
+      <Row label={copy.marco.title}>
+        <FieldButton
+          value={artwork.title || copy.marco.titlePlaceholder}
+          placeholder={!artwork.title}
+          label={copy.marco.title}
+          onEdit={() => onEdit('title')}
+        />
+      </Row>
+
       <Heading label={copy.marco.size} />
       <div className="m-size">
-        <CmField
-          value={shown.w}
+        <FieldButton
+          value={formatDecimal(shown.w)}
+          unit={copy.marco.unit}
           label={copy.marco.width}
-          onType={(value) => dispatch({ type: 'artwork/resize', side: 'w', value })}
-          onCommit={(value) => commit('w', value)}
+          onEdit={() => onEdit('w')}
         />
         <span className="m-times" aria-hidden>
           ×
         </span>
-        <CmField
-          value={shown.h}
+        <FieldButton
+          value={formatDecimal(shown.h)}
+          unit={copy.marco.unit}
           label={copy.marco.height}
-          onType={(value) => dispatch({ type: 'artwork/resize', side: 'h', value })}
-          onCommit={(value) => commit('h', value)}
+          onEdit={() => onEdit('h')}
         />
         <IconButton
           label={artwork.lockRatio ? copy.marco.lockOn : copy.marco.lockOff}
@@ -104,30 +122,18 @@ export function ArtworkPanel({
         </IconButton>
       </div>
 
-      <Row label={copy.marco.title}>
-        <input
-          className="m-field m-title"
-          type="text"
-          value={artwork.title}
-          maxLength={60}
-          placeholder={copy.marco.titlePlaceholder}
-          enterKeyHint="done"
-          aria-label={copy.marco.title}
-          onChange={(e) => dispatch({ type: 'artwork/patch', patch: { title: e.target.value } })}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur()
-          }}
-        />
-      </Row>
-
+      {/* Cambiar, girar y quitar juntos y a la vista, como la foto en Referencia.
+          Quitar vuelve a la pantalla de inicio y conserva el enmarcado: probar la
+          misma moldura en otro dibujo no tiene por qué costar armarla de nuevo. */}
       <div className="m-actions">
-        {/* Con el dibujo de ejemplo puesto, subir el propio es lo que sigue: por eso
-            ahí el botón es el principal. Después pasa a ser un cambio más. */}
-        <Button variant={placeholder ? 'loud' : 'quiet'} icon={<UploadIcon />} onClick={onPick}>
-          {placeholder ? copy.marco.upload : copy.marco.change}
+        <Button variant="quiet" icon={<UploadIcon />} onClick={onPick}>
+          {copy.marco.change}
         </Button>
         <IconButton label={copy.marco.rotate} onClick={() => dispatch({ type: 'artwork/rotate' })}>
           <RotateIcon />
+        </IconButton>
+        <IconButton label={copy.marco.remove} onClick={onRemove}>
+          <CloseIcon />
         </IconButton>
       </div>
     </>
@@ -136,15 +142,13 @@ export function ArtworkPanel({
 
 // --------------------------------------------------------------------- marco
 
-export type FramePicker = 'finish' | 'profile'
-
 /**
- * La moldura: el color en una tira, el acabado y el perfil en filas que llevan a
- * sus tarjetas, y las dos medidas.
+ * La moldura: el color en una tira, la familia y el perfil en filas que llevan a sus
+ * tarjetas, y las dos medidas.
  *
  * El color es lo que más se prueba —se pasa el dedo por la tira mirando el cuadro—
- * y por eso está a la vista y de un toque. Acabado y perfil se deciden menos veces y
- * tienen nombres que hay que leer ("Caveta", "Bombé"), así que van como en
+ * y por eso está a la vista y de un toque. La familia (madera, pintado, metal) y el
+ * perfil se deciden menos y tienen nombres que hay que leer, así que van como en
  * Referencia: la fila cerrada lleva a una pantalla de tarjetas grandes, cada una con
  * la moldura pintada.
  */
@@ -154,20 +158,14 @@ export function FramePanel({
   picker,
   onPicker,
   onWidth,
-}: PanelProps & {
-  picker: FramePicker | null
-  onPicker: (picker: FramePicker | null, soon?: boolean) => void
-  onWidth: () => void
-}) {
+}: PanelProps & PickerProps & { onWidth: () => void }) {
   const { frame } = state
   const hasFrame = frame.width > 0
-  const molding =
-    MOLDING_TYPES.find((m) => m.material === frame.material && m.finish === frame.finish) ??
-    MOLDING_TYPES[0]
+  const family = MOLDING_FAMILIES.find((m) => m.material === frame.material) ?? MOLDING_FAMILIES[0]
   const profileName = FRAME_PROFILES.find((p) => p.id === frame.profile)?.label ?? ''
 
   if (picker === 'finish') {
-    const options: PickerOption<string>[] = MOLDING_TYPES.map((m) => ({
+    const options: PickerOption<string>[] = MOLDING_FAMILIES.map((m) => ({
       value: m.id,
       label: m.label,
       icon: (
@@ -177,11 +175,11 @@ export function FramePanel({
     return (
       <OptionPicker
         label={copy.marco.finish}
-        value={molding.id}
+        value={family.id}
         columns={3}
         options={options}
         onChange={(id) => {
-          const m = MOLDING_TYPES.find((type) => type.id === id)
+          const m = MOLDING_FAMILIES.find((type) => type.id === id)
           if (m) dispatch({ type: 'frame/patch', patch: { material: m.material, finish: m.finish } })
           onPicker(null, true)
         }}
@@ -252,7 +250,7 @@ export function FramePanel({
       </Strip>
 
       <Row label={copy.marco.finish} disabled={!hasFrame}>
-        <Dropdown label={copy.marco.finish} value={molding.label} onClick={() => onPicker('finish')} />
+        <Dropdown label={copy.marco.finish} value={family.label} onClick={() => onPicker('finish')} />
       </Row>
       <Row label={copy.marco.profile} disabled={!hasFrame}>
         <Dropdown label={copy.marco.profile} value={profileName} onClick={() => onPicker('profile')} />
@@ -292,7 +290,15 @@ export function FramePanel({
 
 // ------------------------------------------------------------- passe-partout
 
-/** El passe-partout: color —o ninguno— y ancho. */
+/**
+ * El passe-partout: color —o ninguno— y ancho. El ancho llega a cero como el del
+ * marco, y cero es "sin passe-partout": las dos formas de sacarlo —la muestra de
+ * "sin" y bajar el ancho— hacen lo mismo en las dos pestañas.
+ *
+ * Por debajo del centímetro no hay passe-partout que cortar, así que el primer paso
+ * después del cero lo trae de vuelta en su ancho mínimo en vez de dejar un valor que
+ * no existe.
+ */
 export function MatPanel({ state, dispatch, onWidth }: PanelProps & { onWidth: () => void }) {
   const mat = state.mats[0]
   const on = Boolean(mat?.enabled)
@@ -324,17 +330,22 @@ export function MatPanel({ state, dispatch, onWidth }: PanelProps & { onWidth: (
         />
       </Strip>
 
-      <Row label={copy.marco.matWidth} disabled={!on}>
+      <Row label={copy.marco.matWidth}>
         <Slider
           label={copy.marco.matWidth}
-          value={mat.width}
-          min={LIMITS.matWidth.min}
+          value={on ? mat.width : 0}
+          min={0}
           max={LIMITS.matWidth.max}
           step={LIMITS.matWidth.step}
-          format={cm}
-          disabled={!on}
-          onChange={(width) => {
-            dispatch({ type: 'mat/patch', patch: { width, enabled: true } })
+          format={(v) => (v === 0 ? copy.marco.noMatShort : cm(v))}
+          onChange={(v) => {
+            dispatch({
+              type: 'mat/patch',
+              patch:
+                v === 0
+                  ? { enabled: false }
+                  : { enabled: true, width: Math.max(LIMITS.matWidth.min, v) },
+            })
             onWidth()
           }}
         />
@@ -345,44 +356,56 @@ export function MatPanel({ state, dispatch, onWidth }: PanelProps & { onWidth: (
 
 // -------------------------------------------------------------------- vidrio
 
-/**
- * Los cuatro vidrios, en tarjetas y sin fila cerrada: no hay nada más que ajustar
- * en esta pestaña, igual que Ajustes en Referencia abre directo en sus tarjetas.
- *
- * Son las tarjetas del sistema (`.ds-option`) con un renglón más —qué hace cada
- * vidrio, "refleja", "difumina"—, que `OptionPicker` no tiene. La diferencia entre
- * cristal y antirreflejo es justamente la que no se adivina por el nombre.
- */
+/** Los cuatro vidrios, directo en sus tarjetas: no hay nada más que ajustar acá. */
+const GLASS_OPTIONS: PickerOption<GlassType>[] = GLASS_TYPES.map((g) => ({
+  value: g.id,
+  label: g.label,
+  icon: <span className="m-glass" data-glass={g.id} aria-hidden />,
+}))
+
 export function GlassPanel({ state, dispatch }: PanelProps) {
   return (
-    <div className="ds-option-picker">
-      <p className="ds-option-header">{copy.marco.glass}</p>
-      <div className="ds-option-grid ds-option-grid--2">
-        {GLASS_TYPES.map((g, index) => (
-          <button
-            key={g.id}
-            type="button"
-            className={'ds-option m-glass-option' + (state.glass === g.id ? ' is-selected' : '')}
-            style={{ '--i': index } as CSSProperties}
-            aria-pressed={state.glass === g.id}
-            onClick={() => dispatch({ type: 'glass/set', value: g.id as GlassType })}
-          >
-            <span className="m-glass" data-glass={g.id} aria-hidden />
-            <span>{g.label}</span>
-            <em>{g.hint}</em>
-          </button>
-        ))}
-      </div>
-    </div>
+    <OptionPicker
+      label={copy.marco.glass}
+      value={state.glass}
+      columns={2}
+      options={GLASS_OPTIONS}
+      onChange={(value) => dispatch({ type: 'glass/set', value })}
+    />
   )
 }
 
 // --------------------------------------------------------------------- pared
 
-/** La pared: el color en una tira y la textura en cuatro botones. */
-export function WallPanel({ state, dispatch }: PanelProps) {
+/**
+ * La pared: el color en una tira y la textura en una fila que lleva a sus tarjetas.
+ * Cada tarjeta muestra un pedazo de esa pared, acercado: en el cuadro, a su escala,
+ * la diferencia entre yeso y gotelé es sutil, y en un botón con el nombre no se veía.
+ */
+export function WallPanel({ state, dispatch, picker, onPicker }: PanelProps & PickerProps) {
   const { wall } = state
   const custom = !WALL_PRESETS.some((p) => same(p.color, wall.color))
+  const texture = WALL_PATTERNS.find((p) => p.id === wall.pattern) ?? WALL_PATTERNS[0]
+
+  if (picker === 'texture') {
+    const options: PickerOption<WallPattern>[] = WALL_PATTERNS.map((p) => ({
+      value: p.id,
+      label: p.label,
+      icon: <WallChip color={wall.color} pattern={p.id} />,
+    }))
+    return (
+      <OptionPicker
+        label={copy.marco.texture}
+        value={wall.pattern}
+        columns={2}
+        options={options}
+        onChange={(pattern) => {
+          dispatch({ type: 'wall/patch', patch: { pattern } })
+          onPicker(null, true)
+        }}
+      />
+    )
+  }
 
   return (
     <>
@@ -405,14 +428,9 @@ export function WallPanel({ state, dispatch }: PanelProps) {
         />
       </Strip>
 
-      <Heading label={copy.marco.texture} />
-      <ChoiceGroup<WallPattern>
-        className="ds-choice-group--start m-choices"
-        label={copy.marco.texture}
-        value={wall.pattern}
-        onChange={(pattern) => dispatch({ type: 'wall/patch', patch: { pattern } })}
-        options={WALL_PATTERNS.map((p) => ({ value: p.id, label: p.label }))}
-      />
+      <Row label={copy.marco.texture}>
+        <Dropdown label={copy.marco.texture} value={texture.label} onClick={() => onPicker('texture')} />
+      </Row>
     </>
   )
 }

@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { copy, formatDecimal } from '../../../shared/copy'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { paintMoldingChip, type ChipLook } from '../../render/chip'
-import type { FrameFinish, FrameMaterial, FrameProfile } from '../../types'
+import { paintWallChip } from '../../render/textures'
+import type { FrameFinish, FrameMaterial, FrameProfile, WallPattern } from '../../types'
 
 /**
  * Las piezas con que se arman los cajones del celular. Los controles de verdad
@@ -176,56 +176,47 @@ export function MoldingChip({
 }
 
 /**
- * Un campo de centímetros.
- *
- * Es de texto y no `type="number"`: en un teléfono en castellano el teclado ofrece
- * la coma, y un campo numérico la rechaza en silencio. Mientras se escribe se
- * respeta lo que se tipeó —acotar en cada tecla hacía imposible escribir "1" camino
- * a "18"— y cada valor que ya se puede leer se aplica, así el cuadro acompaña. Al
- * salir se acota y se reescribe prolijo.
+ * Un pedazo de pared, con el color puesto y la textura acercada: en la tarjeta tiene
+ * que verse qué textura es, que en la escena —a la escala del cuadro— es sutil.
  */
-export function CmField({
+export function WallChip({ color, pattern }: { color: string; pattern: WallPattern }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (ref.current) paintWallChip(ref.current, 72, 44, color, pattern)
+  }, [color, pattern])
+
+  return <canvas ref={ref} className="m-wall-chip" style={{ width: 72, height: 44 }} aria-hidden />
+}
+
+/**
+ * Lo que en el cajón parece un campo pero no abre el teclado ahí: lo abre en el
+ * editor a pantalla completa (`FieldEditor`). Escribir adentro del cajón con el
+ * teclado encima tapaba el campo y achicaba el cuadro a nada.
+ */
+export function FieldButton({
   value,
   label,
-  onType,
-  onCommit,
+  unit,
+  placeholder,
+  onEdit,
 }: {
-  value: number
+  value: string
   label: string
-  onType: (value: number) => void
-  onCommit: (value: number) => void
+  unit?: string
+  placeholder?: boolean
+  onEdit: () => void
 }) {
-  const [draft, setDraft] = useState<string | null>(null)
-
-  const parse = (raw: string) => Number(raw.replace(',', '.').trim())
-
   return (
-    // La unidad va adentro del campo, como en Referencia: se escribe 30 y ya dice 30 cm.
-    <span className="m-unit" data-unit={copy.marco.unit}>
-      <input
-        type="text"
-        inputMode="decimal"
-        enterKeyHint="done"
-        className="m-field"
+    <span className="m-unit" data-unit={unit}>
+      <button
+        type="button"
+        className={'m-field m-field-button' + (placeholder ? ' is-placeholder' : '')}
         aria-label={label}
-        value={draft ?? formatDecimal(value)}
-        onFocus={(e) => {
-          setDraft(formatDecimal(value))
-          e.currentTarget.select()
-        }}
-        onChange={(e) => {
-          setDraft(e.target.value)
-          const next = parse(e.target.value)
-          if (e.target.value && Number.isFinite(next) && next > 0) onType(next)
-        }}
-        onBlur={(e) => {
-          onCommit(parse(e.target.value))
-          setDraft(null)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
-        }}
-      />
+        onClick={onEdit}
+      >
+        <span className="m-field-text">{value}</span>
+      </button>
     </span>
   )
 }

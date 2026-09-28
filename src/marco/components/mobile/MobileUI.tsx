@@ -8,14 +8,16 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { copy } from '../../../shared/copy'
 import { loadArtworkFile } from '../../../shared/imageFile'
-import { BackIcon, Button, IconButton, PhotoIcon, UploadIcon } from '../../../shared/ui'
+import { BackIcon, IconButton, PhotoIcon } from '../../../shared/ui'
 import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
 import type { FreeArea, SceneSnapshot } from '../Canvas'
 import { FrameIcon, GlassIcon, MatIcon, WallIcon } from '../hud/icons'
 import { WallLabel } from '../hud/WallLabel'
+import { FieldEditor, type Editing } from './FieldEditor'
 import {
   ArtworkPanel,
   cm,
@@ -23,7 +25,7 @@ import {
   GlassPanel,
   MatPanel,
   WallPanel,
-  type FramePicker,
+  type Picker,
 } from './panels'
 
 export type Tab = 'obra' | 'marco' | 'passe' | 'vidrio' | 'pared'
@@ -50,11 +52,9 @@ interface Props {
   onTab: (tab: Tab | null) => void
   /** Dónde se registra la medición del lugar libre que lee el lienzo. */
   freeArea: MutableRefObject<(() => FreeArea | null) | null>
-  /** Si sigue puesto el dibujo de ejemplo. */
-  placeholder: boolean
-  /** Si ya se sabe si había un dibujo guardado: antes, no se ofrece subir uno. */
-  ready: boolean
   onArtwork: (src: string, aspect: number) => void
+  /** Quitar el dibujo: vuelve a la pantalla de inicio. */
+  onRemove: () => void
 }
 
 /** Cuánto tiempo se muestran las cotas sobre el marco al abrir su pestaña. */
@@ -65,6 +65,9 @@ const HINT_WIDTH_MS = 1400
 const NOTE_MS = 3600
 /** Lo que espera un picker antes de cerrarse, para que se vea qué se eligió. */
 const PICKER_CLOSE_MS = 180
+
+/** En qué pestaña vive cada picker. */
+const PICKER_TAB: Record<Picker, Tab> = { finish: 'marco', profile: 'marco', texture: 'pared' }
 
 /**
  * El alto natural de la vista del cajón, medido y no fijado: cada pestaña mide lo
@@ -110,9 +113,8 @@ export function MobileUI({
   tab,
   onTab,
   freeArea,
-  placeholder,
-  ready,
   onArtwork,
+  onRemove,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const safeRef = useRef<HTMLDivElement>(null)
@@ -124,7 +126,12 @@ export function MobileUI({
   const fileRef = useRef<HTMLInputElement>(null)
   const content = useContentHeight()
 
-  const [picker, setPicker] = useState<FramePicker | null>(null)
+  const [picker, setPicker] = useState<Picker | null>(null)
+  const [editing, setEditing] = useState<Editing | null>(null)
+  const titleInput = useRef<HTMLInputElement>(null)
+  const widthInput = useRef<HTMLInputElement>(null)
+  const heightInput = useRef<HTMLInputElement>(null)
+  const inputs = { title: titleInput, w: widthInput, h: heightInput }
   const [note, setNote] = useState<string | null>(null)
   const [wallLuma, setWallLuma] = useState(0.5)
   const noteTimer = useRef(0)
@@ -168,7 +175,7 @@ export function MobileUI({
    * Referencia: sin ella se iba antes de que se viera qué tarjeta se tocó, y
    * elegir se sentía como errarle al botón.
    */
-  const choosePicker = useCallback((next: FramePicker | null, soon = false) => {
+  const choosePicker = useCallback((next: Picker | null, soon = false) => {
     window.clearTimeout(pickerTimer.current)
     if (soon) pickerTimer.current = window.setTimeout(() => setPicker(next), PICKER_CLOSE_MS)
     else setPicker(next)
@@ -179,6 +186,18 @@ export function MobileUI({
   }, [])
 
   const pickFile = useCallback(() => fileRef.current?.click(), [])
+
+  /**
+   * Abrir el editor con el teclado ya arriba. En iPhone el teclado solo sale si el
+   * foco llega **en el mismo toque**: si el campo aparece en el render siguiente y
+   * se enfoca desde un efecto, ya es tarde y el teclado no se abre. Por eso el editor
+   * se monta en el acto (`flushSync`) y se enfoca acá mismo.
+   */
+  const edit = useCallback((field: Editing) => {
+    flushSync(() => setEditing(field))
+    const input = (field === 'title' ? titleInput : field === 'w' ? widthInput : heightInput).current
+    input?.focus()
+  }, [])
 
   const onFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -310,7 +329,7 @@ export function MobileUI({
 
   // --- qué se ve en el cajón, y cómo entra ----------------------------------
   const shown = tab ?? lastTab.current
-  const viewKey = shown === 'marco' && picker ? `marco:${picker}` : shown
+  const viewKey = picker && PICKER_TAB[picker] === shown ? `${shown}:${picker}` : shown
   const previous = useRef({ key: viewKey, open: tab !== null })
   const motion = useRef('is-rise')
   if (viewKey !== previous.current.key || (tab !== null) !== previous.current.open) {
@@ -328,14 +347,20 @@ export function MobileUI({
     switch (shown) {
       case 'obra':
         return (
-          <ArtworkPanel state={state} dispatch={dispatch} placeholder={placeholder} onPick={pickFile} />
+          <ArtworkPanel
+            state={state}
+            dispatch={dispatch}
+            onEdit={edit}
+            onPick={pickFile}
+            onRemove={onRemove}
+          />
         )
       case 'marco':
         return (
           <FramePanel
             state={state}
             dispatch={dispatch}
-            picker={picker}
+            picker={picker && PICKER_TAB[picker] === 'marco' ? picker : null}
             onPicker={choosePicker}
             onWidth={showWidth}
           />
@@ -345,18 +370,20 @@ export function MobileUI({
       case 'vidrio':
         return <GlassPanel state={state} dispatch={dispatch} />
       case 'pared':
-        return <WallPanel state={state} dispatch={dispatch} />
+        return (
+          <WallPanel
+            state={state}
+            dispatch={dispatch}
+            picker={picker && PICKER_TAB[picker] === 'pared' ? picker : null}
+            onPicker={choosePicker}
+          />
+        )
     }
   })()
 
   // La marca oscura de la pestaña abierta es un elemento propio que viaja de botón
   // en botón, como en Referencia. Con todo cerrado se achica donde estaba.
   const thumbIndex = TABS.findIndex((t) => t.id === shown)
-
-  // Subir el dibujo propio es lo primero, mientras siga el de ejemplo: un botón a la
-  // vista, encima de la barra. No antes de saber si había uno guardado —aparecería
-  // un instante y se iría—, ni con un cajón abierto, que ya tiene el suyo adentro.
-  const invite = ready && placeholder && !tab
 
   return (
     <div ref={rootRef} className="m-ui">
@@ -376,14 +403,6 @@ export function MobileUI({
       </div>
 
       <div ref={dockRef} className="m-dock">
-        {invite && (
-          <div className="m-invite">
-            <Button variant="loud" icon={<UploadIcon />} onClick={pickFile}>
-              {copy.marco.upload}
-            </Button>
-          </div>
-        )}
-
         <div
           ref={drawerRef}
           className={'m-drawer' + (tab ? ' is-open' : '')}
@@ -426,6 +445,16 @@ export function MobileUI({
       </div>
 
       {note && <div className="m-note">{note}</div>}
+
+      {editing && (
+        <FieldEditor
+          editing={editing}
+          state={state}
+          dispatch={dispatch}
+          inputs={inputs}
+          onDone={() => setEditing(null)}
+        />
+      )}
 
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
       <h1 className="ds-sr">{copy.marco.name}</h1>

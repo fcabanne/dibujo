@@ -45,6 +45,47 @@ export function fbm(x: number, y: number, seed: number, octaves = 4): number {
   return sum / norm
 }
 
+/**
+ * Lo mismo que `fbm`, pero que se repite sin costura cada `period` unidades: la
+ * grilla del ruido da la vuelta en el borde. Es lo que necesita una textura que se
+ * pinta como baldosa —la de la pared—, donde la variación grande tiene que empalmar
+ * con la baldosa de al lado. `period` tiene que ser entero.
+ */
+export function tileableFbm(
+  x: number,
+  y: number,
+  period: number,
+  seed: number,
+  octaves = 4,
+): number {
+  let sum = 0
+  let amp = 0.5
+  let freq = 1
+  let norm = 0
+
+  for (let i = 0; i < octaves; i++) {
+    const p = period * freq
+    const fx = x * freq
+    const fy = y * freq
+    const xi = Math.floor(fx)
+    const yi = Math.floor(fy)
+    const u = smooth(fx - xi)
+    const v = smooth(fy - yi)
+    const w = (n: number) => ((n % p) + p) % p
+    const s = seed + i * 17
+    const a = hash(w(xi), w(yi), s)
+    const b = hash(w(xi + 1), w(yi), s)
+    const c = hash(w(xi), w(yi + 1), s)
+    const d = hash(w(xi + 1), w(yi + 1), s)
+    sum += ((a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v) * amp
+    norm += amp
+    amp *= 0.5
+    freq *= 2
+  }
+
+  return sum / norm
+}
+
 const fieldCache = new Map<string, HTMLCanvasElement>()
 
 /**

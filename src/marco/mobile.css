@@ -154,22 +154,6 @@
   pointer-events: auto;
 }
 
-/* Subir el dibujo propio, mientras siga el de ejemplo. Llega último, cuando
-   el cuadro ya está colgado: primero se ve qué es esto, después qué hacer. */
-.m-invite {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--ds-space-3);
-  pointer-events: none;
-  animation: m-rise var(--ds-dur-slow) var(--ds-ease) 320ms backwards;
-}
-
-.m-invite .ds-button {
-  font: var(--ds-text-control);
-  box-shadow: 0 12px 30px rgb(16 16 16 / 0.32);
-  pointer-events: auto;
-}
-
 /* --- el cajón -------------------------------------------------------
    Una tarjeta que flota sobre la escena y mide lo que mide su contenido
    (`--content-height`, lo pone `MobileUI`). Se despliega hacia arriba desde
@@ -472,8 +456,33 @@
   opacity: 0.55;
 }
 
-.m-row .m-title {
+/* Parece un campo pero es un botón: lleva al editor a pantalla completa. */
+.m-field-button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: text;
+}
+
+/* Un título largo termina en puntos suspensivos en vez de cortarse a la mitad de
+   una letra. Va en su propio `span`: sobre el botón, que es flex, no funciona. */
+.m-field-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-field-button.is-placeholder {
+  color: var(--ds-accent-dark);
+  opacity: 0.55;
+}
+
+.m-row > .m-unit {
   flex: 1 1 0;
+}
+
+.m-row .m-field-button {
   height: 40px;
   padding-right: var(--ds-space-4);
 }
@@ -487,6 +496,7 @@
 .m-actions .ds-button {
   flex: 1;
   min-width: 0;
+  padding: 0 var(--ds-space-4);
   font: var(--ds-text-control);
 }
 
@@ -495,14 +505,6 @@
 }
 
 /* --- el vidrio ------------------------------------------------------- */
-
-.m-glass-option em {
-  margin-top: calc(var(--ds-space-1) * -1);
-  font: var(--ds-text-meta);
-  font-style: normal;
-  text-transform: none;
-  opacity: 0.72;
-}
 
 .m-glass {
   display: block;
@@ -539,15 +541,183 @@
 
 /* --- la pared -------------------------------------------------------- */
 
-/* Las cuatro texturas se reparten la fila entera. */
-.m-choices {
-  flex-wrap: nowrap;
+/* Un pedazo de pared en la tarjeta de su textura. Rectangular y no redondo: es
+   una pared, y en un círculo chico la textura no tiene dónde verse. */
+.m-wall-chip {
+  display: block;
+  border-radius: var(--ds-radius-check);
+  box-shadow: inset 0 0 0 1px rgb(16 16 16 / 0.08);
 }
 
-.m-choices .ds-choice {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 0 var(--ds-space-1);
+/* --- escribir a pantalla completa --------------------------------------
+   El campo arriba de todo, lejos de donde sube el teclado, y "Listo" al lado
+   del título: en el teclado numérico del iPhone no hay tecla de aceptar. */
+
+.m-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: calc(env(safe-area-inset-top, 0px) + var(--ds-space-5)) var(--ds-space-5)
+    var(--ds-space-5);
+  background: var(--ds-background);
+  /* La capa del celular deja pasar los toques al lienzo; el editor no. */
+  pointer-events: auto;
+  animation: m-rise var(--ds-dur) var(--ds-ease);
+}
+
+.m-editor-header {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ds-space-2);
+}
+
+.m-editor-header h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.m-editor-header .ds-button {
+  font: var(--ds-text-control);
+}
+
+.m-editor-title {
+  height: var(--ds-control-min);
+  padding-right: var(--ds-space-4);
+  font: var(--ds-text-title);
+}
+
+.m-editor-row {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+  min-height: var(--ds-control-min);
+}
+
+.m-editor-row > span:first-child {
+  flex: 0 0 96px;
+  font: var(--ds-text-field);
+  color: var(--ds-black);
+  text-transform: uppercase;
+}
+
+.m-editor-row > .m-unit {
+  flex: 1;
+}
+
+/* La casilla de sí/no va contra el borde, con el nombre ocupando el resto. */
+.m-editor-row--switch > span:first-child {
+  flex: 1;
+}
+
+.m-editor-row .m-field {
+  height: var(--ds-control-min);
+}
+
+.m-editor-meta {
+  margin: var(--ds-space-2) 0 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+}
+
+/* --- la pantalla de inicio ---------------------------------------------
+   La de Referencia y la mesa de luz, igual: mismas medidas, mismo orden de
+   llegada. */
+
+.m-welcome-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ds-background);
+}
+
+.m-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-7);
+  align-items: center;
+  width: 290px;
+  max-width: calc(100% - var(--ds-space-7));
+  text-align: center;
+}
+
+.m-welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: 100%;
+}
+
+.m-welcome-text h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  color: var(--ds-black);
+}
+
+.m-welcome-text p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+}
+
+.m-welcome .ds-button {
+  font: var(--ds-text-control);
+}
+
+/* Se lee en orden: saludo, qué es, qué hacer, y el botón que responde a todo
+   lo anterior. La barra de abajo llega última: es de otra conversación. */
+.m-welcome-text > *,
+.m-welcome > .ds-button {
+  animation: m-rise var(--ds-dur-slow) var(--ds-ease) backwards;
+}
+
+.m-welcome-text > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.m-welcome-text > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.m-welcome > .ds-button {
+  animation-delay: 240ms;
+}
+
+.m-welcome-note {
+  margin: calc(var(--ds-space-5) * -1) 0 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-accent-dark);
+}
+
+.m-welcome-bottombar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom, 0px));
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
+}
+
+/* La pastilla de la barra sobre el fondo claro, como en Referencia: sin sombra,
+   porque no flota sobre nada. */
+.m-tray {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-accent-light);
 }
 
 /* --- el aviso -------------------------------------------------------- */
@@ -590,6 +760,14 @@
 }
 
 /* --- el celular más angosto ------------------------------------------ */
+
+/* "Cambiar dibujo" comparte la fila con girar y quitar: en un teléfono angosto el
+   ícono se va y queda la palabra, que es la que dice qué hace. */
+@media (max-width: 380px) {
+  .m-actions .ds-button svg {
+    display: none;
+  }
+}
 
 @media (max-width: 340px) {
   .m-bar .ds-icon-button {

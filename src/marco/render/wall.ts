@@ -17,6 +17,7 @@ export function drawWall(
   wall: WallState,
   light: Light,
   focus: Rect,
+  pxPerCm: number,
 ) {
   ctx.fillStyle = wall.color
   ctx.fillRect(0, 0, w, h)
@@ -29,11 +30,13 @@ export function drawWall(
   ctx.drawImage(blotchField(w, h, 7), 0, 0, w, h)
   ctx.restore()
 
-  const structure = wallStructure(ctx, wall.pattern)
+  // Anclada al cuadro y a su escala: la textura es de la pared en la que cuelga, no
+  // de la pantalla, así que acompaña al cuadro cuando se lo acerca o se lo corre.
+  const structure = wallStructure(ctx, wall.pattern, pxPerCm, { x: focus.x, y: focus.y })
   if (structure) {
     ctx.save()
     ctx.globalCompositeOperation = 'soft-light'
-    ctx.globalAlpha = 0.7
+    ctx.globalAlpha = 0.8
     ctx.fillStyle = structure
     ctx.fillRect(0, 0, w, h)
     ctx.restore()

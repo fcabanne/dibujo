@@ -159,6 +159,20 @@ porque es el mismo render:
   Cuatro piezas idénticas delatan un marco dibujado.
 - **Sin marco, el canto del vidrio agarra luz** (`drawGlassEdge`), con el tinte verdoso
   del vidrio común visto de canto.
+- **Los ganchitos son clips de acero de resorte** (`render/clips.ts`), en centímetros:
+  una lengüeta de un centímetro que pisa el vidrio, el doblez sobre el canto que agarra
+  la luz, y la sombra que tira sobre la obra a través del vidrio. Van como vienen los
+  portarretratos de clip —uno al medio de cada lado corto, dos cerca de las puntas en
+  los largos desde los 30 cm—. Antes eran cuatro pastillas grises montadas sobre el
+  borde, y se leían como un juguete.
+- **Las texturas de pared están en escala real** (`wallStructure` en `textures.ts`):
+  cada una se dibuja en centímetros —la gota de gotelé de dos a seis milímetros, el
+  hilo de lino de milímetro y medio, las manchas de llana del yeso de varios
+  centímetros— y se pinta a la escala del cuadro, anclada a él. Antes se dibujaban en
+  píxeles de pantalla y no se distinguían entre sí; ahora se ven, y acercar la vista
+  las agranda como a todo lo demás. Las baldosas empalman sin costura: el ruido grande
+  da la vuelta en el borde (`tileableFbm`) y lo que cae en un borde se pinta también
+  del otro lado.
 - **La sombra y el vidrio mate andan en Safari** (`render/blur.ts`). `ctx.filter` está
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
@@ -207,9 +221,9 @@ el cuadro y publica dónde va (`SceneSnapshot.label`).
 
 **Cada pestaña, sus controles:**
 
-- **Obra**: el tamaño real arriba de todo —es lo que vuelve el juego en medidas—, el
-  título, cambiar y girar. Los campos son de texto con teclado decimal: un campo
-  numérico rechaza en silencio la coma del teclado en castellano.
+- **Obra**: el título arriba y el tamaño real abajo, como en la cartela; y cambiar,
+  girar y quitar. Ni el título ni las medidas se escriben en el cajón: tocarlos abre
+  el editor a pantalla completa (ver abajo).
 - **Marco**: el color en una **tira de muestras que se corre de costado** —se busca
   pasando el dedo y mirando el cuadro, como frente a la pared de muestras de una casa de
   cuadros—, acabado y perfil en filas que llevan a sus tarjetas (`Dropdown` +
@@ -217,15 +231,39 @@ el cuadro y publica dónde va (`SceneSnapshot.label`).
   es lo que más se prueba; acabado y perfil se deciden menos y tienen nombres que hay
   que leer.
 - **Passe-partout**: la tira de colores y el ancho.
-- **Vidrio**: las cuatro tarjetas directo, con un renglón de qué hace cada una
-  ("refleja", "difumina"): la diferencia entre cristal y antirreflejo no se adivina por
-  el nombre. Son las tarjetas del sistema armadas acá, porque `OptionPicker` no tiene
-  ese renglón.
-- **Pared**: la tira de colores y las cuatro texturas en botones.
+- **Vidrio**: las cuatro tarjetas directo (`OptionPicker`), solo con el nombre.
+- **Pared**: la tira de colores y la textura en una fila que lleva a sus tarjetas. Cada
+  tarjeta muestra un pedazo de esa pared, acercado (`paintWallChip`): a la escala del
+  cuadro la diferencia entre yeso y gotelé es sutil, y con el nombre solo no se veía.
+
+**Los acabados son tres en el celular**: madera, pintado y metal (`MOLDING_FAMILIES` en
+`palettes.ts`). Las siete de escritorio se distinguen mirando de cerca —veteado o lisa,
+mate o satinado—, pero en el cuadro terminado casi no cambian nada. La familia se
+reconoce por el material, así que un marco armado en escritorio con "Laca" aparece como
+"Pintado". El escritorio sigue con las siete.
 
 **"Sin" es la primera muestra de su tira**: sin marco, sin passe-partout, como "Sin
 vidrio" es la primera tarjeta. No tener es una opción de enmarcado más, no un apagado
-escondido. Sin marco, las filas que no tienen a qué aplicarse quedan apagadas.
+escondido. Sin marco, las filas que no tienen a qué aplicarse quedan apagadas. **Y el
+ancho de los dos llega a cero**, que es lo mismo que la muestra de "sin": las dos formas
+de sacarlo hacen lo mismo en las dos pestañas. Por debajo del centímetro no hay
+passe-partout que cortar, así que el primer paso después del cero lo trae en su ancho
+mínimo.
+
+**Se escribe a pantalla completa** (`FieldEditor`). Con el teclado abierto el celular
+se come media pantalla, y el cajón —con el campo adentro— quedaba tapado o empujaba
+todo: el cuadro se achicaba a nada y el campo se iba de la vista. En el cajón el título
+y las medidas son botones con forma de campo (`FieldButton`); tocarlos abre el editor
+con el campo arriba de todo y "Listo" al lado del título —el teclado numérico del
+iPhone no tiene tecla de aceptar—. Lo escrito se aplica en el acto, como todo; "Listo"
+cierra, no confirma. Abajo, cuánto mide el cuadro terminado, que es lo que se encarga.
+Los campos de medida son de texto con teclado decimal: uno numérico rechaza en silencio
+la coma del teclado en castellano.
+
+**El teclado tiene que salir en el mismo toque.** En iPhone, si el campo aparece en el
+render siguiente y se enfoca desde un efecto, ya es tarde: el foco llega pero el
+teclado no se abre. Por eso `edit` en `MobileUI` monta el editor en el acto
+(`flushSync`) y lo enfoca ahí mismo, adentro del manejador del toque.
 
 **Las muestras de moldura se miran de frente** (`look: 'face'` en `render/chip.ts`) y
 las tarjetas de perfil de costado (`'bottom'`). Con la sección del lado de arriba —la
@@ -264,9 +302,18 @@ siempre; en un teléfono eso es batería gastada en una imagen quieta. Compara c
 está llegando a destino: mientras los dedos arrastran, la vista va pegada a ellos y
 "ya llegó" en cada cuadro, y con esa pregunta el pellizco no se pintaba nunca.
 
-**Subir el dibujo propio es un botón a la vista** mientras siga el de ejemplo, encima
-de la barra. Recién después de leer IndexedDB (`ready` en `App`): antes aparecería un
-instante y se iría. Al subir uno, se abre Obra con el tamaño arriba: es lo que sigue.
+**Sin dibujo, la pantalla de inicio de Referencia y la mesa** (`mobile/Welcome.tsx`):
+el saludo, qué es, qué hacer, el botón, y abajo volver y "Dejame sugerencias". **En el
+celular no hay dibujo de ejemplo**: hacía creer que ya había algo cargado. El
+escritorio lo conserva —ahí invita a tocar los controles, que se descubren pasando el
+mouse—. En el estado el ejemplo sigue siendo la obra por defecto; el celular lo lee
+como "no hay dibujo". `App` espera a IndexedDB (`ready`) antes de elegir entre la
+bienvenida y el cuadro: sin esa espera la bienvenida parpadearía con un dibujo
+guardado. Al subir uno se abre Obra: es lo que sigue.
+
+**Quitar el dibujo vuelve a la bienvenida y conserva el enmarcado**, como en
+Referencia: probar la misma moldura en otro dibujo de la serie no tiene por qué costar
+armarla de nuevo. Lo que se guarda es el dibujo de ejemplo, que es la obra "vacía".
 
 **Los campos van a 16 px** y el `viewport` de `marco/index.html` lleva
 `viewport-fit=cover` —la pared ocupa la pantalla entera y los controles se corren con

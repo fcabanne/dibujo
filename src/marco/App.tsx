@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Canvas, type FreeArea, type Part, type SceneSnapshot } from './components/Canvas'
 import { MobileUI, type Tab } from './components/mobile/MobileUI'
+import { Welcome } from './components/mobile/Welcome'
 import { Overlay, type Category } from './components/Overlay'
 import { computeLayout } from './domain/geometry'
 import { useCompact } from './hooks/useCompact'
@@ -113,33 +114,60 @@ export function App() {
     setTab(part === 'wall' ? null : TAB_FOR[part])
   }, [])
 
+  /**
+   * Quitar el dibujo vuelve a la pantalla de inicio y **no toca el enmarcado**, como
+   * quitar la foto en Referencia: probar la misma moldura en otro dibujo de la serie
+   * no tiene por qué costar armarla de nuevo. El dibujo de ejemplo vuelve a ser la
+   * obra —es lo que el escritorio muestra sin dibujo— y se guarda como tal.
+   */
+  const handleRemove = useCallback(() => {
+    setTab(null)
+    dispatch({ type: 'artwork/patch', patch: { src: DEFAULT_STATE.artwork.src } })
+  }, [])
+
+  /**
+   * En el celular no hay dibujo de ejemplo: sin uno propio va la pantalla de inicio,
+   * como en Referencia y la mesa de luz. Mientras IndexedDB no contestó no se muestra
+   * ninguna de las dos cosas, porque si había un dibujo guardado la bienvenida
+   * parpadearía un instante y parecería que se perdió.
+   */
+  const placeholder = state.artwork.src === DEFAULT_STATE.artwork.src
+  const welcome = compact && placeholder
+  const showCanvas = !compact || (ready && !placeholder)
+
   return (
     <div className={'app' + (compact ? ' is-compact ds' : '')}>
-      <Canvas
-        state={shown}
-        dispatch={dispatch}
-        sceneRef={sceneRef}
-        onLayout={handleLayout}
-        onArtworkDropped={handleArtworkDropped}
-        onAwakeChange={setAwake}
-        compact={compact}
-        freeArea={freeArea}
-        onPartTap={handlePartTap}
-      />
-
-      {compact ? (
-        <MobileUI
-          state={state}
+      {showCanvas && (
+        <Canvas
+          state={shown}
           dispatch={dispatch}
           sceneRef={sceneRef}
-          layout={layout}
-          tab={tab}
-          onTab={setTab}
+          onLayout={handleLayout}
+          onArtworkDropped={handleArtworkDropped}
+          onAwakeChange={setAwake}
+          compact={compact}
           freeArea={freeArea}
-          placeholder={state.artwork.src === DEFAULT_STATE.artwork.src}
-          ready={ready}
-          onArtwork={handleArtworkDropped}
+          onPartTap={handlePartTap}
         />
+      )}
+
+      {compact ? (
+        ready &&
+        (welcome ? (
+          <Welcome onArtwork={handleArtworkDropped} />
+        ) : (
+          <MobileUI
+            state={state}
+            dispatch={dispatch}
+            sceneRef={sceneRef}
+            layout={layout}
+            tab={tab}
+            onTab={setTab}
+            freeArea={freeArea}
+            onArtwork={handleArtworkDropped}
+            onRemove={handleRemove}
+          />
+        ))
       ) : (
         <Overlay
           state={shown}

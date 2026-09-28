@@ -158,7 +158,7 @@
       "glass": "Glass",
       "wall": "Wall"
     },
-    "upload": "Upload your drawing",
+    "upload": "Upload drawing",
     "change": "Change drawing",
     "rotate": "Rotate the frame",
     "size": "Real size",
@@ -182,6 +182,15 @@
     "texture": "Texture",
     "cm": "{n} cm",
     "unit": "cm",
+    "intro": "I made this little tool so you can try frames, mats and glass on your drawing before taking it to the framer.",
+    "hint": "Upload a photo of the drawing, play with the framing and take the measurements with you.",
+    "remove": "Remove the drawing",
+    "done": "Done",
+    "widthShort": "Width",
+    "heightShort": "Height",
+    "keepRatio": "Keep ratio",
+    "finished": "The finished piece measures {width} × {height} cm",
+    "noMatShort": "No mat",
     "loadFailed": "Couldn't load the image"
   }
 }

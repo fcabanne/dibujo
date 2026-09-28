@@ -1,7 +1,8 @@
 import { composeRects, computeLayout, type SceneRects } from '../domain/geometry'
 import type { AppState, Layout } from '../types'
 import { drawArtwork } from './artwork'
-import { drawFrame, drawGlassClips, drawRebateShadow, type Parallax } from './frame'
+import { drawGlassClips } from './clips'
+import { drawFrame, drawRebateShadow, type Parallax } from './frame'
 import { drawGlass, drawGlassEdge } from './glass'
 import { lightFor, type Light } from './light'
 import { drawMat } from './mat'
@@ -48,7 +49,7 @@ export function renderScene(
   const depthPx = layout.depth * pxPerCm
 
   // 1. Pared, con el foco apuntado al cuadro
-  drawWall(ctx, width, height, state.wall, light, outer)
+  drawWall(ctx, width, height, state.wall, light, outer, pxPerCm)
 
   // 2. Sombra proyectada. Se desplaza más que el cuadro: esa diferencia es la
   //    señal de profundidad más barata que hay.
@@ -75,7 +76,7 @@ export function renderScene(
     drawRebateShadow(ctx, glass, depthPx, light)
   } else {
     if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, light)
-    drawGlassClips(ctx, glass, pxPerCm)
+    drawGlassClips(ctx, glass, pxPerCm, light)
   }
 
   // 8. El foco también cae sobre el cuadro, no solo sobre la pared

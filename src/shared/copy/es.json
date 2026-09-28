@@ -158,7 +158,7 @@
       "glass": "Vidrio",
       "wall": "Pared"
     },
-    "upload": "Subir tu dibujo",
+    "upload": "Subir dibujo",
     "change": "Cambiar dibujo",
     "rotate": "Girar el cuadro",
     "size": "Tamaño real",
@@ -182,6 +182,15 @@
     "texture": "Textura",
     "cm": "{n} cm",
     "unit": "cm",
+    "intro": "Hice esta mini herramienta para que pruebes marcos, passe-partout y vidrios sobre tu dibujo antes de llevarlo a enmarcar.",
+    "hint": "Subí una foto del dibujo, jugá con el enmarcado y llevate las medidas para la casa de cuadros.",
+    "remove": "Quitar el dibujo",
+    "done": "Listo",
+    "widthShort": "Ancho",
+    "heightShort": "Alto",
+    "keepRatio": "Mantener proporción",
+    "finished": "El cuadro terminado mide {width} × {height} cm",
+    "noMatShort": "Sin passe",
     "loadFailed": "No se pudo cargar la imagen"
   }
 }
