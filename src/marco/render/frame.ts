@@ -90,6 +90,13 @@ function profileAxis(outer: Rect, inner: Rect, side: Side) {
 const SIDES: Side[] = ['top', 'left', 'right', 'bottom']
 const SEED: Record<Side, number> = { top: 11, right: 29, bottom: 47, left: 67 }
 
+/**
+ * Cuánto se aparta cada listón del tono de la madera: positivo aclara, negativo
+ * oscurece. Fijo y no al azar para que el marco no cambie entre una visita y otra,
+ * y alternado para que dos lados vecinos nunca coincidan.
+ */
+const PIECE_TONE: Record<Side, number> = { top: 0.022, right: -0.026, bottom: 0.016, left: -0.02 }
+
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
   outer: Rect,
@@ -114,6 +121,16 @@ export function drawFrame(
 
     // Material con la veta corriendo a lo largo de la pieza real.
     drawMaterial(ctx, rect, alongX, frame.color, frame.material, frame.finish, SEED[side])
+
+    // Cada lado de una moldura de madera es un listón distinto, cortado de otra
+    // parte de la tabla, y ninguno tiene exactamente el tono del de al lado. Cuatro
+    // piezas idénticas son lo que delata un marco dibujado; unos pocos puntos de
+    // diferencia alcanzan para que la juntura del inglete se lea como una juntura.
+    if (frame.material === 'wood') {
+      const tone = PIECE_TONE[side]
+      ctx.fillStyle = tone > 0 ? rgba('#fff4e4', tone) : rgba('#140c06', -tone)
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+    }
 
     // Sección de la moldura: cada parada sale de iluminar la normal del perfil.
     const axis = profileAxis(outer, inner, side)

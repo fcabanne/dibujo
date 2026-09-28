@@ -2,7 +2,13 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: la pared ocupa la pantalla entera, muescas incluidas, y
+         los controles se corren solos con env(safe-area-inset-*). Con el teclado
+         abierto el contenido se achica en vez de quedar tapado (Android). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <title>Cuadros — probador de enmarcado</title>
   </head>
   <body>

@@ -2,11 +2,11 @@ import { composeRects, computeLayout, type SceneRects } from '../domain/geometry
 import type { AppState, Layout } from '../types'
 import { drawArtwork } from './artwork'
 import { drawFrame, drawGlassClips, drawRebateShadow, type Parallax } from './frame'
-import { drawGlass } from './glass'
+import { drawGlass, drawGlassEdge } from './glass'
 import { lightFor, type Light } from './light'
 import { drawMat } from './mat'
 import { drawCastShadow } from './shadow'
-import { drawWall } from './wall'
+import { drawObjectFalloff, drawWall } from './wall'
 
 export interface SceneParams {
   width: number
@@ -15,6 +15,12 @@ export interface SceneParams {
   dpr: number
   /** Puntero normalizado a -1..1 sobre el lienzo, ya suavizado. */
   parallax: Parallax
+  /**
+   * Dónde va el centro del cuadro, en px. Sin él cuelga donde siempre: al medio y
+   * apenas por encima. El celular lo pasa porque el lugar libre cambia —el cajón de
+   * controles sube y el cuadro se acomoda arriba de él—.
+   */
+  anchor?: { x: number; y: number }
 }
 
 export interface SceneResult {
@@ -34,10 +40,10 @@ export function renderScene(
   image: HTMLImageElement | null,
   params: SceneParams,
 ): SceneResult {
-  const { width, height, pxPerCm, dpr, parallax } = params
+  const { width, height, pxPerCm, dpr, parallax, anchor } = params
   const layout = computeLayout(state)
   const light = lightFor(parallax.x, parallax.y)
-  const rects = composeRects(layout, { width, height }, pxPerCm, parallax)
+  const rects = composeRects(layout, { width, height }, pxPerCm, parallax, anchor)
   const { outer, glass, sight } = rects
   const depthPx = layout.depth * pxPerCm
 
@@ -64,12 +70,16 @@ export function renderScene(
   // 6. Vidrio, sobre todo el contenido del rebaje
   drawGlass(ctx, glass, state.glass, dpr, light, parallax)
 
-  // 7. Sombra del rebaje, o los ganchitos si no hay marco
+  // 7. Sombra del rebaje, o el canto del vidrio y los ganchitos si no hay marco
   if (hasFrame) {
     drawRebateShadow(ctx, glass, depthPx, light)
   } else {
+    if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, light)
     drawGlassClips(ctx, glass, pxPerCm)
   }
+
+  // 8. El foco también cae sobre el cuadro, no solo sobre la pared
+  drawObjectFalloff(ctx, outer, light)
 
   return { layout, rects, light }
 }

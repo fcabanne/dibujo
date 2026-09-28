@@ -147,5 +147,41 @@
     "denied": "La cámara está bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
     "noCamera": "No se encontró ninguna cámara.",
     "retry": "Reintentar"
+  },
+
+  "marco": {
+    "name": "Cuadros",
+    "tabs": {
+      "artwork": "Obra",
+      "frame": "Marco",
+      "mat": "Passe-partout",
+      "glass": "Vidrio",
+      "wall": "Pared"
+    },
+    "upload": "Subir tu dibujo",
+    "change": "Cambiar dibujo",
+    "rotate": "Girar el cuadro",
+    "size": "Tamaño real",
+    "width": "Ancho de la obra",
+    "height": "Alto de la obra",
+    "lockOn": "Proporción trabada: el otro lado acompaña",
+    "lockOff": "Proporción libre: cada lado va por su cuenta",
+    "title": "Título",
+    "titlePlaceholder": "Sin título",
+    "color": "Color",
+    "customColor": "Otro color",
+    "custom": "A medida",
+    "finish": "Acabado",
+    "profile": "Perfil",
+    "frameWidth": "Ancho",
+    "depth": "Espesor",
+    "matWidth": "Ancho",
+    "noFrame": "Sin marco",
+    "noMat": "Sin passe-partout",
+    "glass": "Vidrio",
+    "texture": "Textura",
+    "cm": "{n} cm",
+    "unit": "cm",
+    "loadFailed": "No se pudo cargar la imagen"
   }
 }

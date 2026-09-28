@@ -1,4 +1,5 @@
 import type { Rect } from '../types'
+import { fillBlurredRect } from './blur'
 import type { Light } from './light'
 
 /**
@@ -31,9 +32,7 @@ function bake(w: number, h: number, depthPx: number, dx: number, dy: number): HT
 
   const put = (blur: number, alpha: number, fill: string, spread: number) => {
     ctx.globalAlpha = alpha
-    ctx.filter = 'blur(' + blur.toFixed(1) + 'px)'
-    ctx.fillStyle = fill
-    ctx.fillRect(pad + dx * depthPx * spread, pad + dy * depthPx * spread, w, h)
+    fillBlurredRect(ctx, pad + dx * depthPx * spread, pad + dy * depthPx * spread, w, h, blur, fill)
   }
 
   put(ambient, 0.5, 'rgba(0, 0, 0, 0.72)', 1.7)

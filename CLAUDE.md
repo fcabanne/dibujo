@@ -120,8 +120,9 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
   `src/shared/copy/LEEME.md`.
 - `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Ya solo lo usa
-  Cuadros, que todavía no está dibujada en Figma. Referencia y Mesa de luz pasaron al
-  sistema de arriba. Cuando Cuadros se dibuje, esta hoja desaparece.
+  el escritorio de Cuadros, que todavía no está dibujado en Figma. Referencia, Mesa de
+  luz y Cuadros en el celular usan el sistema de arriba. Cuando el escritorio de Cuadros
+  se dibuje, esta hoja desaparece.
 
 ## Cómo está armado el probador de enmarcado
 
@@ -132,16 +133,145 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
-- `src/marco/interaction/` — qué parte del cuadro está bajo el puntero.
-- `src/marco/components/` — el lienzo y la capa de controles que se apoya encima.
+- `src/marco/interaction/` — qué parte del cuadro está bajo el puntero, o bajo el dedo.
+- `src/marco/components/` — el lienzo y las dos capas de controles que se apoyan
+  encima: la de escritorio (`Overlay` y `hud/`) y la del celular (`mobile/`).
+- `src/marco/hooks/` — `useCompact` decide qué capa va; `useTilt` lee la inclinación
+  del teléfono.
 
-**La UI no tiene barra ni paneles.** Los controles se apoyan sobre la parte que
-editan y desaparecen solos. Los anchos se arrastran directamente sobre el cuadro.
+**En escritorio la UI no tiene barra ni paneles.** Los controles se apoyan sobre la
+parte que editan y desaparecen solos (en el celular sí hay barra: ver más abajo). Los anchos se arrastran directamente sobre el cuadro.
 Las referencias visuales son Tiny Glade y Outside the Blocks.
 
 **Los anclajes de la UI se calculan como fracción del elemento**, nunca con márgenes
 fijos en píxeles: con un margen constante los controles se despegan de su esquina
 apenas se hace zoom.
+
+**Lo que se sumó al render para que se vea más real**, y que ve también el escritorio
+porque es el mismo render:
+
+- **El foco cae también sobre el cuadro** (`drawObjectFalloff` en `wall.ts`), no solo
+  sobre la pared: unos pocos puntos de caída hacia los bordes lejanos del pozo de luz.
+  Antes el cuadro iba parejo encima de una pared que sí caía a penumbra, y se leía
+  pegado. Es suave a propósito: no alcanza para cambiar cómo se ven los colores de la
+  obra, que es lo que se está juzgando.
+- **Cada listón de madera tiene su tono** (`PIECE_TONE` en `frame.ts`), fijo y alternado.
+  Cuatro piezas idénticas delatan un marco dibujado.
+- **Sin marco, el canto del vidrio agarra luz** (`drawGlassEdge`), con el tinte verdoso
+  del vidrio común visto de canto.
+- **La sombra y el vidrio mate andan en Safari** (`render/blur.ts`). `ctx.filter` está
+  apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
+  de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
+  para el mate. Chrome sigue por el camino de siempre y da lo mismo que antes.
+
+### En el celular
+
+La capa de escritorio vive de un puntero que pasa por encima —las burbujas despiertan
+al mover el mouse, los abanicos se abren al pasar, el paralaje sigue al cursor—, y en
+una pantalla que solo se toca no aparecía nunca: la herramienta abría sin controles. Por
+eso Cuadros tiene una segunda capa de controles para el celular. **El lienzo, el estado,
+el reducer y el render son los mismos**; lo que cambia es lo que flota encima
+(`components/mobile/` en vez de `Overlay`), y el lienzo (`Canvas.tsx`) tiene una rama
+de gestos para el dedo. **El escritorio no se tocó**: su camino en `Canvas` es el de
+antes, y todo el CSS del celular cuelga de `.is-compact` o de clases `m-`
+(`src/marco/mobile.css`).
+
+**La pregunta no es solo el ancho** (`useCompact`): angosta **o** sin un puntero que
+pase por encima (`(hover: none) and (pointer: coarse)`). En Referencia alcanza con el
+ancho porque su panel anda igual con el dedo; acá la capa de escritorio no anda sin
+hover, así que un iPad o un teléfono acostado —que pasan de 720 px— tienen que recibir
+la del celular. Una notebook táctil tiene mouse como puntero principal y sigue con la
+de escritorio.
+
+**Se ve como Referencia y como la mesa**: sistema de diseño (`shared/ui`) y textos en
+`copy` (sección `marco`). Como en la mesa, todo flota sobre una imagen —acá la pared—,
+así que cada cosa que se toca va en su pastilla del fondo claro. Abajo, volver a la
+izquierda y las cinco pestañas a la derecha, con la marca oscura que viaja de pestaña en
+pestaña: **Obra, Marco, Passe-partout, Vidrio, Pared**, el orden en que se decide un
+cuadro. Los nombres de colores, acabados y perfiles salen de `palettes.ts`, los mismos
+del escritorio: son vocabulario de taller, no textos de pantalla.
+
+**El cajón mide lo que mide su contenido y el cuadro se acomoda arriba de él.** Al
+revés que en Referencia, donde el cajón tapa la foto sin moverla: acá lo que se está
+eligiendo es el cuadro, y taparlo sería elegir a ciegas. `MobileUI` registra en
+`freeArea` una función que mide del DOM el lugar que dejan libre los controles, y el
+lienzo la llama **en cada cuadro**, así que el cuadro sube y se achica acompañando la
+transición de CSS del cajón, sin que nadie le avise. Acostado y bajito, el cajón pasa a
+la derecha y el cuadro se encaja a su izquierda.
+
+**La cartela cuelga debajo del cuadro** cuando no hay cajón abierto —al costado, si el
+teléfono está acostado—, y se va mientras hay uno: no hay lugar, y el cuadro es lo que
+importa mientras se elige. Es la misma cartela del escritorio con las letras del
+sistema, y es lo que uno se lleva al enmarcador. El lienzo reserva su lugar al encajar
+el cuadro y publica dónde va (`SceneSnapshot.label`).
+
+**Cada pestaña, sus controles:**
+
+- **Obra**: el tamaño real arriba de todo —es lo que vuelve el juego en medidas—, el
+  título, cambiar y girar. Los campos son de texto con teclado decimal: un campo
+  numérico rechaza en silencio la coma del teclado en castellano.
+- **Marco**: el color en una **tira de muestras que se corre de costado** —se busca
+  pasando el dedo y mirando el cuadro, como frente a la pared de muestras de una casa de
+  cuadros—, acabado y perfil en filas que llevan a sus tarjetas (`Dropdown` +
+  `OptionPicker`, como en Referencia), y ancho y espesor. El color va a la vista porque
+  es lo que más se prueba; acabado y perfil se deciden menos y tienen nombres que hay
+  que leer.
+- **Passe-partout**: la tira de colores y el ancho.
+- **Vidrio**: las cuatro tarjetas directo, con un renglón de qué hace cada una
+  ("refleja", "difumina"): la diferencia entre cristal y antirreflejo no se adivina por
+  el nombre. Son las tarjetas del sistema armadas acá, porque `OptionPicker` no tiene
+  ese renglón.
+- **Pared**: la tira de colores y las cuatro texturas en botones.
+
+**"Sin" es la primera muestra de su tira**: sin marco, sin passe-partout, como "Sin
+vidrio" es la primera tarjeta. No tener es una opción de enmarcado más, no un apagado
+escondido. Sin marco, las filas que no tienen a qué aplicarse quedan apagadas.
+
+**Las muestras de moldura se miran de frente** (`look: 'face'` en `render/chip.ts`) y
+las tarjetas de perfil de costado (`'bottom'`). Con la sección del lado de arriba —la
+que usa el escritorio, y la que sigue usando—, un marco blanco se veía gris oscuro en su
+muestra: en una caveta ese lado mira para abajo y queda en sombra.
+
+**El cuadro también se toca**, y nada depende de pasar por encima:
+
+- **Un dedo sobre la moldura o el passe-partout los ensancha**, como el mouse, con las
+  mismas cotas y el medio centímetro de imán. La banda se agranda hacia afuera para el
+  dedo (`touchZone`): una moldura de 3 cm en un teléfono mide veinte píxeles.
+- **Las cotas aparecen solas un rato** al abrir Marco o Passe-partout, o al mover su
+  ancho desde el slider: dicen que esa banda se estira, sin un texto que lo diga.
+- **Un toque abre lo que edita la parte tocada**: la moldura, el passe-partout, la
+  obra. Tocar la pared cierra el cajón —es tocar "afuera"—.
+- **Dos dedos acercan**, anclados al medio de los dedos, hasta tres veces. De cerca, un
+  dedo corre la vista —solo hacia donde sobra cuadro, como en Referencia— y un doble
+  toque vuelve al encuadre. Soltar por debajo del encuadre vuelve solo.
+- **Un dedo sobre la pared corre la luz**, como el mouse en escritorio: el reflejo barre
+  el vidrio y asoma el canto de la moldura.
+
+**El teléfono inclinado también corre la luz** (`useTilt`). Es lo que en escritorio hace
+el mouse, y en un celular es todavía mejor: se mueve el teléfono y el cuadro responde
+como un objeto. Mide cambios y no la postura —el centro se va acomodando solo en unos
+tres segundos—. En iPhone el sensor pide permiso, y solo en respuesta a un toque: se
+pide una vez, al primer toque sobre el cuadro (`askTiltPermission`). Si se niega no pasa
+nada; el dedo sobre la pared sigue corriendo la luz.
+
+**Un material nuevo se funde sobre el anterior** en vez de saltar (`looksKey` y
+`snapshot` en `Canvas.tsx`). Solo lo que cambia sin mover nada de lugar —color,
+acabado, perfil, vidrio, pared—: un cambio de medida con fundido se vería doble.
+
+**El lienzo no pinta si nada cambió** (`paintedRef`). En escritorio el loop pinta
+siempre; en un teléfono eso es batería gastada en una imagen quieta. Compara contra
+**lo último que se pintó** —estado, escala, centro, paralaje—, no contra si la vista
+está llegando a destino: mientras los dedos arrastran, la vista va pegada a ellos y
+"ya llegó" en cada cuadro, y con esa pregunta el pellizco no se pintaba nunca.
+
+**Subir el dibujo propio es un botón a la vista** mientras siga el de ejemplo, encima
+de la barra. Recién después de leer IndexedDB (`ready` en `App`): antes aparecería un
+instante y se iría. Al subir uno, se abre Obra con el tamaño arriba: es lo que sigue.
+
+**Los campos van a 16 px** y el `viewport` de `marco/index.html` lleva
+`viewport-fit=cover` —la pared ocupa la pantalla entera y los controles se corren con
+`env(safe-area-inset-*)`— e `interactive-widget=resizes-content`, para que en Android
+el teclado achique la app en vez de tapar el campo.
 
 ## Cómo está armada Referencia
 
@@ -275,7 +405,7 @@ abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fil
 sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz también;
-Cuadros todavía no.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+Cuadros, solo en el celular.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
 no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
 mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 

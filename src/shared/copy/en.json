@@ -147,5 +147,41 @@
     "denied": "The camera is blocked for this site. Allow it from the padlock in the address bar.",
     "noCamera": "No camera was found.",
     "retry": "Try again"
+  },
+
+  "marco": {
+    "name": "Frames",
+    "tabs": {
+      "artwork": "Artwork",
+      "frame": "Frame",
+      "mat": "Mat",
+      "glass": "Glass",
+      "wall": "Wall"
+    },
+    "upload": "Upload your drawing",
+    "change": "Change drawing",
+    "rotate": "Rotate the frame",
+    "size": "Real size",
+    "width": "Artwork width",
+    "height": "Artwork height",
+    "lockOn": "Ratio locked: the other side follows",
+    "lockOff": "Ratio free: each side on its own",
+    "title": "Title",
+    "titlePlaceholder": "Untitled",
+    "color": "Color",
+    "customColor": "Other color",
+    "custom": "Custom",
+    "finish": "Finish",
+    "profile": "Profile",
+    "frameWidth": "Width",
+    "depth": "Depth",
+    "matWidth": "Width",
+    "noFrame": "No frame",
+    "noMat": "No mat",
+    "glass": "Glass",
+    "texture": "Texture",
+    "cm": "{n} cm",
+    "unit": "cm",
+    "loadFailed": "Couldn't load the image"
   }
 }

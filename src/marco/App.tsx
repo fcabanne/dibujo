@@ -1,17 +1,40 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
-import { Canvas, type SceneSnapshot } from './components/Canvas'
+import { Canvas, type FreeArea, type Part, type SceneSnapshot } from './components/Canvas'
+import { MobileUI, type Tab } from './components/mobile/MobileUI'
 import { Overlay, type Category } from './components/Overlay'
 import { computeLayout } from './domain/geometry'
+import { useCompact } from './hooks/useCompact'
 import { loadArtwork } from '../shared/imageStore'
+import { DEFAULT_STATE } from './state/defaults'
 import { loadSession, saveSession } from './state/persistence'
 import { reducer, type Action } from './state/reducer'
 import type { Layout } from './types'
+
+/** Qué pestaña abre, en el celular, tocar cada parte del cuadro. */
+const TAB_FOR: Record<Exclude<Part, 'wall'>, Tab> = {
+  frame: 'marco',
+  mat: 'passe',
+  art: 'obra',
+}
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, loadSession)
   const [open, setOpen] = useState<Category | null>(null)
   const [awake, setAwake] = useState(false)
   const [layout, setLayout] = useState<Layout>(() => computeLayout(loadSession()))
+
+  /**
+   * Celular o escritorio. No son dos apps: el mismo lienzo, el mismo estado y el
+   * mismo render, con dos capas de controles encima. Ver `useCompact` para por qué
+   * acá la pregunta no es solo el ancho.
+   */
+  const compact = useCompact()
+  /** La pestaña abierta en el celular. Vive acá porque también la abre tocar el cuadro. */
+  const [tab, setTab] = useState<Tab | null>(null)
+  /** Si ya se leyó IndexedDB: antes no se sabe si el dibujo de ejemplo se va a quedar. */
+  const [ready, setReady] = useState(false)
+  /** Lo registra la capa del celular y lo lee el lienzo en cada cuadro. */
+  const freeArea = useRef<(() => FreeArea | null) | null>(null)
 
   /**
    * Vista previa al pasar por una opción: se ve el cambio en el cuadro antes de
@@ -39,7 +62,9 @@ export function App() {
   useEffect(() => {
     let cancelled = false
     void loadArtwork('marco').then((src) => {
-      if (!cancelled && src) dispatch({ type: 'artwork/restore', src })
+      if (cancelled) return
+      if (src) dispatch({ type: 'artwork/restore', src })
+      setReady(true)
     })
     return () => {
       cancelled = true
@@ -51,6 +76,13 @@ export function App() {
     const id = window.setTimeout(() => saveSession(state), 400)
     return () => window.clearTimeout(id)
   }, [state])
+
+  // Al pasar de una capa a la otra no queda nada abierto de la anterior.
+  useEffect(() => {
+    setOpen(null)
+    setPreview(null)
+    setTab(null)
+  }, [compact])
 
   const handleLayout = useCallback((next: Layout) => {
     setLayout((prev) =>
@@ -64,13 +96,25 @@ export function App() {
     )
   }, [])
 
-  const handleArtworkDropped = useCallback((src: string, aspect: number) => {
-    dispatch({ type: 'artwork/replace', src, aspect })
-    setOpen('artwork')
+  // Una obra nueva abre lo suyo: en escritorio la burbuja de la obra, en el celular
+  // su pestaña, con el tamaño real arriba — es lo que sigue después de subirla.
+  const handleArtworkDropped = useCallback(
+    (src: string, aspect: number) => {
+      dispatch({ type: 'artwork/replace', src, aspect })
+      if (compact) setTab('obra')
+      else setOpen('artwork')
+    },
+    [compact],
+  )
+
+  // Tocar una parte del cuadro abre lo que la edita. Tocar la pared cierra el cajón:
+  // es tocar "afuera", y devuelve el cuadro entero con su cartela.
+  const handlePartTap = useCallback((part: Part) => {
+    setTab(part === 'wall' ? null : TAB_FOR[part])
   }, [])
 
   return (
-    <div className="app">
+    <div className={'app' + (compact ? ' is-compact ds' : '')}>
       <Canvas
         state={shown}
         dispatch={dispatch}
@@ -78,18 +122,36 @@ export function App() {
         onLayout={handleLayout}
         onArtworkDropped={handleArtworkDropped}
         onAwakeChange={setAwake}
+        compact={compact}
+        freeArea={freeArea}
+        onPartTap={handlePartTap}
       />
 
-      <Overlay
-        state={shown}
-        onPreview={setPreview}
-        dispatch={dispatch}
-        sceneRef={sceneRef}
-        layout={layout}
-        awake={awake}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      {compact ? (
+        <MobileUI
+          state={state}
+          dispatch={dispatch}
+          sceneRef={sceneRef}
+          layout={layout}
+          tab={tab}
+          onTab={setTab}
+          freeArea={freeArea}
+          placeholder={state.artwork.src === DEFAULT_STATE.artwork.src}
+          ready={ready}
+          onArtwork={handleArtworkDropped}
+        />
+      ) : (
+        <Overlay
+          state={shown}
+          onPreview={setPreview}
+          dispatch={dispatch}
+          sceneRef={sceneRef}
+          layout={layout}
+          awake={awake}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      )}
     </div>
   )
 }

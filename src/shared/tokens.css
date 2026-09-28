@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------
    El tema oscuro: vidrio, acento cálido y tipografía de sistema.
 
-   Ya solo lo usa Cuadros, que todavía no está dibujada en Figma.
-   Referencia y Mesa de luz pasaron al sistema de diseño de `ui/`, que
-   sale del archivo. Cuando Cuadros se dibuje, esta hoja desaparece.
+   Ya solo lo usa el escritorio de Cuadros, que todavía no está dibujado
+   en Figma. Referencia, Mesa de luz y Cuadros en el celular usan el
+   sistema de diseño de `ui/`, que sale del archivo. Cuando el escritorio
+   de Cuadros se dibuje, esta hoja desaparece.
    ------------------------------------------------------------------ */
 
 :root {
