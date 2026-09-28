@@ -1,5 +1,6 @@
 import type { GlassType, Rect } from '../types'
-import type { Light } from './light'
+import { canvasFilterSupported } from './blur'
+import { sideIntensity, type Light, type Side } from './light'
 
 let scratch: HTMLCanvasElement | null = null
 
@@ -76,10 +77,85 @@ function drawDiffusion(ctx: CanvasRenderingContext2D, rect: Rect, dpr: number) {
     dh,
   )
 
+  const radius = Math.min(rect.w, rect.h) * 0.006
+
   ctx.save()
-  ctx.filter = 'blur(' + (Math.min(rect.w, rect.h) * 0.006).toFixed(2) + 'px)'
   ctx.globalAlpha = 0.75
-  ctx.drawImage(sctx.canvas, rect.x, rect.y, rect.w, rect.h)
+  if (canvasFilterSupported()) {
+    ctx.filter = 'blur(' + radius.toFixed(2) + 'px)'
+    ctx.drawImage(sctx.canvas, rect.x, rect.y, rect.w, rect.h)
+  } else {
+    // Sin filtro (Safari): achicar y volver a agrandar. El suavizado del reescalado
+    // es un desenfoque barato, y al radio chico del vidrio mate no se le nota la
+    // diferencia con el gaussiano.
+    const shrink = Math.max(1.5, radius * dpr * 1.4)
+    const small = getSmall(Math.max(1, Math.round(dw / shrink)), Math.max(1, Math.round(dh / shrink)))
+    if (small) {
+      small.imageSmoothingQuality = 'high'
+      small.drawImage(sctx.canvas, 0, 0, small.canvas.width, small.canvas.height)
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(small.canvas, rect.x, rect.y, rect.w, rect.h)
+    }
+  }
+  ctx.restore()
+}
+
+let smallScratch: HTMLCanvasElement | null = null
+
+function getSmall(w: number, h: number): CanvasRenderingContext2D | null {
+  if (!smallScratch) smallScratch = document.createElement('canvas')
+  if (smallScratch.width !== w || smallScratch.height !== h) {
+    smallScratch.width = w
+    smallScratch.height = h
+  }
+  const small = smallScratch.getContext('2d')
+  small?.clearRect(0, 0, w, h)
+  return small
+}
+
+/**
+ * El canto del vidrio, cuando no hay marco que lo tape.
+ *
+ * Con moldura el borde del vidrio queda escondido en el rebaje. Sin ella —el
+ * sándwich de vidrio con ganchitos— el canto pulido está a la vista y agarra luz: un
+ * hilo claro del lado de la fuente y uno oscuro del otro, con el tinte verdoso que
+ * tiene el vidrio común visto de canto. Es lo que hace que ese cuadro se lea como
+ * una placa con espesor y no como un rectángulo con un reflejo encima.
+ */
+export function drawGlassEdge(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  pxPerCm: number,
+  light: Light,
+) {
+  const width = Math.max(1, pxPerCm * 0.12)
+  const half = width / 2
+  const x0 = rect.x + half
+  const y0 = rect.y + half
+  const x1 = rect.x + rect.w - half
+  const y1 = rect.y + rect.h - half
+
+  const sides: { side: Side; from: [number, number]; to: [number, number] }[] = [
+    { side: 'top', from: [x0, y0], to: [x1, y0] },
+    { side: 'left', from: [x0, y0], to: [x0, y1] },
+    { side: 'bottom', from: [x0, y1], to: [x1, y1] },
+    { side: 'right', from: [x1, y0], to: [x1, y1] },
+  ]
+
+  ctx.save()
+  ctx.lineWidth = width
+  ctx.lineCap = 'square'
+  for (const { side, from, to } of sides) {
+    const k = sideIntensity(side, light)
+    ctx.strokeStyle =
+      k > 0
+        ? 'rgba(232, 248, 242, ' + (0.28 + k * 0.4).toFixed(3) + ')'
+        : 'rgba(34, 58, 52, ' + (0.18 - k * 0.22).toFixed(3) + ')'
+    ctx.beginPath()
+    ctx.moveTo(from[0], from[1])
+    ctx.lineTo(to[0], to[1])
+    ctx.stroke()
+  }
   ctx.restore()
 }
 

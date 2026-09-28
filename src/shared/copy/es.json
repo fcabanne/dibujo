@@ -19,7 +19,6 @@
 
   "canvas": {
     "drop": "Soltá tu foto de referencia acá",
-    "fit": "Ajustar",
     "alt": "Foto de referencia"
   },
 
@@ -51,29 +50,28 @@
   "grid": {
     "tab": "Grilla",
     "title": "Grilla",
-    "type": "Tipo",
+    "type": "Grilla",
     "proportional": "Proporcional",
     "proportionalHint": "Divide la foto en partes iguales",
     "square": "Cuadrada",
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
-    "divisions": "Divisiones",
-    "fewer": "Menos divisiones",
-    "more": "Más divisiones",
+    "none": "Ninguna",
+    "noneHint": "Sin grilla",
+    "divisions": "Cantidad",
+    "fewer": "Menos",
+    "more": "Más",
     "color": "Color",
-    "customColor": "Otro color",
+    "customColor": "Otro",
     "colors": {
       "white": "Blanco",
       "black": "Negro",
-      "red": "Rojo",
       "cyan": "Celeste",
       "yellow": "Amarillo",
       "pink": "Rosa"
     },
     "weight": "Espesor",
     "opacity": "Opacidad",
-    "opacityValue": "{n}%",
-    "labels": "Mostrar etiquetas",
-    "subdivide": "Subdividir"
+    "opacityValue": "{n}%"
   },
 
   "adjust": {
@@ -105,7 +103,9 @@
     "pdfHint": "Se imprime sin reescalar",
     "jpg": "JPG",
     "jpgHint": "Una imagen común",
-    "cancel": "Cancelar",
+    "labels": "Etiquetas",
+    "close": "Cerrar",
+    "lightTable": "Llevar a la mesa de luz",
     "working": "Preparando…",
     "fileSuffix": "referencia"
   },
@@ -121,11 +121,76 @@
     "shared": "Compartido",
     "loadFailed": "No se pudo cargar la imagen",
     "downloadFailed": "No se pudo descargar",
+    "lightTableFailed": "No se pudo llevar la foto a la mesa de luz",
     "notAnImage": "El archivo no es una imagen",
     "unreadable": "No se pudo leer la imagen",
     "unprocessable": "No se pudo procesar la imagen",
     "unopenable": "No se pudo abrir la imagen",
     "canvasFailed": "No se pudo preparar el lienzo del export",
     "outOfMemory": "Este dispositivo se quedó sin memoria para un archivo de ese tamaño. Probá con una hoja más chica."
+  },
+
+  "mesa": {
+    "name": "Mesa de luz",
+    "intro": "Con esta herramienta podés superponer tu imagen de referencia sobre el papel para copiarla o ver las diferencias.",
+    "hint": "Empezá poniendo el celu en un trípode o algo fijo y subí tu referencia.",
+    "change": "Cambiar foto",
+    "opacity": "Cuánto se ve la foto",
+    "opacityValue": "{n}%",
+    "corner": "Esquina {n}",
+    "reset": "Restablecer",
+    "torchOn": "Prender la linterna",
+    "torchOff": "Apagar la linterna",
+    "insecure": "La cámara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
+    "openSite": "Abrir la mesa de luz",
+    "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
+    "denied": "La cámara está bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
+    "noCamera": "No se encontró ninguna cámara.",
+    "retry": "Reintentar"
+  },
+
+  "marco": {
+    "name": "Enmarcado",
+    "tabs": {
+      "artwork": "Obra",
+      "frame": "Marco",
+      "mat": "Passe-partout",
+      "glass": "Vidrio",
+      "wall": "Pared"
+    },
+    "upload": "Subir dibujo",
+    "change": "Cambiar dibujo",
+    "rotate": "Girar el cuadro",
+    "size": "Tamaño real",
+    "width": "Ancho de la obra",
+    "height": "Alto de la obra",
+    "lockOn": "Proporción trabada: el otro lado acompaña",
+    "lockOff": "Proporción libre: cada lado va por su cuenta",
+    "title": "Título",
+    "titlePlaceholder": "Sin título",
+    "color": "Color",
+    "customColor": "Otro color",
+    "custom": "A medida",
+    "finish": "Acabado",
+    "profile": "Perfil",
+    "frameWidth": "Ancho",
+    "depth": "Espesor",
+    "matWidth": "Ancho",
+    "noFrame": "Sin marco",
+    "noMat": "Sin passe-partout",
+    "glass": "Vidrio",
+    "texture": "Textura",
+    "cm": "{n} cm",
+    "unit": "cm",
+    "intro": "Hice esta mini herramienta para que pruebes marcos, passe-partout y vidrios sobre tu dibujo antes de llevarlo a enmarcar.",
+    "hint": "Subí una foto del dibujo, jugá con el enmarcado y llevate las medidas para la casa de cuadros.",
+    "remove": "Quitar el dibujo",
+    "done": "Listo",
+    "widthShort": "Ancho",
+    "heightShort": "Alto",
+    "keepRatio": "Mantener proporción",
+    "finished": "El cuadro terminado mide {width} × {height} cm",
+    "noMatShort": "Sin passe",
+    "loadFailed": "No se pudo cargar la imagen"
   }
 }

@@ -45,6 +45,78 @@ export function fbm(x: number, y: number, seed: number, octaves = 4): number {
   return sum / norm
 }
 
+/**
+ * Lo mismo que `fbm`, pero que se repite sin costura cada `period` unidades: la
+ * grilla del ruido da la vuelta en el borde. Es lo que necesita una textura que se
+ * pinta como baldosa —la de la pared—, donde la variación grande tiene que empalmar
+ * con la baldosa de al lado. `period` tiene que ser entero.
+ */
+export function tileableFbm(
+  x: number,
+  y: number,
+  period: number,
+  seed: number,
+  octaves = 4,
+): number {
+  let sum = 0
+  let amp = 0.5
+  let freq = 1
+  let norm = 0
+
+  for (let i = 0; i < octaves; i++) {
+    const p = period * freq
+    const fx = x * freq
+    const fy = y * freq
+    const xi = Math.floor(fx)
+    const yi = Math.floor(fy)
+    const u = smooth(fx - xi)
+    const v = smooth(fy - yi)
+    const w = (n: number) => ((n % p) + p) % p
+    const s = seed + i * 17
+    const a = hash(w(xi), w(yi), s)
+    const b = hash(w(xi + 1), w(yi), s)
+    const c = hash(w(xi), w(yi + 1), s)
+    const d = hash(w(xi + 1), w(yi + 1), s)
+    sum += ((a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v) * amp
+    norm += amp
+    amp *= 0.5
+    freq *= 2
+  }
+
+  return sum / norm
+}
+
+/**
+ * Ruido de valor que da la vuelta solo en x, cada `period` unidades (entero). Es para
+ * lo que corre a lo largo de algo y se repite nada más en ese sentido: la veta de un
+ * listón, que se pinta como baldosa a lo largo de la pieza.
+ */
+export function stripNoise(x: number, y: number, period: number, seed: number): number {
+  const xi = Math.floor(x)
+  const yi = Math.floor(y)
+  const u = smooth(x - xi)
+  const v = smooth(y - yi)
+  const x0 = ((xi % period) + period) % period
+  const x1 = (x0 + 1) % period
+  const a = intHash(x0, yi, seed)
+  const b = intHash(x1, yi, seed)
+  const c = intHash(x0, yi + 1, seed)
+  const d = intHash(x1, yi + 1, seed)
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v
+}
+
+/**
+ * El mismo tipo de azar que `hash`, con enteros en vez de un seno: varias veces más
+ * rápido. Importa en lo que se hornea por píxel —la madera son cientos de miles—,
+ * donde el seno se llevaba la mayor parte del tiempo.
+ */
+function intHash(x: number, y: number, seed: number): number {
+  let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1442695041)) | 0
+  h = Math.imul(h ^ (h >>> 13), 1274126177)
+  h ^= h >>> 16
+  return (h >>> 0) / 4294967296
+}
+
 const fieldCache = new Map<string, HTMLCanvasElement>()
 
 /**

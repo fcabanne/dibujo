@@ -123,3 +123,89 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+/**
+ * Grilla proporcional. Figma: `Proportional` (26:395/26:417) — mismo caso que
+ * la flecha del Dropdown: no se pudo bajar el trazo exacto, se dibujó a ojo
+ * sobre la captura (dos marcas de esquina, como un ícono de "mantener
+ * proporción").
+ */
+export function ProportionalIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M9 4H5C4.44772 4 4 4.44772 4 5V9M15 4H19C19.5523 4 20 4.44772 20 5V9M9 20H5C4.44772 20 4 19.5523 4 19V15M15 20H19C19.5523 20 20 19.5523 20 19V15" />
+    </svg>
+  )
+}
+
+/** Grilla cuadrada. Figma: `Proportional` (26:395/26:417, variante). */
+export function SquareIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 4H20V20H4V4ZM12 4V20M4 12H20" />
+    </svg>
+  )
+}
+
+/**
+ * Blanco y negro. **No viene de Figma** — no hay un frame dibujado para el
+ * picker de Ajustes todavía. Un círculo partido al medio, la marca habitual
+ * de contraste/blanco y negro.
+ */
+export function ContrastIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3V21" />
+    </svg>
+  )
+}
+
+/** Bordes. **No viene de Figma**, mismo caso que `ContrastIcon`: un trazo en
+ * zigzag, como un contorno. */
+export function EdgesIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M3 16L8 8L12 13L16 6L21 11" />
+    </svg>
+  )
+}
+
+/** Facetado. **No viene de Figma**, mismo caso: un hexágono, como una faceta. */
+export function FacetsIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 3L20 8V16L12 21L4 16V8Z" />
+    </svg>
+  )
+}
+
+/**
+ * La flecha del Dropdown. Figma: `Dropdown` (23:130) — existe en el archivo,
+ * pero esta sesión no pudo bajar el trazo exacto (la red del entorno bloquea
+ * la descarga directa de assets de Figma; solo se pudo ver por captura). Se
+ * dibujó a ojo sobre esa captura, con la métrica del set. Reemplazar el `d`
+ * cuando se pueda leer el archivo.
+ */
+export function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 9L12 15L18 9" />
+    </svg>
+  )
+}
+
+/**
+ * La linterna: la luz de la cámara, para iluminar la hoja en la mesa de luz.
+ *
+ * **Tampoco viene de Figma.** Cabeza ancha arriba, mango abajo y el botón en el
+ * medio, con la métrica del set y el radio de 1 que usan los extremos de `File`.
+ * Cuando se dibuje en el archivo, se reemplaza el `d`.
+ */
+export function FlashlightIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M7 3H17V6L15 10V20C15 20.5523 14.5523 21 14 21H10C9.44772 21 9 20.5523 9 20V10L7 6V3ZM7 6H17M12 13V15" />
+    </svg>
+  )
+}

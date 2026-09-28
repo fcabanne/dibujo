@@ -40,6 +40,20 @@ export function lightFor(parallaxX: number, parallaxY: number): Light {
 
 export const REST_LIGHT = normalize(BASE)
 
+/**
+ * Dónde está el foco, en px respecto del centro de un cuadro de `w`×`h`, con z
+ * saliendo de la pared. Sobre la dirección de la luz y a una distancia que crece con
+ * el cuadro: nadie ilumina un cuadro de un metro con un foco a medio metro.
+ *
+ * Lo usan la sombra y el brillo de la moldura. La dirección sola alcanza para casi
+ * todo, pero no para lo que cambia de un punto del cuadro a otro: de qué lado se
+ * estira la sombra, qué punta del listón brilla.
+ */
+export function spotPosition(light: Light, w: number, h: number, pxPerCm: number) {
+  const reach = 150 * pxPerCm + 1.5 * Math.max(w, h)
+  return { x: light.x * reach, y: light.y * reach, z: light.z * reach, reach }
+}
+
 export interface RGB {
   r: number
   g: number
@@ -79,6 +93,38 @@ export function shade(hex: string, amount: number): string {
 export function rgba(hex: string, alpha: number): string {
   const { r, g, b } = hexToRgb(hex)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/** Cuánto más saturada que la superficie es su sombra. */
+const SHADOW_CHROMA = 1.4
+
+/**
+ * Lo que una superficie le agrega a la sombra que cae sobre ella, para multiplicar.
+ *
+ * Una sombra de verdad no es negro encima: es la misma superficie con menos luz, y
+ * lo que queda es más saturado —la pared se ilumina con su propio rebote— y un poco
+ * más frío, porque lo que se tapó es el foco cálido y lo que sigue llegando es la luz
+ * de la habitación. Con negro semitransparente una pared crema salía gris sucio.
+ *
+ * Es el color de la superficie llevado a que su canal más alto valga uno y corrido
+ * hacia el azul: multiplicado, no oscurece casi nada —de eso se ocupa la sombra
+ * negra de siempre— y solo le devuelve el color.
+ */
+export function shadowTint(hex: string): string {
+  const { r, g, b } = hexToRgb(hex)
+  const c = [
+    Math.pow(Math.max(r, 12) / 255, SHADOW_CHROMA) * 0.94,
+    Math.pow(Math.max(g, 12) / 255, SHADOW_CHROMA) * 0.98,
+    Math.pow(Math.max(b, 12) / 255, SHADOW_CHROMA) * 1.06,
+  ]
+  const top = Math.max(...c)
+  return rgbToHex({ r: (c[0] / top) * 255, g: (c[1] / top) * 255, b: (c[2] / top) * 255 })
+}
+
+/** Un color multiplicado por `k`, canal por canal: más oscuro sin cambiar de tono. */
+export function scaleHex(hex: string, k: number): string {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex({ r: r * k, g: g * k, b: b * k })
 }
 
 /** Luminancia percibida 0..1. Sirve para decidir contrastes contra la pared. */

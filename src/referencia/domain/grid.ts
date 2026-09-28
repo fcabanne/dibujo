@@ -35,12 +35,13 @@ export interface GridLines {
 export const GRID_LIMITS = { min: 2, max: 8 }
 
 export function computeGrid(grid: GridState, aspect: number): GridLines | null {
-  // Sin opacidad no hay grilla. Se corta acá y no dibujando transparente porque
-  // las etiquetas y las cotas se dibujan con un piso de opacidad —para que se
+  // Sin grilla no hay nada que calcular: ni por modo (`'none'`) ni por opacidad
+  // en cero, que sigue siendo una forma válida de atenuarla hasta que
+  // desaparezca. Se corta acá y no dibujando transparente porque las
+  // etiquetas y las cotas se dibujan con un piso de opacidad —para que se
   // lean sobre cualquier foto— y seguirían saliendo. Devolver `null` apaga
-  // también eso y la línea de medidas del export, que es lo que uno quiere
-  // decir cuando lleva la opacidad al cero.
-  if (grid.style.opacity <= 0) return null
+  // también eso y la línea de medidas del export.
+  if (grid.mode === 'none' || grid.style.opacity <= 0) return null
   const n = clamp(grid.count)
   return grid.mode === 'proportional'
     ? proportional(n, grid.subdivide)

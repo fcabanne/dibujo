@@ -1,12 +1,13 @@
 /**
  * Cómo se reparte la grilla sobre la foto.
  *
- * No hay un modo "ninguna": sacar la grilla es bajarle la opacidad a cero, que
- * es la misma perilla con la que se la atenúa. Un modo aparte para apagarla era
- * un tercer botón que no elegía nada — y con dos botones y una etiqueta la fila
- * entra en un celular, que con tres no entraba.
+ * `'none'` volvió: el picker a pantalla completa (Figma 26:279) tiene lugar de
+ * sobra para las tres tarjetas, así que ya no hace falta pisar la opacidad
+ * para sacar la grilla. Es un modo de verdad y no un atajo sobre `opacity` —
+ * elegirlo no toca el valor de la opacidad, que sigue siendo su propia
+ * perilla y no se pierde al volver a Proporcional o Cuadrada.
  */
-export type GridMode = 'proportional' | 'square'
+export type GridMode = 'proportional' | 'square' | 'none'
 
 export interface GridStyle {
   color: string
@@ -18,8 +19,6 @@ export interface GridStyle {
    * pantalla sea la misma que sale en un export de 6000 px.
    */
   weight: number
-  /** Letras en las columnas y números en las filas. */
-  labels: boolean
 }
 
 export interface GridState {
@@ -41,19 +40,20 @@ export interface GridState {
 }
 
 /**
- * Qué se le está haciendo a la foto. Son tres caminos cerrados y no cinco perillas
+ * Qué se le está haciendo a la foto. Son cuatro caminos cerrados y no cinco perillas
  * sueltas: las perillas sueltas son honestas pero exigen saber qué hace cada una, y
  * lo que uno quiere acá es elegir cómo mirar la referencia, no revelarla a mano.
  *
  * Cada modo fija los valores que no le importan y deja a la vista solo los que sí.
+ * `bw` es de estos: Bordes y Facetado son monocromos siempre, y "Blanco y negro" es
+ * su propio modo, no un interruptor que conviva con los otros tres.
  */
-export type EffectsMode = 'original' | 'edges' | 'facets'
+export type EffectsMode = 'original' | 'bw' | 'edges' | 'facets'
 
 /**
  * Los efectos, todos en unidades de persona y no de shader: el shader traduce.
  *
- * El modo manda sobre estos valores, salvo `bw`, que es independiente: pasar a
- * blanco y negro no tiene que ver con qué se le está haciendo a la foto.
+ * El modo manda sobre todos estos valores, `bw` incluido.
  */
 export interface Effects {
   mode: EffectsMode
@@ -92,6 +92,13 @@ export type ExportSize = 'original' | SheetId
 export interface ExportState {
   size: ExportSize
   format: 'pdf' | 'jpg'
+  /**
+   * Letras en las columnas y números en las filas — pero solo en el archivo que
+   * sale, nunca en la vista previa. Por eso vive acá y no en `grid.style`: es una
+   * pregunta del export, como el tamaño o el formato, no un ajuste de cómo se ve
+   * la grilla mientras se trabaja.
+   */
+  labels: boolean
 }
 
 export interface AppState {

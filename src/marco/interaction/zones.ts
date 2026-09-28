@@ -46,6 +46,34 @@ export function hitZone(
   return 'wall'
 }
 
+/**
+ * Lo mismo que `hitZone`, pero para un dedo.
+ *
+ * Una moldura de tres centímetros en un teléfono mide veinte píxeles, menos que la
+ * yema. Así que la banda se agranda hacia afuera —la pared de al lado del marco
+ * cuenta como marco— y la del passe-partout se mete un poco en la obra. Hacia
+ * adentro el marco no crece: ahí empieza el passe-partout, y robarle toques a una
+ * banda para dárselos a la otra sería peor que errarle.
+ */
+export function touchZone(
+  p: Point,
+  rects: SceneRects,
+  hasFrame: boolean,
+  hasMat: boolean,
+): Zone {
+  const { outer, glass, sight } = rects
+  const REACH = 16
+
+  if (hasFrame && inside(p, outer, REACH) && !inside(p, glass)) return 'frame'
+  if (!hasFrame && inside(p, glass, GHOST + REACH) && !inside(p, glass)) return 'frame-ghost'
+
+  if (hasMat && inside(p, glass) && !inside(p, shrink(sight, 10))) return 'mat'
+  if (!hasMat && inside(p, glass) && !inside(p, shrink(sight, GHOST))) return 'mat-ghost'
+
+  if (inside(p, sight)) return 'art'
+  return 'wall'
+}
+
 function shrink(r: Rect, by: number): Rect {
   return { x: r.x + by, y: r.y + by, w: Math.max(0, r.w - by * 2), h: Math.max(0, r.h - by * 2) }
 }
