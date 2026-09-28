@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
-   Cuadros en el celular.
+   Enmarcado en el celular.
 
    El escritorio no se toca: todo lo de acá cuelga de `.is-compact` o de
    clases `m-` que solo usa la capa del celular (`components/mobile/`).
@@ -248,7 +248,7 @@
   box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
 }
 
-/* Los íconos propios de Cuadros se dibujaron con un trazo de 1,7. En la barra
+/* Los íconos propios de Enmarcado se dibujaron con un trazo de 1,7. En la barra
    van con el del sistema, para que se lean de la misma familia que volver. */
 .m-bar .ds-icon-button svg {
   stroke-width: 2;

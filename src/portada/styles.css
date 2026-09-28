@@ -1,75 +1,73 @@
-@import '../shared/tokens.css';
+@import '../shared/ui/tokens.css';
+@import '../shared/ui/components.css';
 
 /* ------------------------------------------------------------------
-   Portada: el bifurcador hacia las herramientas. Nada más que eso, con
-   sitio reservado para la galería y la bio cuando lleguen.
+   Portada: el bifurcador hacia las herramientas.
+
+   Habla como la pantalla de inicio de Referencia (Figma 18:76) y usa su
+   mismo sistema: un saludo, una frase, y las tres herramientas en el
+   orden en que se usan — la foto, el calcado, el marco.
    ------------------------------------------------------------------ */
 
 body {
   min-height: 100vh;
+  margin: 0;
   display: grid;
   place-items: center;
-  padding: 48px 24px;
-  /* Un pozo de luz tenue, como el de la pared del probador de marcos. */
-  background:
-    radial-gradient(ellipse at 50% 34%, rgba(255, 244, 224, 0.09), transparent 62%),
-    var(--fondo);
+  padding: var(--ds-space-7) var(--ds-space-5);
 }
 
 .portada {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-7);
+  align-items: center;
   width: 100%;
-  max-width: 880px;
+  max-width: 920px;
 }
 
 .portada header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  max-width: 420px;
   text-align: center;
-  margin-bottom: 44px;
 }
 
 .portada h1 {
   margin: 0;
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font: var(--ds-text-title);
 }
 
 .portada header p {
-  margin: 10px 0 0;
-  font-size: 14px;
-  color: var(--hud-dim);
+  margin: 0;
 }
 
 .tools {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ds-space-6);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .tool {
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
-  border: 1px solid var(--hud-border);
-  background: var(--hud-bg);
+  height: 100%;
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-white);
   overflow: hidden;
-  text-decoration: none;
   color: inherit;
-  box-shadow: var(--shadow-hud);
-  transition:
-    transform 220ms var(--ease),
-    border-color 220ms var(--ease);
-}
-
-a.tool:hover {
-  transform: translateY(-4px);
-  border-color: rgba(230, 176, 117, 0.5);
+  text-decoration: none;
+  transition: transform 260ms var(--ds-ease);
 }
 
 .tool-art {
   display: block;
-  background: linear-gradient(160deg, #23242a, #15161a);
-  border-bottom: 1px solid var(--hud-border);
+  background: var(--ds-accent-light);
 }
 
 .tool-art svg {
@@ -79,51 +77,125 @@ a.tool:hover {
 }
 
 .tool-body {
-  display: block;
-  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-6);
 }
 
 .tool-body strong {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font: var(--ds-text-label);
+  color: var(--ds-accent-dark);
 }
 
-.tool-body em {
-  display: block;
-  margin-top: 7px;
-  font-style: normal;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--hud-dim);
+.tool:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 3px;
 }
 
-.badge {
-  padding: 3px 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(230, 176, 117, 0.35);
-  background: rgba(230, 176, 117, 0.12);
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* --- los colores de las ilustraciones --------------------------------
+   Todo lo que no es la foto sale del sistema: el papel, el grafito, la
+   moldura, el lápiz. La foto tiene sus colores propios en el HTML. */
+
+.papel {
+  fill: var(--ds-white);
 }
 
-/* Deshabilitada: se ve, se entiende qué va a hacer, pero no se puede entrar. */
-.tool.is-wip {
-  cursor: default;
+.grilla {
+  stroke: var(--ds-white);
 }
 
-.tool.is-wip .tool-art,
-.tool.is-wip .tool-body strong,
-.tool.is-wip .tool-body em {
-  opacity: 0.45;
+.grafito {
+  stroke: var(--ds-black);
 }
 
-.tool.is-wip .badge {
-  opacity: 1;
+.moldura,
+.lapiz-mina {
+  fill: var(--ds-black);
+}
+
+.sombra {
+  fill: var(--ds-accent-secondary);
+  opacity: 0.5;
+}
+
+.bisel {
+  fill: var(--ds-white);
+  stroke: var(--ds-accent-light);
+}
+
+.lapiz-cuerpo {
+  fill: var(--ds-accent-dark);
+}
+
+.lapiz-madera {
+  fill: var(--ds-accent-light);
+}
+
+/* --- el calcado de la mesa de luz -----------------------------------
+   El trazo está a medio hacer y el lápiz apoyado donde quedó. Al pasar
+   por encima termina la vuelta: es lo único que se mueve, y no esconde
+   nada — sin hover la tarjeta dice exactamente lo mismo. */
+
+.trazo path {
+  fill: none;
+  stroke: var(--ds-black);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 62 100;
+  transition: stroke-dasharray 900ms var(--ds-ease);
+}
+
+.lapiz {
+  transition: opacity 300ms var(--ds-ease);
+}
+
+@media (hover: hover) {
+  .tool:hover {
+    transform: translateY(-4px);
+  }
+
+  .tool:hover .trazo path {
+    stroke-dasharray: 100 100;
+  }
+
+  .tool:hover .lapiz {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool,
+  .trazo path,
+  .lapiz {
+    transition: none;
+  }
+}
+
+/* --- pantalla angosta ------------------------------------------------
+   Una debajo de la otra, con el dibujito al costado del nombre: tres
+   tarjetas altas no entran enteras y la tercera quedaría fuera de vista. */
+
+@media (max-width: 720px) {
+  .tools {
+    grid-template-columns: 1fr;
+    gap: var(--ds-space-4);
+  }
+
+  .tool {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .tool-art {
+    flex: none;
+    width: 42%;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+  }
+
+  .tool-body {
+    padding: var(--ds-space-4) var(--ds-space-5);
+  }
 }

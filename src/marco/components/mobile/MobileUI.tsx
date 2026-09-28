@@ -90,7 +90,7 @@ function useContentHeight() {
 }
 
 /**
- * Cuadros en el celular.
+ * Enmarcado en el celular.
  *
  * El cuadro ocupa la pantalla y los controles flotan abajo, en pastillas del fondo
  * claro del sistema de diseño —las de Mesa de luz, que también flotan sobre una

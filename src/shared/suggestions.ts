@@ -1,5 +1,3 @@
-import type { MouseEvent } from 'react'
-
 /**
  * Abre Instagram en la app y no en el navegador. Un `<a href>` normal deja
  * la decisión en manos del sistema, y ahí perdía: abría siempre el
@@ -8,10 +6,11 @@ import type { MouseEvent } from 'react'
  * que el fallback a la web es la ausencia de una señal (`visibilitychange`)
  * en vez de una confirmación.
  *
- * Lo usan las pantallas de inicio de Referencia y de la mesa de luz, para el
- * link de "Dejame sugerencias".
+ * Lo usan las pantallas de inicio de las herramientas y la portada, para el
+ * link de "Dejame sugerencias". Pide solo `preventDefault` para servirle
+ * igual a un evento de React que a uno nativo: la portada no usa React.
  */
-export function openInstagram(e: MouseEvent, url: string): void {
+export function openInstagram(e: Pick<Event, 'preventDefault'>, url: string): void {
   e.preventDefault()
   const username = new URL(url).pathname.replace(/\//g, '')
   let fellBack = false

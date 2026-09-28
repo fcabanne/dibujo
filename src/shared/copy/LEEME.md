@@ -76,7 +76,7 @@ No hace falta ninguna librería para eso: lo hace TypeScript solo.
 
 ## Lo que todavía no pasa por acá
 
-Referencia y Mesa de luz sí, enteras. **Cuadros, a medias**: su capa de celular
+Referencia y Mesa de luz sí, enteras. **Enmarcado, a medias**: su capa de celular
 (`src/marco/components/mobile/`) lee la sección `marco`, pero la de escritorio todavía
 tiene sus textos adentro de los componentes. Los nombres de los colores, acabados y
 perfiles ("Nogal", "Caveta") tampoco pasan por acá: son vocabulario de taller, viven en

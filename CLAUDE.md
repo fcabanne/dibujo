@@ -1,12 +1,13 @@
 # dibujo
 
-Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay tres
-—**Cuadros**, el probador de enmarcado; **Referencia**, el preparador de la foto de
-referencia; y **Mesa de luz**, para calcar del celular— y la idea es que crezca a más. Todas viven en este repo y se publican
+Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay tres, en el
+orden en que se usan —**Referencia**, el preparador de la foto de referencia; **Mesa
+de luz**, para calcar del celular; y **Enmarcado**, el probador de marcos— y la idea
+es que crezca a más. Todas viven en este repo y se publican
 juntas en GitHub Pages.
 
 **Los nombres son de oficio, no de software.** La cosa y no la técnica, y lo más
-corta que se pueda: Cuadros, no "Simulador de molduras". Que sea una sola palabra es
+corta que se pueda: Enmarcado, no "Simulador de molduras". Que sea una sola palabra es
 lo común, no la regla — "mesa de luz" son tres y es exactamente el objeto que un
 dibujante nombraría. Lo que no entra es el nombre de software; si una herramienta
 nueva no se puede nombrar así, el problema es el nombre.
@@ -57,7 +58,7 @@ agregarla a la lista de `scripts/build.mjs`, a la portada y al `ToolId` de
 npm run dev          # servidor local en http://localhost:5173
 npm run dev:celu     # además en https y abierto a la red local, para probar en el celular
 npm run build        # compila el sitio entero a dist/
-npm run build:app    # además deja cuadros.html y referencia.html sueltos, para mandar por mail
+npm run build:app    # además deja enmarcado.html y referencia.html sueltos, para mandar por mail
 npm run deploy       # compila y publica en GitHub Pages
 ```
 
@@ -88,6 +89,21 @@ transiciones CSS quedan congeladas a mitad de camino y `requestAnimationFrame` s
 suspende, así que las posiciones y opacidades que se midan pueden ser de una
 animación a medio correr. Para medir estado final: desactivar transiciones, o forzar
 cuadros con capturas de pantalla.
+
+## Cómo está armada la portada
+
+HTML y CSS sueltos, y un solo script: el que abre Instagram en la app (`main.ts`). Habla como la pantalla de inicio de Referencia
+—"Hola artista!", una frase, el link a Instagram abajo— y usa su mismo sistema de
+diseño. **Las herramientas van en el orden en que se usan**: la foto, el calcado, el
+marco. Las tres ilustraciones son **la misma pera** en esos tres momentos (la foto
+con la grilla, calcada sobre el papel, colgada en la pared), dibujada una sola vez
+en un `<defs>` al principio del archivo; así la portada se lee como un recorrido y no
+como tres cosas sueltas. El único movimiento es el trazo de la mesa de luz, que se
+completa al pasar por encima: sin hover la tarjeta dice exactamente lo mismo.
+
+**Los colores del dibujito salen de `--ds-*`**, como todo lo demás: papel, grafito,
+moldura, lápiz. La única excepción son los de la foto, escritos en el `<defs>`: es
+una foto y no interfaz, y tiene que leerse distinta del dibujo en grafito.
 
 ## Código que comparten las herramientas
 
@@ -120,8 +136,8 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
   `src/shared/copy/LEEME.md`.
 - `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Ya solo lo usa
-  el escritorio de Cuadros, que todavía no está dibujado en Figma. Referencia, Mesa de
-  luz y Cuadros en el celular usan el sistema de arriba. Cuando el escritorio de Cuadros
+  el escritorio de Enmarcado, que todavía no está dibujado en Figma. Referencia, Mesa de
+  luz y Enmarcado en el celular usan el sistema de arriba. Cuando el escritorio de Enmarcado
   se dibuje, esta hoja desaparece.
 
 ## Cómo está armado el probador de enmarcado
@@ -214,7 +230,7 @@ porque es el mismo render:
 La capa de escritorio vive de un puntero que pasa por encima —las burbujas despiertan
 al mover el mouse, los abanicos se abren al pasar, el paralaje sigue al cursor—, y en
 una pantalla que solo se toca no aparecía nunca: la herramienta abría sin controles. Por
-eso Cuadros tiene una segunda capa de controles para el celular. **El lienzo, el estado,
+eso Enmarcado tiene una segunda capa de controles para el celular. **El lienzo, el estado,
 el reducer y el render son los mismos**; lo que cambia es lo que flota encima
 (`components/mobile/` en vez de `Overlay`), y el lienzo (`Canvas.tsx`) tiene una rama
 de gestos para el dedo. **El escritorio no se tocó**: su camino en `Canvas` es el de
@@ -483,7 +499,7 @@ abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fil
 sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz también;
-Cuadros, solo en el celular.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+Enmarcado, solo en el celular.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
 no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
 mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 

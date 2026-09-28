@@ -1,7 +1,7 @@
 # Dependencias y builds: se regeneran con npm install y npm run build:app.
 node_modules
 dist
-cuadros.html
+enmarcado.html
 referencia.html
 tsconfig.tsbuildinfo
 
