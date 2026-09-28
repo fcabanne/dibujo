@@ -93,6 +93,45 @@ body {
   outline-offset: 3px;
 }
 
+/* --- los colores de las ilustraciones --------------------------------
+   Todo lo que no es la foto sale del sistema: el papel, el grafito, la
+   moldura, el lápiz. La foto tiene sus colores propios en el HTML. */
+
+.papel {
+  fill: var(--ds-white);
+}
+
+.grilla {
+  stroke: var(--ds-white);
+}
+
+.grafito {
+  stroke: var(--ds-black);
+}
+
+.moldura,
+.lapiz-mina {
+  fill: var(--ds-black);
+}
+
+.sombra {
+  fill: var(--ds-accent-secondary);
+  opacity: 0.5;
+}
+
+.bisel {
+  fill: var(--ds-white);
+  stroke: var(--ds-accent-light);
+}
+
+.lapiz-cuerpo {
+  fill: var(--ds-accent-dark);
+}
+
+.lapiz-madera {
+  fill: var(--ds-accent-light);
+}
+
 /* --- el calcado de la mesa de luz -----------------------------------
    El trazo está a medio hacer y el lápiz apoyado donde quedó. Al pasar
    por encima termina la vuelta: es lo único que se mueve, y no esconde

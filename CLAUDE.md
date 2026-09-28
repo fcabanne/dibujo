@@ -101,6 +101,10 @@ en un `<defs>` al principio del archivo; así la portada se lee como un recorrid
 como tres cosas sueltas. El único movimiento es el trazo de la mesa de luz, que se
 completa al pasar por encima: sin hover la tarjeta dice exactamente lo mismo.
 
+**Los colores del dibujito salen de `--ds-*`**, como todo lo demás: papel, grafito,
+moldura, lápiz. La única excepción son los de la foto, escritos en el `<defs>`: es
+una foto y no interfaz, y tiene que leerse distinta del dibujo en grafito.
+
 ## Código que comparten las herramientas
 
 Lo que ya existe y conviene reusar antes de escribir algo nuevo:
@@ -131,7 +135,7 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   escribe adentro de un componente, y los números también salen de ahí (el separador
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
   `src/shared/copy/LEEME.md`.
-- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Lo usan Cuadros y
+- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Lo usan Enmarcado y
   Mesa de luz, que todavía no están dibujadas en Figma. Referencia ya no: pasó al
   sistema de arriba. Cuando las otras dos se dibujen, esta hoja desaparece.
 
