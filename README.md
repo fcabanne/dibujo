@@ -8,8 +8,6 @@ tu máquina** — se quedan en el navegador y nunca se suben a ningún lado.
 
 ## Qué hay
 
-- **[Cuadros](https://fcabanne.github.io/dibujo/marco/)** — probá marcos,
-  passe-partout y vidrios sobre tu dibujo, y salí con las medidas para encargarlo.
 - **[Referencia](https://fcabanne.github.io/dibujo/referencia/)** — prepará la foto
   antes de dibujarla: le ponés una grilla (proporcional o de cuadrados exactos), le
   marcás los bordes o le aplastás los tonos para que se lea mejor, y la descargás en
@@ -17,8 +15,10 @@ tu máquina** — se quedan en el navegador y nunca se suben a ningún lado.
 - **[Mesa de luz](https://fcabanne.github.io/dibujo/mesa/)** — para el celular:
   apuntá la cámara al papel, poné la foto encima con la transparencia que quieras y
   calcá mirando la pantalla.
+- **[Enmarcado](https://fcabanne.github.io/dibujo/marco/)** — probá marcos,
+  passe-partout y vidrios sobre tu dibujo, y salí con las medidas para encargarlo.
 
-Cuadros y Referencia también se pueden bajar como un único archivo `.html` y abrirlas
+Enmarcado y Referencia también se pueden bajar como un único archivo `.html` y abrirlas
 con doble clic, sin internet y sin instalar nada. La mesa de luz no: los navegadores
 solo le prestan la cámara a un sitio servido por https.
 
@@ -32,13 +32,13 @@ npm run dev:celu     # además en https y abierto a la red local, para probar en
 
 ```bash
 npm run build        # compila el sitio entero a dist/
-npm run build:app    # además deja cuadros.html y referencia.html sueltos, para mandar por mail
+npm run build:app    # además deja enmarcado.html y referencia.html sueltos, para mandar por mail
 npm run deploy       # compila y publica en GitHub Pages
 ```
 
 ## Cómo está armado
 
-Vite + React + TypeScript. En Cuadros y Referencia todo lo que se ve se dibuja
+Vite + React + TypeScript. En Enmarcado y Referencia todo lo que se ve se dibuja
 en un canvas 2D; la mesa de luz son un video y una imagen, apilados.
 
 ```

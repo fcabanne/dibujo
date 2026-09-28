@@ -1,12 +1,13 @@
 # dibujo
 
-Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay tres
-—**Cuadros**, el probador de enmarcado; **Referencia**, el preparador de la foto de
-referencia; y **Mesa de luz**, para calcar del celular— y la idea es que crezca a más. Todas viven en este repo y se publican
+Herramientas de dibujo para uso propio de Facu, dibujante tradicional. Hoy hay tres, en el
+orden en que se usan —**Referencia**, el preparador de la foto de referencia; **Mesa
+de luz**, para calcar del celular; y **Enmarcado**, el probador de marcos— y la idea
+es que crezca a más. Todas viven en este repo y se publican
 juntas en GitHub Pages.
 
 **Los nombres son de oficio, no de software.** La cosa y no la técnica, y lo más
-corta que se pueda: Cuadros, no "Simulador de molduras". Que sea una sola palabra es
+corta que se pueda: Enmarcado, no "Simulador de molduras". Que sea una sola palabra es
 lo común, no la regla — "mesa de luz" son tres y es exactamente el objeto que un
 dibujante nombraría. Lo que no entra es el nombre de software; si una herramienta
 nueva no se puede nombrar así, el problema es el nombre.
@@ -57,7 +58,7 @@ agregarla a la lista de `scripts/build.mjs`, a la portada y al `ToolId` de
 npm run dev          # servidor local en http://localhost:5173
 npm run dev:celu     # además en https y abierto a la red local, para probar en el celular
 npm run build        # compila el sitio entero a dist/
-npm run build:app    # además deja cuadros.html y referencia.html sueltos, para mandar por mail
+npm run build:app    # además deja enmarcado.html y referencia.html sueltos, para mandar por mail
 npm run deploy       # compila y publica en GitHub Pages
 ```
 
@@ -88,6 +89,17 @@ transiciones CSS quedan congeladas a mitad de camino y `requestAnimationFrame` s
 suspende, así que las posiciones y opacidades que se midan pueden ser de una
 animación a medio correr. Para medir estado final: desactivar transiciones, o forzar
 cuadros con capturas de pantalla.
+
+## Cómo está armada la portada
+
+HTML y CSS sueltos, sin JavaScript. Habla como la pantalla de inicio de Referencia
+—"Hola artista!", una frase, el link a Instagram abajo— y usa su mismo sistema de
+diseño. **Las herramientas van en el orden en que se usan**: la foto, el calcado, el
+marco. Las tres ilustraciones son **la misma pera** en esos tres momentos (la foto
+con la grilla, calcada sobre el papel, colgada en la pared), dibujada una sola vez
+en un `<defs>` al principio del archivo; así la portada se lee como un recorrido y no
+como tres cosas sueltas. El único movimiento es el trazo de la mesa de luz, que se
+completa al pasar por encima: sin hover la tarjeta dice exactamente lo mismo.
 
 ## Código que comparten las herramientas
 
