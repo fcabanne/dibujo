@@ -669,66 +669,6 @@ body {
   pointer-events: auto;
 }
 
-/* ---------------------------------- espesor */
-
-/*
-  El espesor de la moldura, sobre el medio del canto de arriba del cuadro: es una
-  medida, y se lee y se mueve con el cuadro a la vista. Es el slider del sistema, con
-  su nombre al lado. Antes era un arco colgado de la burbuja: chico, sin nombre y
-  difícil de encontrar. El JS le escribe la posición; el centro de la pastilla cae ahí.
-*/
-.depth-dock {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: var(--ds-space-3);
-  width: 252px;
-  margin: -25px 0 0 -126px;
-  padding: var(--ds-space-1) var(--ds-space-1) var(--ds-space-1) var(--ds-space-4);
-  border-radius: var(--ds-radius-control);
-  background: var(--ds-background);
-  box-shadow: var(--shadow-hud);
-  visibility: hidden;
-  opacity: 0;
-  translate: 0 8px;
-  scale: 0.96;
-  pointer-events: none;
-  transition:
-    opacity var(--ds-dur-fast) var(--ease),
-    translate var(--ds-dur) var(--ease),
-    scale var(--ds-dur) var(--ease),
-    visibility 0s linear var(--ds-dur);
-}
-
-.depth-dock.is-on {
-  visibility: visible;
-  opacity: 1;
-  translate: 0 0;
-  scale: 1;
-  pointer-events: auto;
-  transition:
-    opacity var(--ds-dur-fast) var(--ease),
-    translate var(--ds-dur-slow) var(--spring),
-    scale var(--ds-dur-slow) var(--spring);
-  transition-delay: 60ms;
-}
-
-.depth-name {
-  flex: none;
-  font: 700 12px/1 var(--ds-font-mono);
-  text-transform: uppercase;
-  color: var(--ds-black);
-}
-
-.depth-dock .ds-slider {
-  flex: 1;
-  border-radius: var(--ds-radius-small);
-  overflow: hidden;
-}
-
 /* ---------------------------------- gizmo de ancho */
 
 .gizmo {

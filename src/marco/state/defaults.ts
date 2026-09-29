@@ -1,3 +1,4 @@
+import { FRAME_DEPTH } from '../domain/geometry'
 import type { AppState } from '../types'
 
 /**
@@ -45,7 +46,7 @@ export const DEFAULT_STATE: AppState = {
   },
   frame: {
     width: 3,
-    depth: 2,
+    depth: FRAME_DEPTH,
     color: '#6b4326',
     material: 'wood',
     finish: 'grained',

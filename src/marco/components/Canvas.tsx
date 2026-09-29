@@ -221,6 +221,14 @@ export function Canvas({
   const tilt = useTilt(compact)
   /** La cámara que piden los dedos: cuánto se acercó y cuánto se corrió del centro. */
   const camRef = useRef({ zoom: 1, x: 0, y: 0 })
+  /**
+   * La vista tal como se ve ahora: persigue a `camRef` con una curva. Es lo único que
+   * se suaviza acá. Lo que se encaja en el lugar libre no: eso lo mueve el cajón, que
+   * ya viene animado por CSS, y suavizarlo otra vez lo dejaba llegando tarde.
+   */
+  const camShownRef = useRef<{ zoom: number; x: number; y: number } | null>(null)
+  /** Lo que la cartela le está sacando al lugar libre, abajo o al costado, que entra y sale de a poco. */
+  const labelSpaceRef = useRef({ below: 0, side: 0 })
   /** Dónde se ve el centro del cuadro ahora; persigue al pedido, como la escala. */
   const anchorRef = useRef<Point | null>(null)
   /** El centro del lugar libre, sin corrimiento. El pellizco se mide contra él. */
@@ -307,9 +315,23 @@ export function Canvas({
           }
           const cam = camRef.current
           labelMode = cam.zoom > ZOOMED ? null : free.label
+
+          // La cartela reserva su lugar de a poco: que aparezca o se vaya no puede
+          // agrandar o achicar el cuadro de golpe. Al abrir un cajón, por ejemplo, se
+          // va la cartela (más lugar) justo cuando el cajón sube (menos lugar), y si
+          // uno se anticipaba al otro el cuadro crecía un poco antes de achicarse.
+          const space = labelSpaceRef.current
+          const kl = 1 - Math.exp(-dt / 120)
+          const belowTarget = labelMode === 'below' ? LABEL_BELOW : 0
+          const sideTarget = labelMode === 'side' ? LABEL_SIDE : 0
+          space.below += (belowTarget - space.below) * kl
+          space.side += (sideTarget - space.side) * kl
+          if (Math.abs(belowTarget - space.below) < 0.5) space.below = belowTarget
+          if (Math.abs(sideTarget - space.side) < 0.5) space.side = sideTarget
+
           const margin = clamp(Math.min(free.w, free.h) * 0.07, 16, 40)
-          const usableW = Math.max(40, free.w - margin * 2 - (labelMode === 'side' ? LABEL_SIDE : 0))
-          const usableH = Math.max(40, free.h - margin * 2 - (labelMode === 'below' ? LABEL_BELOW : 0))
+          const usableW = Math.max(40, free.w - margin * 2 - space.side)
+          const usableH = Math.max(40, free.h - margin * 2 - space.below)
           const fit = Math.min(usableW / layout.outer.w, usableH / layout.outer.h)
           const base = { x: free.x + margin + usableW / 2, y: free.y + margin + usableH / 2 }
           baseRef.current = base
@@ -321,23 +343,24 @@ export function Canvas({
           cam.x = clamp(cam.x, -spareX, spareX)
           cam.y = clamp(cam.y, -spareY, spareY)
 
-          const targetScale = drag ? drag.frozenScale : s
-          const targetAnchor = { x: base.x + cam.x, y: base.y + cam.y }
           // Con los dedos encima la vista va pegada a ellos; si no, llega con la curva.
           const follow = touchRef.current.mode === 'pinch' || touchRef.current.mode === 'pan'
-
-          if (scaleRef.current === null || anchorRef.current === null || follow) {
-            scaleRef.current = targetScale
-            anchorRef.current = targetAnchor
+          let shown = camShownRef.current
+          if (!shown || follow) {
+            shown = camShownRef.current = { zoom: cam.zoom, x: cam.x, y: cam.y }
           } else {
-            const a = anchorRef.current
-            scaleRef.current += (targetScale - scaleRef.current) * k
-            a.x += (targetAnchor.x - a.x) * k
-            a.y += (targetAnchor.y - a.y) * k
-            if (Math.abs(targetScale - scaleRef.current) < 0.01) scaleRef.current = targetScale
-            if (Math.abs(targetAnchor.x - a.x) < 0.1) a.x = targetAnchor.x
-            if (Math.abs(targetAnchor.y - a.y) < 0.1) a.y = targetAnchor.y
+            shown.zoom += (cam.zoom - shown.zoom) * k
+            shown.x += (cam.x - shown.x) * k
+            shown.y += (cam.y - shown.y) * k
+            if (Math.abs(cam.zoom - shown.zoom) < 0.002) shown.zoom = cam.zoom
+            if (Math.abs(cam.x - shown.x) < 0.1) shown.x = cam.x
+            if (Math.abs(cam.y - shown.y) < 0.1) shown.y = cam.y
           }
+
+          // El encaje es directo: sigue al cajón cuadro a cuadro, sin un segundo
+          // suavizado encima del suyo.
+          scaleRef.current = drag ? drag.frozenScale : fit * shown.zoom
+          anchorRef.current = { x: base.x + shown.x, y: base.y + shown.y }
         } else {
           // Escala: persigue el encaje, salvo mientras arrastrás.
           const target = drag

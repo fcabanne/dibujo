@@ -359,7 +359,7 @@ body {
   /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
      en el acto no se vería bajar. Al abrir es al revés: visible desde el
      primer cuadro. */
-  transition: height var(--ds-dur-slow) var(--ds-ease),
+  transition: height var(--ds-dur-slow) var(--ds-ease-sheet),
     visibility 0s linear var(--ds-dur-slow);
 }
 
@@ -371,7 +371,7 @@ body {
 .tab-drawer.is-open {
   height: calc(var(--content-height, 213px) + var(--ds-space-5));
   visibility: visible;
-  transition: height var(--ds-dur-slow) var(--ds-ease), visibility 0s;
+  transition: height var(--ds-dur-slow) var(--ds-ease-sheet), visibility 0s;
 }
 
 .tab-panel {

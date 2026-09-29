@@ -272,13 +272,14 @@ cuarto de segundo atrás.
 
 **Las mismas opciones que en el celular**: tres acabados (`MOLDING_FAMILIES`, no los
 siete), los cinco perfiles y los once colores. Son tres arcos —acabado, perfil y color,
-de adentro hacia afuera— y ya no hay un cuarto: el espesor se fue del abanico.
+de adentro hacia afuera—.
 
-**El espesor es el slider del sistema, sobre el canto de arriba del cuadro**
-(`.depth-dock`, con `Slider` de `shared/ui`). Es una medida, y se lee y se mueve con el
-cuadro a la vista. Antes era un arco colgado de la burbuja: chico, sin nombre y difícil
-de encontrar. Aparece con el abanico del marco y cuenta como parte de su zona: ir de la
-burbuja al slider no lo cierra (`overExtra`).
+**No hay espesor** (`FRAME_DEPTH`, en `geometry.ts`): la moldura tiene un centímetro fijo,
+en escritorio y en el celular. Se podía elegir, pero es lo que menos se decide y lo que
+menos se nota en el cuadro terminado, y un control que casi no cambia nada es un
+control de más. Lo que una sesión vieja tenía guardado se pisa al abrir
+(`loadSession`). Sigue existiendo en el estado y en la cartela ("Moldura 3,0 × 1,0 cm"),
+porque es una medida real del cuadro.
 
 **La parte que se edita se marca con un aro, nunca con un relleno** (`.lit`, y `.leader`
 para el hilo). Lo que se está juzgando es el color de la moldura, del passe-partout,
@@ -305,7 +306,7 @@ vuelve acá sin tocar el enmarcado: es la única forma de volver, así que tiene
 
 **Ningún tooltip nativo** (`title`): se prendía sobre las muestras a destiempo y
 peleaba con la etiqueta propia. El nombre accesible va en `aria-label`. Con el teclado,
-Enter en una burbuja la abre fija, y Tab entra al arco del espesor y a las muestras
+Enter en una burbuja la abre fija, y Tab entra a las muestras
 —por eso `RadialMenu` va después de la burbuja en el documento—.
 
 **Se ve como lo demás**: superficies claras (`--ds-background`, `--ds-accent-light`),
@@ -348,7 +349,18 @@ revés que en Referencia, donde el cajón tapa la foto sin moverla: acá lo que 
 eligiendo es el cuadro, y taparlo sería elegir a ciegas. `MobileUI` registra en
 `freeArea` una función que mide del DOM el lugar que dejan libre los controles, y el
 lienzo la llama **en cada cuadro**, así que el cuadro sube y se achica acompañando la
-transición de CSS del cajón, sin que nadie le avise. Acostado y bajito, el cajón pasa a
+transición de CSS del cajón, sin que nadie le avise.
+
+**El encaje sigue al cajón sin suavizado propio.** El cajón ya viene animado por CSS con
+`--ds-ease-sheet` (arranca y frena con suavidad; `--ds-ease` sale de golpe y, con algo
+persiguiéndola, se lee como un salto). Antes el lienzo lo suavizaba otra vez encima y el
+cuadro llegaba con una cola: primero acompañaba y después terminaba de acomodarse, como
+un segundo salto. Ahora `scale` y `anchor` salen directo del lugar libre; lo único que
+se suaviza es la vista del usuario (zoom y desplazamiento, `camShownRef`), que sí
+necesita una curva —el doble tap recentra en un recorrido—. Tampoco la cartela le saca
+lugar de golpe: que se vaya al abrir un cajón (más lugar) justo cuando el cajón sube
+(menos lugar) hacía que el cuadro creciera un poco antes de achicarse, así que su
+reserva (`labelSpaceRef`) entra y sale de a poco. Acostado y bajito, el cajón pasa a
 la derecha y el cuadro se encaja a su izquierda.
 
 **La cartela cuelga debajo del cuadro** cuando no hay cajón abierto —al costado, si el
@@ -365,7 +377,7 @@ el cuadro y publica dónde va (`SceneSnapshot.label`).
 - **Marco**: el color en una **tira de muestras que se corre de costado** —se busca
   pasando el dedo y mirando el cuadro, como frente a la pared de muestras de una casa de
   cuadros—, acabado y perfil en filas que llevan a sus tarjetas (`Dropdown` +
-  `OptionPicker`, como en Referencia), y ancho y espesor. El color va a la vista porque
+  `OptionPicker`, como en Referencia), y el ancho. El color va a la vista porque
   es lo que más se prueba; acabado y perfil se deciden menos y tienen nombres que hay
   que leer.
 - **Passe-partout**: la tira de colores y el ancho.
@@ -661,25 +673,22 @@ parecía arrastrarse sola; ahora, como mucho, la vista llega al borde de lo que 
 No hay botón de "Ajustar" — doble tap (o doble clic) recentra, y con el movimiento ya
 acotado no hace falta un botón aparte para volver.
 
-**La foto no se mueve por navegar los controles**, solo por lo que se le hace con los
-dedos — ni siquiera al abrir o cerrar el cajón entero. `.stage` (el lienzo) mide
-siempre el alto entero de `.app` menos la barra de pestañas, una medida constante:
-`.controls` es su único hermano de flex, y lo que cambia de tamaño adentro suyo —el
-cajón (`.tab-drawer`)— está sacado del flujo (`position: absolute`, anclado con
-`bottom: 100%` al borde de arriba de `.controls`) para que no le cuente. El cajón
-**flota sobre la foto** en vez de empujarla: abierto, tapa con su propio fondo una
-franja de abajo, como una bandeja que se levanta encima; cerrado, no tapa nada y se
-ve la foto entera. Por eso puede medir lo que mide su contenido y nada más —Blanco y
-negro, una perilla, ocupa menos que Facetado, tres— sin que el lienzo se
-reencuadre nunca: cambiar de pestaña, abrir un picker o colapsar todo el panel son
-la misma clase de cambio para la foto, ninguno la mueve. `Panel.tsx` mide ese alto con
-`useDrawerHeight`: un `ResizeObserver` sobre la vista actual (`.panel-view`, no
-`.tab-panel`, que ya tiene un alto impuesto por el cajón) que sigue el contenido real
-—el de una perilla que aparece o desaparece, por ejemplo— y lo manda como
-`--content-height` a `.controls`, de donde `.tab-drawer.is-open` lo toma. Antes el
-cajón tenía un alto fijo, el de su vista más alta (`52vh` primero, después
-`--panel-height: 213px` fijo), y las vistas más chicas dejaban un vacío; ahora cada
-una mide lo justo.
+**La foto se acomoda arriba del cajón y lo acompaña mientras se despliega.** Antes el
+cajón flotaba sobre la foto sin moverla, y cuando tapaba una franja se elegía a ciegas;
+ahora es lo mismo que en Enmarcado. `.stage` (el lienzo) sigue midiendo siempre el alto
+entero de `.app` menos la barra de pestañas, y el cajón (`.tab-drawer`) sigue sacado del
+flujo (`position: absolute`, `bottom: 100%` sobre `.controls`), pero `App` le pasa el
+elemento a `Canvas` (`drawer`) y `draw` encuadra la foto en `box.height` menos lo que el
+cajón tapa (`coveredHeight`, leído del DOM en cada cuadro). Un `ResizeObserver` sobre
+el cajón repinta **en el acto** y no en el `requestAnimationFrame` siguiente: el aviso
+llega antes de pintar, así que foto y cajón van en el mismo cuadro y no se ve un
+arrastre. El recorte de la vista, el zoom anclado y el `settle` usan el mismo alto libre.
+`Panel.tsx` mide el alto de lo que hay adentro con `useDrawerHeight`: un
+`ResizeObserver` sobre la vista actual (`.panel-view`, no `.tab-panel`, que ya tiene un
+alto impuesto por el cajón) que sigue el contenido real —el de una perilla que aparece o
+desaparece, por ejemplo— y lo manda como `--content-height` a `.controls`, de donde
+`.tab-drawer.is-open` lo toma. Cada vista mide lo justo. La curva del cajón es
+`--ds-ease-sheet`.
 
 **El cajón repite el padding de `.controls`, no lo hereda.** Al sacarlo del flujo
 para que no empuje el lienzo, dejó de estar adentro de la caja con relleno de

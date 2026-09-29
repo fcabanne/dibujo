@@ -125,6 +125,10 @@
      como efecto. */
   --ds-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ds-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Para lo que crece y arrastra otra cosa con ello —el cajón, y la foto que se
+     acomoda arriba de él—: arranca y frena con suavidad. La de arriba sale de golpe,
+     y con algo persiguiéndola se lee como un salto. */
+  --ds-ease-sheet: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Tres velocidades y no más. La de apretar tiene que ser más corta que
      cualquier toque, si no el botón responde después del dedo. */

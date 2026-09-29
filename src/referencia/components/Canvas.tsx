@@ -12,6 +12,12 @@ interface Props {
   onFile: (file: File) => void
   /** Se avisa una vez si la máquina no puede correr los efectos. */
   onEffectsSupport: (supported: boolean) => void
+  /**
+   * Celular: el cajón de controles, que sube desde abajo y tapa el pie del lienzo. La
+   * foto se acomoda en lo que queda libre arriba de él y lo persigue mientras se
+   * despliega, en vez de quedar tapada.
+   */
+  drawer?: HTMLElement | null
 }
 
 const ZOOM = { min: 0.4, max: 8 }
@@ -70,7 +76,7 @@ function withGrid(state: AppState, grid: GridState, alpha: number): AppState {
   return { ...state, grid: { ...grid, style: { ...grid.style, opacity: grid.style.opacity * alpha } } }
 }
 
-export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
+export function Canvas({ reference, state, onFile, onEffectsSupport, drawer = null }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const effectsRef = useRef<EffectsRenderer | null>(null)
@@ -112,6 +118,15 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
   const drawRef = useRef<() => void>(() => {})
 
   /**
+   * Cuánto del alto del lienzo está tapado por el cajón ahora mismo. Se lee del DOM y
+   * no se calcula: el cajón crece con una transición de CSS, y midiéndolo en cada
+   * cuadro la foto lo acompaña sin que nadie le avise.
+   */
+  const drawerRef = useRef(drawer)
+  drawerRef.current = drawer
+  const coveredHeight = () => drawerRef.current?.getBoundingClientRect().height ?? 0
+
+  /**
    * Se dibuja cuando cambia algo y no sesenta veces por segundo: acá no hay nada
    * animado salvo durante un fundido o una vuelta, y un loop permanente sería
    * tener la placa encendida mirando una foto quieta.
@@ -151,7 +166,9 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
 
     const aspect = aspectOf(current)
     const view = viewRef.current
-    const availH = box.height - PAD * 2
+    // La foto se encuadra en lo que el cajón deja libre, no en el lienzo entero.
+    const freeH = Math.max(80, box.height - coveredHeight())
+    const availH = freeH - PAD * 2
     const base = fitRect(aspect, { w: box.width - PAD * 2, h: availH })
     const w = base.w * view.zoom
     const h = base.h * view.zoom
@@ -161,12 +178,11 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     // mueve nunca. Se recalcula en cada cuadro, así que un cambio de tamaño
     // de la ventana (o del panel de abajo) vuelve a dejar la vista adentro de
     // rango en vez de dejar la foto descentrada.
-    // De referencia va `box.height` y no `availH`: el PAD se cancela solo,
-    // porque entra igual arriba y abajo tanto en `base` como en el centrado
-    // de acá abajo — el centro de la foto es siempre el centro de la ventana,
-    // sin importar el zoom.
+    // De referencia va `freeH` y no `availH`: el PAD se cancela solo, porque entra
+    // igual arriba y abajo tanto en `base` como en el centrado de acá abajo — el
+    // centro de la foto es siempre el centro del lugar libre, sin importar el zoom.
     const overflowX = Math.max(0, (w - box.width) / 2)
-    const overflowY = Math.max(0, (h - box.height) / 2)
+    const overflowY = Math.max(0, (h - freeH) / 2)
     let dx = view.x
     let dy = view.y
     if (boundsRef.current === 'clamp') {
@@ -175,7 +191,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     } else if (boundsRef.current === 'elastic') {
       // Poco recorrido a propósito: tiene que leerse como resistencia, no
       // como que la foto se mueve igual.
-      const reach = Math.min(box.width, box.height) * 0.08
+      const reach = Math.min(box.width, freeH) * 0.08
       dx = rubber(view.x, overflowX, reach)
       dy = rubber(view.y, overflowY, reach)
     }
@@ -284,6 +300,16 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     return () => observer.disconnect()
   }, [schedule])
 
+  // El cajón crece y se achica con una transición: cada cambio de su alto repinta en
+  // el acto —el aviso llega antes de pintar la pantalla, así que la foto y el cajón
+  // van en el mismo cuadro— y no un cuadro después, que se vería como un arrastre.
+  useEffect(() => {
+    if (!drawer) return
+    const observer = new ResizeObserver(() => drawRef.current())
+    observer.observe(drawer)
+    return () => observer.disconnect()
+  }, [drawer])
+
   useEffect(
     () => () => {
       cancelAnimationFrame(frameRef.current)
@@ -368,7 +394,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
     const w = (rect.w / view.zoom) * zoom
     const h = (rect.h / view.zoom) * zoom
     const reachX = Math.max(0, (w - box.width) / 2)
-    const reachY = Math.max(0, (h - box.height) / 2)
+    const reachY = Math.max(0, (h - Math.max(80, box.height - coveredHeight())) / 2)
     const shown = shownRef.current
     settleTo({ zoom, x: clamp(shown.x, -reachX, reachX), y: clamp(shown.y, -reachY, reachY) })
   }, [settleTo])
@@ -397,7 +423,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport }: Props) {
 
     view.zoom = zoom
     view.x = cx - u * w - (box.width - w) / 2
-    view.y = cy - v * h - (box.height - h) / 2
+    view.y = cy - v * h - (Math.max(80, box.height - coveredHeight()) - h) / 2
   }, [])
 
   const onWheel = useCallback(

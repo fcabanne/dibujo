@@ -9,9 +9,16 @@ export const MAT_OVERLAP = 0.5
 /** Espesor del sándwich vidrio + obra + respaldo cuando no hay marco. */
 export const CLIPPED_DEPTH = 0.6
 
+/**
+ * El espesor de la moldura, fijo. Se podía elegir, pero es lo que menos se decide y
+ * lo que menos se nota en el cuadro terminado: se mide de canto, y la casa de cuadros
+ * lo resuelve con el perfil. Un control que casi no cambia nada es un control de más.
+ * Lo que se guardó en sesiones viejas se pisa con este valor al abrir.
+ */
+export const FRAME_DEPTH = 1
+
 export const LIMITS = {
   frameWidth: { min: 0, max: 10, step: 0.5 },
-  frameDepth: { min: 0.5, max: 6, step: 0.5 },
   matWidth: { min: 1, max: 15, step: 0.5 },
   artSide: { min: 5, max: 200 },
 } as const

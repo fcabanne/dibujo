@@ -24,6 +24,8 @@ export function App() {
   const [dialog, setDialog] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [effectsSupported, setEffectsSupported] = useState(true)
+  /** El cajón de controles del celular: la foto se acomoda arriba de él. */
+  const [drawer, setDrawer] = useState<HTMLElement | null>(null)
   const compact = useCompact()
   const noteTimer = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -145,6 +147,7 @@ export function App() {
           state={state}
           onFile={(file) => void handleFile(file)}
           onEffectsSupport={setEffectsSupported}
+          drawer={drawer}
         />
       ) : (
         <div
@@ -169,6 +172,7 @@ export function App() {
         onDownload={() => setDialog(true)}
         effectsSupported={effectsSupported}
         compact={compact}
+        onDrawer={setDrawer}
       />
 
       {/* Uno solo para toda la app: lo usan la pantalla de inicio y el botón de

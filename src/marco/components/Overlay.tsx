@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon, Slider } from '../../shared/ui'
-import { LIMITS } from '../domain/geometry'
+import { BackIcon } from '../../shared/ui'
 import {
   FRAME_PROFILES,
   MOLDING_FAMILIES,
@@ -117,7 +116,6 @@ export function Overlay({
   const fileRef = useRef<HTMLInputElement>(null)
   const backRef = useRef<HTMLButtonElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
-  const depthRef = useRef<HTMLDivElement>(null)
   const presence = useRef(0)
   const litRef = useRef<HTMLDivElement>(null)
   const leaderRef = useRef<SVGSVGElement>(null)
@@ -174,7 +172,7 @@ export function Overlay({
     const o = scene.rects.outer
     const avoid: Box[] = [{ x: o.x, y: o.y, w: o.w, h: o.h }]
     const root = rootRef.current?.getBoundingClientRect()
-    for (const pill of [backRef.current, linkRef.current, depthRef.current]) {
+    for (const pill of [backRef.current, linkRef.current]) {
       const r = pill?.getBoundingClientRect()
       if (r && root) avoid.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height })
     }
@@ -308,15 +306,10 @@ export function Overlay({
 
   /**
    * ¿Está el puntero sobre lo que la categoría abre fuera del abanico —la cartela de
-   * la obra, el espesor del marco— o en el camino entre eso y su burbuja?
+   * la obra— o en el camino entre eso y su burbuja?
    */
   const overExtra = (id: Category, p: Point, box: DOMRect) => {
-    const card =
-      id === 'artwork'
-        ? labelRef.current?.getBoundingClientRect()
-        : id === 'frame'
-          ? depthRef.current?.getBoundingClientRect()
-          : null
+    const card = id === 'artwork' ? labelRef.current?.getBoundingClientRect() : null
     const a = anchorPos.current[id]
     if (!card || !a) return false
     const pad = 28
@@ -403,12 +396,6 @@ export function Overlay({
           const width = current === 'artwork' ? 316 : 226
           const x = Math.min(rects.outer.x + rects.outer.w + 46, v.w - width - 16)
           labelRef.current.style.transform = `translate(${x}px, ${rects.outer.y + rects.outer.h}px)`
-        }
-
-        // El espesor cuelga sobre el medio del canto de arriba del cuadro.
-        if (depthRef.current) {
-          const y = Math.max(28, rects.outer.y - 30)
-          depthRef.current.style.transform = `translate(${rects.outer.x + rects.outer.w / 2}px, ${y}px)`
         }
 
         // Solo cuando cruza el umbral: un setState por frame sería un re-render por frame.
@@ -719,22 +706,6 @@ export function Overlay({
       >
         {copy.welcome.suggestions}
       </a>
-
-      {/* El espesor de la moldura, sobre el cuadro: es una medida, y se lee y se
-          mueve con el cuadro a la vista. Un arco colgado de la burbuja era chico,
-          sin nombre y difícil de encontrar. */}
-      <div ref={depthRef} className={'depth-dock' + (open === 'frame' ? ' is-on' : '')}>
-        <span className="depth-name">{copy.marco.depth}</span>
-        <Slider
-          label={copy.marco.depth}
-          value={state.frame.depth}
-          min={LIMITS.frameDepth.min}
-          max={LIMITS.frameDepth.max}
-          step={LIMITS.frameDepth.step}
-          format={cmLabel}
-          onChange={(depth) => dispatch({ type: 'frame/patch', patch: { depth } })}
-        />
-      </div>
 
       {/* Cargar el dibujo se pide sobre el dibujo: es donde mirás cuando querés
           reemplazarlo, y evita ir a buscarlo dentro de un menú. */}

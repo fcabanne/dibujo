@@ -41,6 +41,8 @@ interface Props {
   effectsSupported: boolean
   /** Pantalla angosta: los controles van abajo en pestañas en vez de al costado. */
   compact: boolean
+  /** Le pasa al lienzo el cajón, para que acomode la foto arriba de él. */
+  onDrawer?: (node: HTMLElement | null) => void
 }
 
 /**
@@ -144,6 +146,7 @@ export function Panel({
   onDownload,
   effectsSupported,
   compact,
+  onDrawer,
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
@@ -652,6 +655,7 @@ export function Panel({
         }
       >
         <div
+          ref={onDrawer}
           className={'tab-drawer' + (openTab ? ' is-open' : '')}
           aria-hidden={openTab ? undefined : true}
         >

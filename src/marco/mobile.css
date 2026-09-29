@@ -171,8 +171,8 @@
   box-shadow: 0 18px 44px rgb(16 16 16 / 0.3), 0 2px 8px rgb(16 16 16 / 0.12);
   /* Se cierra bajando, y recién al terminar pasa a `hidden`: si se ocultara
      en el acto no se vería bajar. Al abrir es al revés. */
-  transition: height var(--ds-dur-slow) var(--ds-ease),
-    margin-bottom var(--ds-dur-slow) var(--ds-ease), visibility 0s linear var(--ds-dur-slow);
+  transition: height var(--ds-dur-slow) var(--ds-ease-sheet),
+    margin-bottom var(--ds-dur-slow) var(--ds-ease-sheet), visibility 0s linear var(--ds-dur-slow);
 }
 
 .m-drawer.is-open {
@@ -182,8 +182,8 @@
   max-height: calc(100dvh - 200px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   margin-bottom: var(--ds-space-2);
   visibility: visible;
-  transition: height var(--ds-dur-slow) var(--ds-ease),
-    margin-bottom var(--ds-dur-slow) var(--ds-ease), visibility 0s;
+  transition: height var(--ds-dur-slow) var(--ds-ease-sheet),
+    margin-bottom var(--ds-dur-slow) var(--ds-ease-sheet), visibility 0s;
 }
 
 .m-drawer-scroll {
@@ -332,7 +332,7 @@
   white-space: nowrap;
 }
 
-/* Sin marco, el acabado y el espesor no tienen a qué aplicarse. */
+/* Sin marco, el acabado y el perfil no tienen a qué aplicarse. */
 .m-row.is-disabled {
   opacity: 0.4;
   pointer-events: none;

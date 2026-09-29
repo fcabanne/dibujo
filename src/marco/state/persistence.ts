@@ -1,4 +1,5 @@
 import type { AppState } from '../types'
+import { FRAME_DEPTH } from '../domain/geometry'
 import { DEFAULT_STATE } from './defaults'
 import { saveArtwork } from '../../shared/imageStore'
 
@@ -24,7 +25,8 @@ export function loadSession(): AppState {
       ...DEFAULT_STATE,
       ...parsed,
       artwork: { ...DEFAULT_STATE.artwork, ...parsed.artwork, src: DEFAULT_STATE.artwork.src },
-      frame: { ...DEFAULT_STATE.frame, ...parsed.frame },
+      // El espesor ya no se elige: lo guardado de antes no manda.
+      frame: { ...DEFAULT_STATE.frame, ...parsed.frame, depth: FRAME_DEPTH },
       mats: parsed.mats?.length ? parsed.mats : DEFAULT_STATE.mats,
       wall: { ...DEFAULT_STATE.wall, ...parsed.wall },
       snapshots: parsed.snapshots ?? [],

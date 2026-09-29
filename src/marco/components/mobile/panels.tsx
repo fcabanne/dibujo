@@ -272,18 +272,6 @@ export function FramePanel({
           }}
         />
       </Row>
-      <Row label={copy.marco.depth} disabled={!hasFrame}>
-        <Slider
-          label={copy.marco.depth}
-          value={frame.depth}
-          min={LIMITS.frameDepth.min}
-          max={LIMITS.frameDepth.max}
-          step={LIMITS.frameDepth.step}
-          format={cm}
-          disabled={!hasFrame}
-          onChange={(depth) => dispatch({ type: 'frame/patch', patch: { depth } })}
-        />
-      </Row>
     </>
   )
 }
