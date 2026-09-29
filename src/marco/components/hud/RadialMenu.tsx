@@ -1,107 +1,121 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { CHIP, chipOffset, SLIDER_RADIUS, SLIDER_SPAN, type FanLayout, type Point } from './fan'
+
+export interface FanItem {
+  node: ReactNode
+  /** El nombre, que se lee sobre la muestra en la que está el puntero. */
+  label: string
+}
 
 interface Props {
+  /** Abierto o cerrándose: las muestras siguen montadas mientras vuelven a la burbuja. */
   open: boolean
-  /** Cada fila es un grupo con sentido propio: colores, formas, acabados. */
-  rows: ReactNode[][]
-  /** 180 abre el arco hacia la izquierda del botón; 0, hacia la derecha. */
+  rows: FanItem[][]
+  layout: FanLayout
+  /** Hacia dónde se abre, en grados: 0 es a la derecha y 180, a la izquierda. */
   centerDeg: number
-  /** Separación entre opciones. Las que llevan etiqueta necesitan más aire. */
-  spacing?: number
-  /** Control de arco, en el radio interno: queda entre el cuadro y las opciones. */
+  /** Dónde está la burbuja en pantalla: decide de qué lado sale la etiqueta. */
+  origin: Point
+  /** Control de arco, en el radio interno: queda entre la burbuja y las muestras. */
   arc?: (radius: number, centerDeg: number, span: number) => ReactNode
 }
 
-/** Radio del arco interno, donde vive el slider. */
-const ARC_RADIUS = 96
-const FIRST_ROW = 150
-/** Suficiente para el swatch más su etiqueta: con menos, las filas se tocan. */
-const ROW_GAP = 74
-/** Barrido amplio: las filas quedan como columnas curvas al costado del cuadro. */
-const SPAN_DEG = 150
+/** Lo que tardan las muestras en llegar a su lugar: hasta ahí no atienden al puntero. */
+const ARM_MS = 300
 
 /**
- * Opciones repartidas en arcos concéntricos al costado del botón que las abrió.
+ * Opciones repartidas en arcos concéntricos a partir de la burbuja que las abrió.
  *
- * Cada fila es un grupo semántico con su propio arco, de adentro hacia afuera y de
- * lo elemental a lo específico. Los arcos son siempre los mismos y se abren siempre
- * en horizontal —a la izquierda o a la derecha, según de qué lado del cuadro esté
- * la burbuja—, así que el menú cae donde uno lo espera en lugar de reacomodarse.
+ * Cada fila es un grupo con sentido propio, de adentro hacia afuera. El reparto sale
+ * de `fan.ts` —mismo paso en píxeles en todos los arcos— y el ángulo lo elige quien
+ * lo monta, así que el menú cae del lado que tiene lugar y no tapa el cuadro.
+ *
+ * No hay una etiqueta bajo cada muestra: con doce nombres a la vez se pisaban entre
+ * sí. Se lee uno solo, sobre la muestra en la que está el puntero.
  */
-export function RadialMenu({ open, rows, centerDeg, spacing = 62, arc }: Props) {
+export function RadialMenu({ open, rows, layout, centerDeg, origin, arc }: Props) {
   /**
-   * Las opciones se montan recién al abrir, así que su posición final ya es la
-   * primera que el navegador conoce y no habría desde dónde animar. Este paso
-   * intermedio las pinta un frame en el centro del icono para que la transición
-   * tenga de dónde salir.
+   * Las opciones se montan recién al abrir, así que su posición final ya es la primera
+   * que el navegador conoce y no habría desde dónde animar. Este paso intermedio las
+   * pinta un instante en el centro de la burbuja para que la transición tenga de dónde
+   * salir. Con temporizador y no con requestAnimationFrame: en una pestaña que no está
+   * pintando el rAF queda suspendido y las opciones se quedarían invisibles.
    */
   const [entered, setEntered] = useState(false)
+  /**
+   * Las muestras nacen en el centro de la burbuja, o sea debajo del puntero: si
+   * atendieran el puntero desde el primer cuadro, la que cayera encima se quedaría
+   * como "hover" —con su etiqueta y su vista previa— hasta que el mouse se moviera.
+   * Se arman recién cuando terminaron de desplegarse.
+   */
+  const [armed, setArmed] = useState(false)
+  const [hot, setHot] = useState<{ row: number; i: number } | null>(null)
 
   useEffect(() => {
     if (!open) {
       setEntered(false)
+      setArmed(false)
+      setHot(null)
       return
     }
-    // Con temporizador y no con requestAnimationFrame: en una pestaña que no está
-    // pintando el rAF queda suspendido, y las opciones se quedarían invisibles en
-    // vez de simplemente abrirse sin animación.
     const id = window.setTimeout(() => setEntered(true), 16)
-    return () => window.clearTimeout(id)
+    const arm = window.setTimeout(() => setArmed(true), ARM_MS)
+    return () => {
+      window.clearTimeout(id)
+      window.clearTimeout(arm)
+    }
   }, [open])
 
-  const maxSpan = (SPAN_DEG * Math.PI) / 180
-
-  // Un único paso angular para todas las filas, dictado por la más poblada. Con un
-  // paso por fila los arcos quedaban de largos distintos y el conjunto se leía
-  // desordenado; compartiéndolo, las opciones se alinean radialmente.
-  const longest = Math.max(1, ...rows.map((r) => r.length))
-  const step = longest > 1 ? Math.min(spacing / FIRST_ROW, maxSpan / (longest - 1)) : 0
-
-  let index = 0
-  const placed: { node: ReactNode; x: number; y: number; order: number }[] = []
-
-  rows.forEach((items, row) => {
-    if (items.length === 0) return
-    const radius = FIRST_ROW + row * ROW_GAP
-    const start = (centerDeg * Math.PI) / 180 - (step * (items.length - 1)) / 2
-
-    items.forEach((node, i) => {
-      const angle = start + step * i
-      placed.push({
-        node,
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-        // Entrada corrida a lo largo del arco, en un solo sentido: nada de rebotes.
-        order: index++,
-      })
-    })
-  })
-
+  const center = (centerDeg * Math.PI) / 180
   const out = open && entered
+  let order = 0
+
+  const hotItem = hot ? rows[hot.row]?.[hot.i] : null
+  const hotAt = hot ? chipOffset(layout, hot.row, hot.i, center) : null
+  // Cerca del borde de arriba la etiqueta se pasa abajo: si no, quedaría fuera de la pantalla.
+  const below = hotAt ? origin.y + hotAt.y < CHIP + 24 : false
 
   return (
-    <div className={open ? 'radial is-open' : 'radial'} aria-hidden={!open}>
-      {open && arc?.(ARC_RADIUS, centerDeg, SPAN_DEG)}
-      {placed.map((p, i) => (
-        <div
-          key={i}
-          className="radial-item"
-          style={{
-            transform: out
-              ? 'translate(-50%, -50%) translate(' + p.x + 'px, ' + p.y + 'px) scale(1)'
-              : 'translate(-50%, -50%) scale(0.5)',
-            opacity: out ? 1 : 0,
-            transitionDelay: (out ? p.order : 0) * 9 + 'ms',
-          }}
-        >
-          {p.node}
+    <div className={'radial' + (open ? ' is-open' : '') + (armed ? ' is-armed' : '')} aria-hidden={!open}>
+      {arc && layout.slider && (
+        <div className={'radial-arc' + (out ? ' is-out' : '')}>
+          {arc(SLIDER_RADIUS, centerDeg, SLIDER_SPAN)}
         </div>
-      ))}
+      )}
+
+      {rows.map((row, r) =>
+        row.map((item, i) => {
+          const at = chipOffset(layout, r, i, center)
+          return (
+            <div
+              key={r + '-' + i}
+              className={'radial-item' + (out ? ' is-out' : '')}
+              style={
+                {
+                  '--x': at.x + 'px',
+                  '--y': at.y + 'px',
+                  '--i': order++,
+                } as CSSProperties
+              }
+              onPointerEnter={() => setHot({ row: r, i })}
+              onPointerLeave={() => setHot((h) => (h && h.row === r && h.i === i ? null : h))}
+            >
+              {item.node}
+            </div>
+          )
+        }),
+      )}
+
+      {out && hotItem && hotAt && (
+        <span
+          key={hot!.row + '-' + hot!.i}
+          className={'radial-label' + (below ? ' is-below' : '')}
+          style={{ left: hotAt.x, top: hotAt.y }}
+          aria-hidden
+        >
+          {hotItem.label}
+        </span>
+      )}
     </div>
   )
-}
-
-/** Extensión del abanico, para dimensionar la zona de hover que lo mantiene abierto. */
-export function fanReach(rowCount: number): number {
-  return FIRST_ROW + Math.max(0, rowCount - 1) * ROW_GAP + 60
 }

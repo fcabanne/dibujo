@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { paintMoldingChip } from '../../render/chip'
+import { CHIP } from './fan'
 import type { FrameFinish, FrameMaterial, FrameProfile } from '../../types'
 
 interface Props {
@@ -12,14 +13,9 @@ interface Props {
   material?: FrameMaterial
   finish?: FrameFinish
   profile?: FrameProfile
-  /**
-   * Nombre visible bajo el swatch. Lo usan los acabados y los perfiles: comparten
-   * el color del marco actual, así que sin el nombre parecen colores repetidos.
-   */
-  caption?: string
 }
 
-const SIZE = 46
+const SIZE = CHIP
 
 /**
  * El swatch se pinta con el mismo material y el mismo perfil que la moldura del
@@ -35,7 +31,6 @@ export function Swatch({
   material,
   finish,
   profile,
-  caption,
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
 
@@ -46,16 +41,14 @@ export function Swatch({
   return (
     <button
       type="button"
-      className={'swatch' + (selected ? ' is-selected' : '') + (caption ? ' has-caption' : '')}
+      className={'swatch' + (selected ? ' is-selected' : '')}
       onClick={onClick}
       onPointerEnter={() => onHover?.(true)}
       onPointerLeave={() => onHover?.(false)}
-      title={label}
       aria-label={label}
       aria-pressed={selected}
     >
       <canvas ref={ref} />
-      {caption && <strong>{caption}</strong>}
     </button>
   )
 }

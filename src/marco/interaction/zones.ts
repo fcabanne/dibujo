@@ -104,31 +104,52 @@ export interface Anchors {
   wall: Point
 }
 
-/** Dónde se apoya la burbuja de cada categoría: sobre la parte que edita. */
-export function anchorsFor(rects: SceneRects, hasFrame: boolean, hasMat: boolean): Anchors {
-  const { outer, glass, sight } = rects
+/** Del canto del cuadro al centro de su burbuja. */
+export const BUBBLE_GAP = 34
+/** Mitad de la separación entre las dos burbujas de un mismo lado. */
+const PAIR = 31
+/** Lo que se aparta del borde de la pantalla el centro de una burbuja. */
+const BUBBLE_EDGE = 32
 
-  // Corridas del punto medio de su banda a propósito: ahí es donde el gizmo pone la
-  // doble flecha, y si coinciden la burbuja tapa la manija que querés arrastrar.
+/**
+ * Dónde se apoya la burbuja de cada categoría.
+ *
+ * Una regla que se pueda adivinar: **dos a cada lado del cuadro y una abajo**, todas
+ * afuera y sobre el eje del medio. A la izquierda lo que lo envuelve, de afuera hacia
+ * adentro (marco y passe-partout); a la derecha lo que lo cubre y lo rodea (vidrio y
+ * pared); abajo, la obra, que no abre un abanico sino la cartela.
+ *
+ * Antes cada una colgaba de un punto distinto de su propia banda, y las bandas son tan
+ * finas que las burbujas terminaban encimadas o sueltas. Y arriba y abajo no hay lugar
+ * para un abanico —el cuadro cuelga a la altura de la vista y sobran unos sesenta
+ * píxeles—, mientras que a los costados sobran cuatrocientos: por eso las que abren
+ * abanico van a los costados.
+ *
+ * Se corren para no salirse de la pantalla cuando el cuadro la llena.
+ */
+export function anchorsFor(
+  rects: SceneRects,
+  view?: { w: number; h: number },
+): Anchors {
+  const { outer } = rects
+  const cx = outer.x + outer.w / 2
+  const cy = outer.y + outer.h / 2
+  const left = outer.x - BUBBLE_GAP
+  const right = outer.x + outer.w + BUBBLE_GAP
+
+  const keep = (p: Point): Point =>
+    view
+      ? {
+          x: Math.min(Math.max(p.x, BUBBLE_EDGE), view.w - BUBBLE_EDGE),
+          y: Math.min(Math.max(p.y, BUBBLE_EDGE), view.h - BUBBLE_EDGE),
+        }
+      : p
+
   return {
-    // Sobre la moldura, en el tramo bajo del lado izquierdo.
-    frame: {
-      x: hasFrame ? (outer.x + glass.x) / 2 : glass.x - GHOST / 2,
-      y: outer.y + outer.h * 0.74,
-    },
-    // Sobre la banda del passe-partout, hacia la izquierda del lado superior.
-    mat: {
-      x: glass.x + glass.w * 0.26,
-      y: hasMat ? (glass.y + sight.y) / 2 : glass.y + GHOST / 2,
-    },
-    // Sobre el vidrio, esquina superior derecha de la obra. El margen es una
-    // fracción de la obra y no un número fijo de píxeles: con un margen constante
-    // la burbuja se despega de su esquina apenas hacés zoom.
-    glass: { x: sight.x + sight.w * 0.88, y: sight.y + sight.h * 0.09 },
-    // Sobre la obra, esquina inferior izquierda.
-    artwork: { x: sight.x + sight.w * 0.12, y: sight.y + sight.h * 0.91 },
-    // Junto a la cartela: es la zona de pared de la escena, así que el control que
-    // pinta la pared vive ahí en vez de flotando en un rincón cualquiera.
-    wall: { x: outer.x + outer.w + 46, y: outer.y + outer.h * 0.34 - 34 },
+    frame: keep({ x: left, y: cy - PAIR }),
+    mat: keep({ x: left, y: cy + PAIR }),
+    glass: keep({ x: right, y: cy - PAIR }),
+    wall: keep({ x: right, y: cy + PAIR }),
+    artwork: keep({ x: cx, y: outer.y + outer.h + BUBBLE_GAP }),
   }
 }

@@ -135,10 +135,6 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   escribe adentro de un componente, y los números también salen de ahí (el separador
   decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
   `src/shared/copy/LEEME.md`.
-- `src/shared/tokens.css` — el tema **oscuro**: vidrio, acento cálido. Ya solo lo usa
-  el escritorio de Enmarcado, que todavía no está dibujado en Figma. Referencia, Mesa de
-  luz y Enmarcado en el celular usan el sistema de arriba. Cuando el escritorio de Enmarcado
-  se dibuje, esta hoja desaparece.
 
 ## Cómo está armado el probador de enmarcado
 
@@ -156,7 +152,7 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   del teléfono.
 
 **En escritorio la UI no tiene barra ni paneles.** Los controles se apoyan sobre la
-parte que editan y desaparecen solos (en el celular sí hay barra: ver más abajo). Los anchos se arrastran directamente sobre el cuadro.
+parte que editan (en el celular sí hay barra: ver más abajo). Los anchos se arrastran directamente sobre el cuadro.
 Las referencias visuales son Tiny Glade y Outside the Blocks.
 
 **Los anclajes de la UI se calculan como fracción del elemento**, nunca con márgenes
@@ -224,6 +220,75 @@ porque es el mismo render:
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
   para el mate. Chrome sigue por el camino de siempre y da lo mismo que antes.
+
+### En escritorio
+
+Las burbujas, sus abanicos y la cartela son de `components/Overlay.tsx` y `hud/`. Lo
+que ya no se hace es lo que se probó y sobraba: nada aparece por arte de magia y nada
+flota sin regla.
+
+**Cada burbuja tiene un lugar que se puede adivinar** (`anchorsFor` en `zones.ts`):
+dos a cada lado del cuadro y una abajo, todas afuera y sobre el eje del medio. A la
+izquierda lo que lo envuelve, de afuera hacia adentro (marco, passe-partout); a la
+derecha lo que lo cubre y lo rodea (vidrio, pared); abajo, la obra. Las que abren un
+abanico van a los costados y no arriba o abajo, a propósito: el cuadro cuelga a la
+altura de la vista y arriba sobran unos sesenta píxeles, mientras que a los costados
+sobran cuatrocientos.
+
+**En reposo son puntos, y crecen con el puntero.** `--p` (0 a 1) lo escribe el rAF en
+cada anclaje según la distancia al mouse y lo suaviza ahí —más rápido al despertar que
+al dormirse—, no con una transición de CSS, que se reinicia en cada cuadro y arrastra.
+Lo discreto (abrir, apretar, fijar) sí es CSS, con `scale` y `transform` por separado
+para que compongan. Mientras se arrastra un ancho, las burbujas se calman.
+
+**Abrir, fijar y cerrar** (`Overlay`). Pasar por encima abre con un instante de
+intención (`INTENT_MS`): pasar de largo no abre. **Un clic fija** el abanico —un aro
+alrededor de la burbuja lo dice— y deja de depender del puntero; otro clic sobre la
+misma burbuja, tocar afuera o Escape lo cierra. Sin fijar, vive mientras el puntero
+esté en su cuerno (`inFan`, una cuenta de ángulo y distancia) o en la burbuja; no hay
+rectángulo invisible. Al salir queda un respiro de `LEAVE_MS`, que solo tapa el
+temblor de la mano. Con un abanico abierto las demás burbujas se apagan pero siguen
+ahí: pasar a una cambia de categoría solo si el puntero ya salió del cuerno abierto
+(cruzar una burbuja camino a una muestra no puede cambiar nada) y, con uno fijo, se
+cambia con un clic.
+
+**El abanico es geometría, no estilos** (`hud/fan.ts`). Todos los arcos usan el mismo
+paso **en píxeles**: con un paso angular compartido los de adentro quedaban apretados
+y las muestras se pisaban. Cada arco pide el radio que necesita según cuántas muestras
+tiene, y el ángulo de apertura lo elige `chooseDirection`: el que deja todo en pantalla
+y sin tapar el cuadro ni la pastilla de volver, lo más cerca posible del preferido. No
+hay una etiqueta bajo cada muestra —con doce a la vez se pisaban—: se lee el nombre de
+la que está bajo el puntero. Las muestras nacen debajo del puntero, así que recién
+atienden al puntero cuando terminaron de desplegarse (`ARM_MS`); si no, la que cayera
+encima quedaba como "hover" con su vista previa hasta que el mouse se moviera. El
+escalonado de entrada tiene tope: veinticinco muestras a 9 ms dejaban la última un
+cuarto de segundo atrás.
+
+**La parte que se edita se marca con un aro, nunca con un relleno** (`.lit`, y `.leader`
+para el hilo). Lo que se está juzgando es el color de la moldura, del passe-partout,
+el vidrio; una capa encima lo falsearía. Solo al aparecer hay un destello de relleno
+que se va antes de elegir nada.
+
+**La obra se edita en la cartela**, no en un panel (`hud/Cartela.tsx`): al abrir la
+obra la hoja de la pared pasa a modo edición —título y tamaño subrayados como campo,
+cargar y girar debajo— y **el texto no se mueve**: el papel crece a su alrededor con un
+margen negativo que compensa el relleno. La capa entera es transparente a los toques
+(`pointer-events: none`), así que la hoja lo reactiva mientras se edita. Con el
+cuadro girado los campos muestran la medida como cuelga, y el límite de tamaño se
+aplica al salir del campo y no en cada tecla (acotar en cada tecla hace imposible tipear
+"1" camino a "18").
+
+**Volver y "Dejame sugerencias"** van en una pastilla fija arriba a la izquierda
+(`.hud-pill`). El abanico la esquiva.
+
+**Ningún tooltip nativo** (`title`): se prendía sobre las muestras a destiempo y
+peleaba con la etiqueta propia. El nombre accesible va en `aria-label`. Con el teclado,
+Enter en una burbuja la abre fija, y Tab entra al arco del espesor y a las muestras
+—por eso `RadialMenu` va después de la burbuja en el documento—.
+
+**Tipografía, curvas y duraciones salen del sistema** (`--ds-*`); lo propio de esta
+capa, en `styles.css`, es el vidrio oscuro y el naranja del activo, que el diseño de
+Figma todavía no dibuja para el escritorio. Ya no hay hoja de tema aparte.
 
 ### En el celular
 
@@ -498,8 +563,9 @@ que configurar —"Ninguna" en la grilla, "Original" en Ajustes— deja su picke
 abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fila
 sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
-**Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz también;
-Enmarcado, solo en el celular.** No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+**Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz y
+Enmarcado también** (en el escritorio de Enmarcado, el vidrio oscuro y el naranja del
+activo son propios de su capa). No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
 no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
 mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 
