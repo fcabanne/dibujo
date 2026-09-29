@@ -29,12 +29,8 @@ const SPACING = 54
 const ROW_GAP = 58
 /** Lo más que se abre un arco. Más allá, las muestras del extremo se van demasiado lejos. */
 const MAX_SWEEP = (140 * Math.PI) / 180
-/** Radio del primer arco cuando no hay control de arco adentro, y cuando sí. */
+/** Radio del primer arco. */
 const FIRST = 112
-const FIRST_WITH_SLIDER = 148
-/** Radio y barrido del control de arco (el espesor de la moldura). */
-export const SLIDER_RADIUS = 86
-export const SLIDER_SPAN = 100
 
 export interface FanLayout {
   /** Radio de cada arco, de adentro hacia afuera. */
@@ -42,17 +38,16 @@ export interface FanLayout {
   /** Paso angular de cada arco, en radianes. */
   steps: number[]
   counts: number[]
-  slider: boolean
   /** Hasta dónde llega el abanico desde el centro de la burbuja. */
   reach: number
   /** Mitad del barrido del arco más ancho, en radianes. */
   halfSweep: number
 }
 
-export function layoutFan(counts: number[], slider: boolean): FanLayout {
+export function layoutFan(counts: number[]): FanLayout {
   const radii: number[] = []
   const steps: number[] = []
-  let r = slider ? FIRST_WITH_SLIDER : FIRST
+  let r = FIRST
 
   counts.forEach((n, i) => {
     // El radio mínimo para que las n muestras entren en el barrido máximo.
@@ -62,17 +57,12 @@ export function layoutFan(counts: number[], slider: boolean): FanLayout {
     steps.push(n > 1 ? SPACING / r : 0)
   })
 
-  const widest = Math.max(
-    0,
-    ...counts.map((n, i) => (n - 1) * steps[i]),
-    slider ? (SLIDER_SPAN * Math.PI) / 180 : 0,
-  )
+  const widest = Math.max(0, ...counts.map((n, i) => (n - 1) * steps[i]))
 
   return {
     radii,
     steps,
     counts,
-    slider,
     reach: (radii[radii.length - 1] ?? FIRST) + CHIP / 2 + 8,
     halfSweep: widest / 2,
   }
@@ -131,7 +121,6 @@ export function chooseDirection(opts: {
       }
     })
 
-    // El control de arco vive adentro: si su extremo se sale, ya se sale la muestra.
     let apart = Math.abs(deg - prefer)
     if (apart > 180) apart = 360 - apart
     cost += apart * 0.7

@@ -5,6 +5,7 @@ import { clamp, LIMITS } from '../../domain/geometry'
 import { buildMeasurements } from '../../domain/measurements'
 import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
+import { CloseIcon } from '../../../shared/ui'
 import { LinkIcon, RotateIcon, UnlinkIcon, UploadIcon } from './icons'
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
   editing: boolean
   /** Se abrió con un clic, no pasando por encima: ahí sí se le da el foco al título. */
   focusTitle: boolean
+  /** Quita el dibujo y vuelve a la pantalla de inicio. */
+  onRemove: () => void
 }
 
 /**
@@ -31,7 +34,7 @@ interface Props {
  * El texto no se mueve al pasar a edición: la hoja crece a su alrededor con un margen
  * negativo que compensa su relleno.
  */
-export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle }: Props) {
+export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle, onRemove }: Props) {
   const rows = buildMeasurements(state, layout).slice(1)
   const { artwork } = state
   const fileRef = useRef<HTMLInputElement>(null)
@@ -49,6 +52,8 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
       titleRef.current?.focus()
       titleRef.current?.select()
     }
+    // Al cerrarse no queda un campo con el foco y su texto seleccionado sobre la pared.
+    if (!editing && document.activeElement === titleRef.current) titleRef.current?.blur()
   }, [editing, focusTitle])
 
   /**
@@ -175,6 +180,15 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
           >
             <RotateIcon />
             {copy.marco.rotate}
+          </button>
+          <button
+            type="button"
+            className="pill"
+            tabIndex={editing ? 0 : -1}
+            onClick={onRemove}
+          >
+            <CloseIcon />
+            {copy.marco.remove}
           </button>
         </div>
       </div>

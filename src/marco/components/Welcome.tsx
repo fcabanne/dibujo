@@ -1,30 +1,29 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react'
-import { copy } from '../../../shared/copy'
-import { loadArtworkFile } from '../../../shared/imageFile'
-import { openInstagram } from '../../../shared/suggestions'
-import { BackIcon, Button, IconButton, UploadIcon } from '../../../shared/ui'
+import { copy } from '../../shared/copy'
+import { loadArtworkFile } from '../../shared/imageFile'
+import { openInstagram } from '../../shared/suggestions'
+import { BackIcon, Button, IconButton, UploadIcon } from '../../shared/ui'
 
 interface Props {
   onArtwork: (src: string, aspect: number) => void
 }
 
 /**
- * Lo primero que se ve en el celular sin un dibujo cargado: la misma pantalla de
- * inicio de Referencia y de la mesa de luz —el saludo, qué es esto, qué hacer y el
- * botón— y abajo volver y "Dejame sugerencias".
+ * Lo primero que se ve sin un dibujo cargado, en el celular y en el escritorio: la
+ * misma pantalla de inicio de Referencia y de la mesa de luz —el saludo, qué es esto,
+ * qué hacer y el botón— y abajo volver y "Dejame sugerencias".
  *
- * Reemplaza al dibujo de ejemplo, que en el escritorio sigue estando. En el celular
- * hacía creer que ya había algo cargado y que el trabajo era cambiarlo; esta pantalla
- * dice qué hacer, y la herramienta arranca con el dibujo propio adentro del marco.
+ * Reemplaza al dibujo de ejemplo. Hacía creer que ya había algo cargado y que el
+ * trabajo era cambiarlo; esta pantalla dice qué hacer, y la herramienta arranca con el
+ * dibujo propio adentro del marco. En el escritorio además se puede soltar el archivo
+ * encima, como sobre el lienzo.
  */
 export function Welcome({ onArtwork }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [note, setNote] = useState<string | null>(null)
 
-  const onFile = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      event.target.value = ''
+  const load = useCallback(
+    async (file: File | undefined) => {
       if (!file) return
       try {
         const { src, aspect } = await loadArtworkFile(file)
@@ -36,8 +35,24 @@ export function Welcome({ onArtwork }: Props) {
     [onArtwork],
   )
 
+  const onFile = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      event.target.value = ''
+      void load(file)
+    },
+    [load],
+  )
+
   return (
-    <div className="m-welcome-screen">
+    <div
+      className="m-welcome-screen"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        void load(e.dataTransfer.files[0])
+      }}
+    >
       <div className="m-welcome">
         <div className="m-welcome-text">
           <h2>{copy.welcome.greeting}</h2>

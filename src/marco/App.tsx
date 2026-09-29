@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Canvas, type FreeArea, type Part, type SceneSnapshot } from './components/Canvas'
 import { MobileUI, type Tab } from './components/mobile/MobileUI'
-import { Welcome } from './components/mobile/Welcome'
+import { Welcome } from './components/Welcome'
 import { Overlay, type Category } from './components/Overlay'
 import { computeLayout } from './domain/geometry'
 import { useCompact } from './hooks/useCompact'
@@ -118,25 +118,28 @@ export function App() {
    * Quitar el dibujo vuelve a la pantalla de inicio y **no toca el enmarcado**, como
    * quitar la foto en Referencia: probar la misma moldura en otro dibujo de la serie
    * no tiene por qué costar armarla de nuevo. El dibujo de ejemplo vuelve a ser la
-   * obra —es lo que el escritorio muestra sin dibujo— y se guarda como tal.
+   * obra —es la obra "vacía"— y se guarda como tal.
    */
   const handleRemove = useCallback(() => {
     setTab(null)
+    setOpen(null)
+    setPreview(null)
     dispatch({ type: 'artwork/patch', patch: { src: DEFAULT_STATE.artwork.src } })
   }, [])
 
   /**
-   * En el celular no hay dibujo de ejemplo: sin uno propio va la pantalla de inicio,
-   * como en Referencia y la mesa de luz. Mientras IndexedDB no contestó no se muestra
-   * ninguna de las dos cosas, porque si había un dibujo guardado la bienvenida
-   * parpadearía un instante y parecería que se perdió.
+   * Sin un dibujo propio va la pantalla de inicio, como en Referencia y la mesa de luz,
+   * en el celular y en el escritorio: el dibujo de ejemplo hacía creer que ya había
+   * algo cargado. Mientras IndexedDB no contestó no se muestra ninguna de las dos
+   * cosas, porque si había un dibujo guardado la bienvenida parpadearía un instante y
+   * parecería que se perdió.
    */
   const placeholder = state.artwork.src === DEFAULT_STATE.artwork.src
-  const welcome = compact && placeholder
-  const showCanvas = !compact || (ready && !placeholder)
+  const welcome = placeholder
+  const showCanvas = ready && !placeholder
 
   return (
-    <div className={'app' + (compact ? ' is-compact ds' : '')}>
+    <div className={'app' + (compact ? ' is-compact' : '') + (compact || !showCanvas ? ' ds' : '')}>
       {showCanvas && (
         <Canvas
           state={shown}
@@ -151,11 +154,10 @@ export function App() {
         />
       )}
 
-      {compact ? (
-        ready &&
+      {ready &&
         (welcome ? (
           <Welcome onArtwork={handleArtworkDropped} />
-        ) : (
+        ) : compact ? (
           <MobileUI
             state={state}
             dispatch={dispatch}
@@ -167,19 +169,19 @@ export function App() {
             onArtwork={handleArtworkDropped}
             onRemove={handleRemove}
           />
-        ))
-      ) : (
-        <Overlay
-          state={shown}
-          onPreview={setPreview}
-          dispatch={dispatch}
-          sceneRef={sceneRef}
-          layout={layout}
-          awake={awake}
-          open={open}
-          onOpenChange={setOpen}
-        />
-      )}
+        ) : (
+          <Overlay
+            state={shown}
+            onPreview={setPreview}
+            dispatch={dispatch}
+            sceneRef={sceneRef}
+            layout={layout}
+            awake={awake}
+            open={open}
+            onOpenChange={setOpen}
+            onRemove={handleRemove}
+          />
+        ))}
     </div>
   )
 }

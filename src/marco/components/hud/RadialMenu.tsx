@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { CHIP, chipOffset, SLIDER_RADIUS, SLIDER_SPAN, type FanLayout, type Point } from './fan'
+import { CHIP, chipOffset, type FanLayout, type Point } from './fan'
 
 export interface FanItem {
   node: ReactNode
@@ -16,8 +16,6 @@ interface Props {
   centerDeg: number
   /** Dónde está la burbuja en pantalla: decide de qué lado sale la etiqueta. */
   origin: Point
-  /** Control de arco, en el radio interno: queda entre la burbuja y las muestras. */
-  arc?: (radius: number, centerDeg: number, span: number) => ReactNode
 }
 
 /** Lo que tardan las muestras en llegar a su lugar: hasta ahí no atienden al puntero. */
@@ -33,7 +31,7 @@ const ARM_MS = 300
  * No hay una etiqueta bajo cada muestra: con doce nombres a la vez se pisaban entre
  * sí. Se lee uno solo, sobre la muestra en la que está el puntero.
  */
-export function RadialMenu({ open, rows, layout, centerDeg, origin, arc }: Props) {
+export function RadialMenu({ open, rows, layout, centerDeg, origin }: Props) {
   /**
    * Las opciones se montan recién al abrir, así que su posición final ya es la primera
    * que el navegador conoce y no habría desde dónde animar. Este paso intermedio las
@@ -77,12 +75,6 @@ export function RadialMenu({ open, rows, layout, centerDeg, origin, arc }: Props
 
   return (
     <div className={'radial' + (open ? ' is-open' : '') + (armed ? ' is-armed' : '')} aria-hidden={!open}>
-      {arc && layout.slider && (
-        <div className={'radial-arc' + (out ? ' is-out' : '')}>
-          {arc(SLIDER_RADIUS, centerDeg, SLIDER_SPAN)}
-        </div>
-      )}
-
       {rows.map((row, r) =>
         row.map((item, i) => {
           const at = chipOffset(layout, r, i, center)

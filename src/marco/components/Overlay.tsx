@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon } from '../../shared/ui'
+import { BackIcon, Slider } from '../../shared/ui'
 import { LIMITS } from '../domain/geometry'
 import {
   FRAME_PROFILES,
-  MOLDING_TYPES,
+  MOLDING_FAMILIES,
   FRAME_PRESETS,
   GLASS_TYPES,
   MAT_PRESETS,
@@ -17,7 +17,6 @@ import { anchorsFor, draggableTarget } from '../interaction/zones'
 import type { Action } from '../state/reducer'
 import type { AppState, GlassType, Layout } from '../types'
 import type { SceneSnapshot } from './Canvas'
-import { ArcSlider } from './hud/ArcSlider'
 import { Cartela } from './hud/Cartela'
 import {
   chooseDirection,
@@ -60,6 +59,8 @@ interface Props {
   onOpenChange: (next: Category | null) => void
   /** Aplica un cambio sin confirmarlo, para ver la opción antes de elegirla. */
   onPreview: (action: Action | null) => void
+  /** Vuelve a la pantalla de inicio, sin tocar el enmarcado. */
+  onRemove: () => void
 }
 
 /** Un abanico ya resuelto: qué es, hacia dónde se abre y de dónde parte. */
@@ -105,6 +106,7 @@ export function Overlay({
   open,
   onOpenChange,
   onPreview,
+  onRemove,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const bubbleRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -113,7 +115,10 @@ export function Overlay({
   const labelRef = useRef<HTMLDivElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const pillRef = useRef<HTMLElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+  const linkRef = useRef<HTMLAnchorElement>(null)
+  const depthRef = useRef<HTMLDivElement>(null)
+  const presence = useRef(0)
   const litRef = useRef<HTMLDivElement>(null)
   const leaderRef = useRef<SVGSVGElement>(null)
   const leaderLine = useRef<SVGLineElement>(null)
@@ -165,16 +170,13 @@ export function Overlay({
     if (!scene.rects) return null
     const v = view()
     const origin = anchorsFor(scene.rects, v)[id]
-    const rowLayout = layoutFan(
-      rowsFor(id).map((row) => row.length),
-      id === 'frame',
-    )
+    const rowLayout = layoutFan(rowsFor(id).map((row) => row.length))
     const o = scene.rects.outer
     const avoid: Box[] = [{ x: o.x, y: o.y, w: o.w, h: o.h }]
-    const pill = pillRef.current?.getBoundingClientRect()
     const root = rootRef.current?.getBoundingClientRect()
-    if (pill && root) {
-      avoid.push({ x: pill.left - root.left, y: pill.top - root.top, w: pill.width, h: pill.height })
+    for (const pill of [backRef.current, linkRef.current, depthRef.current]) {
+      const r = pill?.getBoundingClientRect()
+      if (r && root) avoid.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height })
     }
     return {
       id,
@@ -280,8 +282,8 @@ export function Overlay({
       if (!a) return
 
       const onBubble = Math.hypot(p.x - a.x, p.y - a.y) <= 34
-      const onCard = id === 'artwork' && overCartela(p, box)
-      if (onBubble || onCard || inFan(p, a, f.layout, f.deg)) {
+      const onExtra = overExtra(id, p, box)
+      if (onBubble || onExtra || inFan(p, a, f.layout, f.deg)) {
         window.clearTimeout(leaveTimer.current)
       } else {
         window.clearTimeout(leaveTimer.current)
@@ -304,10 +306,18 @@ export function Overlay({
     }
   }, [close])
 
-  /** ¿Está el puntero sobre la cartela o en el camino entre ella y la burbuja de la obra? */
-  const overCartela = (p: Point, box: DOMRect) => {
-    const card = labelRef.current?.getBoundingClientRect()
-    const a = anchorPos.current.artwork
+  /**
+   * ¿Está el puntero sobre lo que la categoría abre fuera del abanico —la cartela de
+   * la obra, el espesor del marco— o en el camino entre eso y su burbuja?
+   */
+  const overExtra = (id: Category, p: Point, box: DOMRect) => {
+    const card =
+      id === 'artwork'
+        ? labelRef.current?.getBoundingClientRect()
+        : id === 'frame'
+          ? depthRef.current?.getBoundingClientRect()
+          : null
+    const a = anchorPos.current[id]
     if (!card || !a) return false
     const pad = 28
     const left = Math.min(card.left - box.left, a.x - 24) - pad
@@ -346,6 +356,17 @@ export function Overlay({
       const scene = sceneRef.current
       const rects = scene.rects
 
+      // Presencia: con el mouse quieto un rato, los controles se van del todo y queda
+      // el cuadro solo. Aparecen rápido y se van despacio, y se suavizan acá por lo
+      // mismo que la proximidad. Un abanico abierto o fijo los sostiene.
+      const here = scene.awake || openRef.current !== null
+      presence.current += ((here ? 1 : 0) - presence.current) * (1 - Math.exp(-dt * (here ? 14 : 3.6)))
+      const root = rootRef.current
+      if (root) {
+        root.style.setProperty('--presence', presence.current.toFixed(3))
+        root.classList.toggle('is-away', presence.current < 0.35)
+      }
+
       if (rects) {
         const v = view()
         const anchors = anchorsFor(rects, v)
@@ -378,9 +399,16 @@ export function Overlay({
         // La cartela se apoya en la esquina inferior derecha del cuadro, como la
         // ficha que acompaña a una obra colgada. Editando ocupa más: no se sale.
         if (labelRef.current) {
-          const width = current === 'artwork' ? 300 : 226
+          // Lo que ocupa a la derecha del punto de anclaje: el papel entero, menos su relleno.
+          const width = current === 'artwork' ? 316 : 226
           const x = Math.min(rects.outer.x + rects.outer.w + 46, v.w - width - 16)
           labelRef.current.style.transform = `translate(${x}px, ${rects.outer.y + rects.outer.h}px)`
+        }
+
+        // El espesor cuelga sobre el medio del canto de arriba del cuadro.
+        if (depthRef.current) {
+          const y = Math.max(28, rects.outer.y - 30)
+          depthRef.current.style.transform = `translate(${rects.outer.x + rects.outer.w / 2}px, ${y}px)`
         }
 
         // Solo cuando cruza el umbral: un setState por frame sería un re-render por frame.
@@ -546,15 +574,34 @@ export function Overlay({
   }
 
   /**
-   * Filas de cada categoría. En el marco, de adentro hacia afuera: el espesor (el
-   * arco), la forma, el acabado y el color. Van así porque cada arco pide un radio
-   * según cuántas muestras tiene, y así los más poblados quedan afuera, donde hay
-   * más largo de arco.
+   * Filas de cada categoría. En el marco, de adentro hacia afuera: acabado, perfil y
+   * color —las mismas opciones que el celular: tres acabados, no siete—. Van así porque
+   * cada arco pide un radio según cuántas muestras tiene, y los más poblados quedan
+   * afuera, donde hay más largo de arco.
    */
   function rowsFor(id: Category): FanItem[][] {
     switch (id) {
       case 'frame':
         return [
+          MOLDING_FAMILIES.map((t) => ({
+            label: t.label,
+            node: (
+              <Swatch
+                label={t.label}
+                color={state.frame.color}
+                material={t.material}
+                finish={t.finish}
+                profile={state.frame.profile}
+                // La familia se reconoce por el material, como en el celular: un marco
+                // armado con "Laca" aparece como "Pintado".
+                selected={state.frame.material === t.material}
+                {...choose({
+                  type: 'frame/patch',
+                  patch: { material: t.material, finish: t.finish },
+                })}
+              />
+            ),
+          })),
           FRAME_PROFILES.map((p) => ({
             label: p.label,
             node: (
@@ -566,23 +613,6 @@ export function Overlay({
                 profile={p.id}
                 selected={state.frame.profile === p.id}
                 {...choose({ type: 'frame/patch', patch: { profile: p.id } })}
-              />
-            ),
-          })),
-          MOLDING_TYPES.map((t) => ({
-            label: t.label,
-            node: (
-              <Swatch
-                label={t.label}
-                color={state.frame.color}
-                material={t.material}
-                finish={t.finish}
-                profile={state.frame.profile}
-                selected={state.frame.material === t.material && state.frame.finish === t.finish}
-                {...choose({
-                  type: 'frame/patch',
-                  patch: { material: t.material, finish: t.finish },
-                })}
               />
             ),
           })),
@@ -669,24 +699,42 @@ export function Overlay({
         (pinned ? ' is-pinned' : '')
       }
     >
-      {/* Volver y sugerencias: la salida de la herramienta, siempre a la mano. */}
-      <nav ref={pillRef} className="hud-pill">
-        <button
-          type="button"
-          className="hud-back"
-          onClick={() => (window.location.href = '../')}
-          aria-label={copy.app.back}
-        >
-          <BackIcon />
-        </button>
-        <a
-          className="hud-link"
-          href={copy.welcome.suggestionsUrl}
-          onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
-        >
-          {copy.welcome.suggestions}
-        </a>
-      </nav>
+      {/* Volver abajo a la izquierda y sugerencias abajo a la derecha, como en la mesa
+          de luz y en Referencia. Aparecen con los controles y se van con ellos: con
+          el cuadro solo no hay nada que tape. */}
+      <button
+        ref={backRef}
+        type="button"
+        className="hud-back"
+        onClick={() => (window.location.href = '../')}
+        aria-label={copy.app.back}
+      >
+        <BackIcon />
+      </button>
+      <a
+        ref={linkRef}
+        className="hud-link"
+        href={copy.welcome.suggestionsUrl}
+        onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+      >
+        {copy.welcome.suggestions}
+      </a>
+
+      {/* El espesor de la moldura, sobre el cuadro: es una medida, y se lee y se
+          mueve con el cuadro a la vista. Un arco colgado de la burbuja era chico,
+          sin nombre y difícil de encontrar. */}
+      <div ref={depthRef} className={'depth-dock' + (open === 'frame' ? ' is-on' : '')}>
+        <span className="depth-name">{copy.marco.depth}</span>
+        <Slider
+          label={copy.marco.depth}
+          value={state.frame.depth}
+          min={LIMITS.frameDepth.min}
+          max={LIMITS.frameDepth.max}
+          step={LIMITS.frameDepth.step}
+          format={cmLabel}
+          onChange={(depth) => dispatch({ type: 'frame/patch', patch: { depth } })}
+        />
+      </div>
 
       {/* Cargar el dibujo se pide sobre el dibujo: es donde mirás cuando querés
           reemplazarlo, y evita ir a buscarlo dentro de un menú. */}
@@ -756,6 +804,7 @@ export function Overlay({
           wallLuma={wallLuma}
           editing={open === 'artwork'}
           focusTitle={open === 'artwork' && pinned}
+          onRemove={onRemove}
         />
       </div>
 
@@ -790,24 +839,6 @@ export function Overlay({
                 layout={mine.layout}
                 centerDeg={mine.deg}
                 origin={mine.origin}
-                arc={
-                  id === 'frame'
-                    ? (radius, centerDeg, span) => (
-                        <ArcSlider
-                          label={copy.marco.depth}
-                          value={state.frame.depth}
-                          min={LIMITS.frameDepth.min}
-                          max={LIMITS.frameDepth.max}
-                          step={LIMITS.frameDepth.step}
-                          format={cmLabel}
-                          onChange={(depth) => dispatch({ type: 'frame/patch', patch: { depth } })}
-                          radius={radius}
-                          centerDeg={centerDeg}
-                          spanDeg={span}
-                        />
-                      )
-                    : undefined
-                }
               />
             )}
           </div>

@@ -4,20 +4,18 @@
    en un abanico de muestras y desaparece cuando no la usás. Tiene que
    leerse igual contra una pared clara o una oscura.
 
-   Los colores de vidrio y el naranja del activo son de esta capa —el
-   diseño de Figma todavía no dibuja el escritorio de Enmarcado—; las
-   tipografías, las curvas y las duraciones salen del sistema (`--ds-*`).
+   Todo sale del sistema de diseño (`--ds-*`) y se parece a lo que ya hay en
+   Referencia, la mesa de luz y el celular: superficies claras, y la marca
+   oscura para lo que está elegido. Las cosas que flotan sobre la pared llevan
+   su propia sombra, como las pastillas de la mesa de luz sobre la cámara.
    ------------------------------------------------------------------ */
 
 :root {
-  --hud-bg: rgba(16, 16, 19, 0.66);
-  --hud-bg-solid: rgba(22, 22, 26, 0.9);
-  --hud-border: rgba(255, 255, 255, 0.16);
-  --hud-text: rgba(255, 255, 255, 0.93);
-  --hud-dim: rgba(255, 255, 255, 0.52);
-  --accent: #e6b075;
+  --hud-border: rgb(255 255 255 / 0.16);
+  --hud-text: rgb(255 255 255 / 0.93);
   --fondo: #0c0c0e;
-  --shadow-hud: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* La de las pastillas de la mesa de luz: sobre una imagen, no sobre el fondo claro. */
+  --shadow-hud: 0 10px 30px rgb(16 16 16 / 0.28);
   /* Con rebote: es lo que le da cuerpo a lo que aparece. */
   --spring: var(--ds-spring);
   --ease: var(--ds-ease);
@@ -85,13 +83,10 @@ body {
   top: 50%;
   transform: translate(-50%, -50%);
   padding: 14px 22px;
-  border-radius: 999px;
-  background: var(--hud-bg-solid);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid var(--hud-border);
-  color: var(--hud-text);
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-background);
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-control);
   box-shadow: var(--shadow-hud);
   pointer-events: none;
 }
@@ -99,7 +94,6 @@ body {
 .canvas-error {
   top: auto;
   bottom: 22%;
-  color: #ffb4a8;
 }
 
 /* ---------------------------------- capa de control */
@@ -118,12 +112,8 @@ body {
   width: 0;
   height: 0;
   --p: 0;
-  --rest: 0.5;
+  --rest: 0.9;
   transition: opacity var(--ds-dur) var(--ease);
-}
-
-.overlay.is-awake .anchor {
-  --rest: 0.8;
 }
 
 /* Con un abanico abierto, las demás burbujas se apagan: el abanico es lo único que
@@ -136,7 +126,9 @@ body {
   En reposo es un punto; con el puntero cerca crece hasta ser burbuja. `--p` va de 0
   a 1 y lo suaviza el rAF —más rápido al despertar que al dormirse—, así que acá no
   hay transición sobre él: se reiniciaría en cada cuadro y la burbuja iría arrastrada.
-  Lo que sí se anima con CSS es lo discreto: abrir, apretar, fijar.
+  `--presence` es lo mismo pero para todo el conjunto: con el mouse quieto un rato
+  los controles se van del todo y queda el cuadro solo. Lo que sí se anima con CSS es
+  lo discreto: abrir, apretar, fijar.
 */
 .bubble {
   position: absolute;
@@ -146,25 +138,28 @@ body {
   height: 44px;
   margin: 0;
   padding: 0;
+  border: 0;
   border-radius: 50%;
-  border: 1px solid var(--hud-border);
-  background: var(--hud-bg);
-  backdrop-filter: blur(16px) saturate(1.3);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-  color: rgba(255, 255, 255, 0.86);
+  background: var(--ds-background);
+  color: var(--ds-accent-dark);
   display: grid;
   place-items: center;
   cursor: pointer;
   pointer-events: auto;
   box-shadow: var(--shadow-hud);
-  transform: translate(-50%, -50%) scale(calc(0.3 + 0.7 * var(--p)));
-  opacity: calc(var(--rest) + (1 - var(--rest)) * var(--p));
+  transform: translate(-50%, -50%) scale(calc((0.3 + 0.7 * var(--p)) * var(--presence, 1)));
+  opacity: calc((var(--rest) + (1 - var(--rest)) * var(--p)) * var(--presence, 1));
   scale: 1;
   transition:
     scale var(--ds-dur-slow) var(--spring),
     background var(--ds-dur-fast) var(--ease),
     color var(--ds-dur-fast) var(--ease),
     box-shadow var(--ds-dur) var(--ease);
+}
+
+/* Lejos del todo no atiende: una burbuja invisible no debe frenar un clic. */
+.overlay.is-away .bubble {
+  pointer-events: none;
 }
 
 .bubble svg {
@@ -183,9 +178,10 @@ body {
   border-radius: 50%;
 }
 
-.bubble:hover {
-  background: rgba(38, 38, 44, 0.86);
-  color: #fff;
+@media (hover: hover) {
+  .bubble:hover:not(.is-open) {
+    background: var(--ds-accent-light);
+  }
 }
 
 .bubble:active {
@@ -194,30 +190,34 @@ body {
   transition-timing-function: var(--ease);
 }
 
+/* Con el teclado se ve aunque el mouse esté quieto y todo se haya ido. */
 .bubble:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ds-white);
   outline-offset: 3px;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
 }
 
+/* La marca oscura, como la pestaña elegida de la barra del celular. */
 .bubble.is-open {
-  background: var(--accent);
-  color: #1d1408;
-  border-color: transparent;
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
   scale: 1.12;
 }
 
 /* Fija: un aro alrededor dice que el abanico ya no depende del puntero. */
 .overlay.is-pinned .bubble.is-open {
   box-shadow:
-    0 0 0 3px rgba(230, 176, 117, 0.32),
+    0 0 0 3px rgb(255 255 255 / 0.7),
     var(--shadow-hud);
 }
 
 /* ---------------------------------- la parte que se edita */
 
 /*
-  La parte de la categoría abierta se marca con un aro del color del activo, y un hilo
-  la une a la burbuja. Es un aro y no un relleno a propósito: lo que se está eligiendo
+  La parte de la categoría abierta se marca con un aro blanco, y un hilo la une a la
+  burbuja. Es un aro y no un relleno a propósito: lo que se está eligiendo
   es el color, el vidrio, la moldura, y una capa encima los falsearía. Solo al aparecer
   hay un destello de relleno, que se va antes de que se elija nada. La luz recorta su
   hueco con `evenodd`: solo se ve la parte.
@@ -228,7 +228,9 @@ body {
   top: 0;
   pointer-events: none;
   opacity: 0;
-  box-shadow: inset 0 0 0 2px rgba(230, 176, 117, 0.95);
+  box-shadow:
+    inset 0 0 0 2px var(--ds-white),
+    inset 0 0 0 3px rgb(16 16 16 / 0.25);
   clip-path: polygon(
     evenodd,
     0 0,
@@ -253,7 +255,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(230, 176, 117, 0.4);
+  background: rgb(255 255 255 / 0.4);
   opacity: 0;
 }
 
@@ -278,8 +280,12 @@ body {
 
 /* El hilo se dibuja de la burbuja a la parte: `pathLength=1` deja animar el trazo
    sin saber cuánto mide. */
+.leader {
+  filter: drop-shadow(0 1px 3px rgb(16 16 16 / 0.45));
+}
+
 .leader line {
-  stroke: var(--accent);
+  stroke: var(--ds-white);
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-dasharray: 1;
@@ -291,7 +297,7 @@ body {
 }
 
 .leader circle {
-  fill: var(--accent);
+  fill: var(--ds-white);
   opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
@@ -355,41 +361,19 @@ body {
   pointer-events: auto;
 }
 
-/* El control de arco sale después de las muestras, desde adentro. */
-.radial-arc {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  scale: 0.7;
-  transform-origin: 0 0;
-  transition:
-    opacity var(--ds-dur-fast) var(--ease),
-    scale var(--ds-dur) var(--ease);
-}
-
-.radial-arc.is-out {
-  opacity: 1;
-  scale: 1;
-  transition-delay: 40ms;
-}
-
 /* El nombre de la muestra en la que estás. Uno solo: con doce a la vez se pisaban. */
 .radial-label {
   position: absolute;
   z-index: 2;
   transform: translate(-50%, calc(-100% - 30px));
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--hud-bg-solid);
-  border: 1px solid var(--hud-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: var(--hud-text);
-  font: 700 11px/1 var(--ds-font-mono);
-  letter-spacing: 0.02em;
+  padding: 7px 12px;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
+  font: var(--ds-text-meta);
   white-space: nowrap;
   pointer-events: none;
+  box-shadow: var(--shadow-hud);
   animation: label-in var(--ds-dur-fast) var(--spring);
 }
 
@@ -417,7 +401,7 @@ body {
   overflow: hidden;
   cursor: pointer;
   display: block;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-hud);
   scale: 1;
   transition:
     scale var(--ds-dur) var(--spring),
@@ -447,14 +431,17 @@ body {
 .swatch:focus-visible,
 .text-chip:focus-visible,
 .text-option:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ds-white);
   outline-offset: 3px;
 }
 
+/* El aro del elegido: un anillo claro y otro oscuro, que se leen sobre una pared clara
+   y sobre una oscura. */
 .swatch.is-selected {
   box-shadow:
-    0 0 0 3px var(--accent),
-    0 6px 22px rgba(0, 0, 0, 0.5);
+    0 0 0 2px var(--ds-background),
+    0 0 0 4px var(--ds-accent-dark),
+    var(--shadow-hud);
 }
 
 .swatch.is-custom {
@@ -501,8 +488,9 @@ body {
 
 .text-option.is-selected .text-option-visual {
   box-shadow:
-    0 0 0 3px var(--accent),
-    0 6px 22px rgba(0, 0, 0, 0.5);
+    0 0 0 2px var(--ds-background),
+    0 0 0 4px var(--ds-accent-dark),
+    var(--shadow-hud);
 }
 
 .text-option-visual[data-glass='clear'] {
@@ -537,14 +525,13 @@ body {
   width: 46px;
   height: 46px;
   padding: 0 4px;
+  border: 0;
   border-radius: 50%;
-  border: 1px solid var(--hud-border);
-  background: var(--hud-bg-solid);
-  backdrop-filter: blur(14px);
-  color: var(--hud-dim);
+  background: var(--ds-background);
+  color: var(--ds-accent-dark);
   font: 700 10px/1.2 var(--ds-font-mono);
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-hud);
   scale: 1;
   transition:
     scale var(--ds-dur) var(--spring),
@@ -553,29 +540,27 @@ body {
     box-shadow var(--ds-dur-fast) var(--ease);
 }
 
-.text-chip:hover {
-  color: var(--hud-text);
-}
-
 .text-chip.is-selected {
-  color: #1d1408;
-  background: var(--accent);
+  color: var(--ds-white);
+  background: var(--ds-accent-dark);
   box-shadow:
-    0 0 0 3px rgba(230, 176, 117, 0.4),
-    0 6px 22px rgba(0, 0, 0, 0.5);
+    0 0 0 2px var(--ds-background),
+    0 0 0 4px var(--ds-accent-dark),
+    var(--shadow-hud);
 }
 
-/* ---------------------------------- vidrio: botones */
+/* ---------------------------------- botones chicos */
 
+/* El botón "quiet" del sistema, en chico: el de la cartela y el de cargar sobre la obra. */
 .pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--hud-border);
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--hud-text);
-  border-radius: 999px;
+  padding: 9px 14px;
+  border: 0;
+  background: var(--ds-accent-light);
+  color: var(--ds-accent-dark);
+  border-radius: var(--ds-radius-control);
   font: 700 11px/1 var(--ds-font-mono);
   cursor: pointer;
   white-space: nowrap;
@@ -585,8 +570,10 @@ body {
     scale var(--ds-dur) var(--spring);
 }
 
-.pill:hover {
-  background: rgba(255, 255, 255, 0.14);
+@media (hover: hover) {
+  .pill:hover {
+    background: #ebe4d6;
+  }
 }
 
 .pill:active {
@@ -596,7 +583,7 @@ body {
 }
 
 .pill:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ds-accent-dark);
   outline-offset: 2px;
 }
 
@@ -607,82 +594,139 @@ body {
 
 /* ---------------------------------- volver y sugerencias */
 
-.hud-pill {
+/*
+  Volver abajo a la izquierda y sugerencias abajo a la derecha, como en la mesa de luz
+  y en Referencia. Aparecen con los controles y se van con ellos: `--presence` los
+  lleva de 0 a 1, así que no hay una transición aparte.
+*/
+.hud-back,
+.hud-link {
   position: absolute;
-  left: 16px;
-  top: 16px;
+  bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom, 0px));
   z-index: 6;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  border: 1px solid var(--hud-border);
-  background: var(--hud-bg);
-  backdrop-filter: blur(16px) saturate(1.3);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-  box-shadow: var(--shadow-hud);
-  pointer-events: auto;
-  animation: pill-in var(--ds-dur-slow) var(--spring) 120ms backwards;
-}
-
-@keyframes pill-in {
-  from {
-    opacity: 0;
-    translate: -8px -6px;
-    scale: 0.92;
-  }
-}
-
-.hud-back {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  height: var(--ds-control-min);
   border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--hud-text);
-  cursor: pointer;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-background);
+  color: var(--ds-accent-dark);
+  box-shadow: var(--shadow-hud);
+  pointer-events: auto;
+  opacity: var(--presence, 0);
+  translate: 0 calc((1 - var(--presence, 0)) * 12px);
   scale: 1;
   transition:
     background var(--ds-dur-fast) var(--ease),
     scale var(--ds-dur) var(--spring);
 }
 
+.hud-back {
+  left: var(--ds-space-5);
+  width: var(--ds-control-min);
+  padding: 0;
+  cursor: pointer;
+}
+
 .hud-back svg {
-  width: 20px;
-  height: 20px;
-}
-
-.hud-back:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.hud-back:active {
-  scale: 0.9;
-  transition-duration: var(--ds-dur-press);
+  width: var(--ds-icon);
+  height: var(--ds-icon);
 }
 
 .hud-link {
-  padding: 0 14px 0 6px;
-  color: var(--hud-dim);
-  font: 700 11px/1 var(--ds-font-mono);
+  right: var(--ds-space-5);
+  padding: 0 var(--ds-space-5);
+  font: var(--ds-text-link);
   text-decoration: none;
   white-space: nowrap;
-  transition: color var(--ds-dur-fast) var(--ease);
 }
 
-.hud-link:hover {
-  color: var(--hud-text);
+.overlay.is-away .hud-back,
+.overlay.is-away .hud-link {
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .hud-back:hover,
+  .hud-link:hover {
+    background: var(--ds-accent-light);
+  }
+}
+
+.hud-back:active,
+.hud-link:active {
+  scale: 0.94;
+  transition-duration: var(--ds-dur-press);
+  transition-timing-function: var(--ease);
 }
 
 .hud-back:focus-visible,
 .hud-link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 999px;
+  outline: 2px solid var(--ds-white);
+  outline-offset: 3px;
+  opacity: 1;
+  translate: none;
+  pointer-events: auto;
+}
+
+/* ---------------------------------- espesor */
+
+/*
+  El espesor de la moldura, sobre el medio del canto de arriba del cuadro: es una
+  medida, y se lee y se mueve con el cuadro a la vista. Es el slider del sistema, con
+  su nombre al lado. Antes era un arco colgado de la burbuja: chico, sin nombre y
+  difícil de encontrar. El JS le escribe la posición; el centro de la pastilla cae ahí.
+*/
+.depth-dock {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  width: 252px;
+  margin: -25px 0 0 -126px;
+  padding: var(--ds-space-1) var(--ds-space-1) var(--ds-space-1) var(--ds-space-4);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-background);
+  box-shadow: var(--shadow-hud);
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 8px;
+  scale: 0.96;
+  pointer-events: none;
+  transition:
+    opacity var(--ds-dur-fast) var(--ease),
+    translate var(--ds-dur) var(--ease),
+    scale var(--ds-dur) var(--ease),
+    visibility 0s linear var(--ds-dur);
+}
+
+.depth-dock.is-on {
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  pointer-events: auto;
+  transition:
+    opacity var(--ds-dur-fast) var(--ease),
+    translate var(--ds-dur-slow) var(--spring),
+    scale var(--ds-dur-slow) var(--spring);
+  transition-delay: 60ms;
+}
+
+.depth-name {
+  flex: none;
+  font: 700 12px/1 var(--ds-font-mono);
+  text-transform: uppercase;
+  color: var(--ds-black);
+}
+
+.depth-dock .ds-slider {
+  flex: 1;
+  border-radius: var(--ds-radius-small);
+  overflow: hidden;
 }
 
 /* ---------------------------------- gizmo de ancho */
@@ -852,11 +896,10 @@ body {
   top: 50%;
   transform: translate(-50%, -50%) scale(0.8);
   padding: 4px 11px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #1d1408;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-dark);
+  color: var(--ds-white);
+  font: 700 12px/1.3 var(--ds-font-mono);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   opacity: 0;
@@ -866,74 +909,6 @@ body {
 .gizmo.is-pressed .gizmo-value {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
-}
-
-/* ---------------------------------- slider de arco */
-
-.arc-slider {
-  position: absolute;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-}
-
-.arc-slider svg {
-  overflow: visible;
-  pointer-events: none;
-}
-
-.arc-track,
-.arc-fill {
-  fill: none;
-  stroke-linecap: round;
-  pointer-events: stroke;
-}
-
-.arc-track {
-  stroke: rgba(255, 255, 255, 0.22);
-  /* El riel acepta el puntero aunque el resto del SVG no: así se puede saltar a
-     un valor haciendo clic sobre el arco, no solo arrastrando el pulgar. */
-  pointer-events: stroke;
-  cursor: pointer;
-}
-
-.arc-fill {
-  stroke: var(--accent);
-  pointer-events: none;
-}
-
-.arc-knob {
-  fill: #fff;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.65));
-  cursor: grab;
-  pointer-events: all;
-}
-
-.arc-slider svg:active .arc-knob {
-  cursor: grabbing;
-}
-
-.arc-value {
-  position: absolute;
-  transform: translate(-50%, -160%);
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(16, 16, 19, 0.82);
-  border: 1px solid var(--hud-border);
-  color: var(--hud-text);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* El range nativo queda accesible por teclado aunque el control visible sea el arco. */
-.arc-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* ---------------------------------- cartela de museo */
@@ -1163,22 +1138,13 @@ body {
 
 .cartela-actions > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   min-height: 0;
   overflow: hidden;
   /* El foco y la sombra de los botones no se recortan contra el borde. */
   padding: 2px;
   margin: -2px;
-}
-
-.cartela .pill {
-  border: 0;
-  background: var(--ds-accent-light);
-  color: var(--ds-accent-dark);
-}
-
-.cartela .pill:hover {
-  background: #ebe4d6;
 }
 
 /* ---------------------------------- cargar sobre la obra */
@@ -1205,9 +1171,7 @@ body {
 
 .art-drop .pill {
   transform: translate(-50%, -50%);
-  background: var(--hud-bg-solid);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: var(--ds-background);
   box-shadow: var(--shadow-hud);
   white-space: nowrap;
 }

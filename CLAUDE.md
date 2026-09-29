@@ -241,6 +241,12 @@ al dormirse—, no con una transición de CSS, que se reinicia en cada cuadro y 
 Lo discreto (abrir, apretar, fijar) sí es CSS, con `scale` y `transform` por separado
 para que compongan. Mientras se arrastra un ancho, las burbujas se calman.
 
+**Con el mouse quieto un rato, todo se va y queda el cuadro solo.** `--presence` (0 a 1,
+suavizada en el mismo rAF: aparece rápido, se va despacio) multiplica el tamaño y la
+opacidad de las burbujas y de las dos pastillas de abajo. Un abanico abierto o fijo la
+sostiene. Con la presencia casi en cero (`.is-away`) nada atiende toques: una burbuja
+invisible no puede frenar un clic. El foco de teclado sí las muestra.
+
 **Abrir, fijar y cerrar** (`Overlay`). Pasar por encima abre con un instante de
 intención (`INTENT_MS`): pasar de largo no abre. **Un clic fija** el abanico —un aro
 alrededor de la burbuja lo dice— y deja de depender del puntero; otro clic sobre la
@@ -264,6 +270,16 @@ encima quedaba como "hover" con su vista previa hasta que el mouse se moviera. E
 escalonado de entrada tiene tope: veinticinco muestras a 9 ms dejaban la última un
 cuarto de segundo atrás.
 
+**Las mismas opciones que en el celular**: tres acabados (`MOLDING_FAMILIES`, no los
+siete), los cinco perfiles y los once colores. Son tres arcos —acabado, perfil y color,
+de adentro hacia afuera— y ya no hay un cuarto: el espesor se fue del abanico.
+
+**El espesor es el slider del sistema, sobre el canto de arriba del cuadro**
+(`.depth-dock`, con `Slider` de `shared/ui`). Es una medida, y se lee y se mueve con el
+cuadro a la vista. Antes era un arco colgado de la burbuja: chico, sin nombre y difícil
+de encontrar. Aparece con el abanico del marco y cuenta como parte de su zona: ir de la
+burbuja al slider no lo cierra (`overExtra`).
+
 **La parte que se edita se marca con un aro, nunca con un relleno** (`.lit`, y `.leader`
 para el hilo). Lo que se está juzgando es el color de la moldura, del passe-partout,
 el vidrio; una capa encima lo falsearía. Solo al aparecer hay un destello de relleno
@@ -271,24 +287,34 @@ que se va antes de elegir nada.
 
 **La obra se edita en la cartela**, no en un panel (`hud/Cartela.tsx`): al abrir la
 obra la hoja de la pared pasa a modo edición —título y tamaño subrayados como campo,
-cargar y girar debajo— y **el texto no se mueve**: el papel crece a su alrededor con un
+cargar, girar y quitar debajo— y **el texto no se mueve**: el papel crece a su alrededor con un
 margen negativo que compensa el relleno. La capa entera es transparente a los toques
 (`pointer-events: none`), así que la hoja lo reactiva mientras se edita. Con el
 cuadro girado los campos muestran la medida como cuelga, y el límite de tamaño se
 aplica al salir del campo y no en cada tecla (acotar en cada tecla hace imposible tipear
 "1" camino a "18").
 
-**Volver y "Dejame sugerencias"** van en una pastilla fija arriba a la izquierda
-(`.hud-pill`). El abanico la esquiva.
+**Volver abajo a la izquierda y "Dejame sugerencias" abajo a la derecha** (`.hud-back`,
+`.hud-link`), como en la mesa de luz y en Referencia, cada uno en su pastilla. Aparecen
+con los controles y se van con ellos. Los abanicos las esquivan.
+
+**Sin dibujo, la pantalla de inicio** (`components/Welcome.tsx`), en el escritorio igual
+que en el celular. El lienzo y los controles recién existen con un dibujo propio, y se
+puede soltar el archivo encima de la bienvenida. "Quitar el dibujo" está en la cartela y
+vuelve acá sin tocar el enmarcado: es la única forma de volver, así que tiene que estar.
 
 **Ningún tooltip nativo** (`title`): se prendía sobre las muestras a destiempo y
 peleaba con la etiqueta propia. El nombre accesible va en `aria-label`. Con el teclado,
 Enter en una burbuja la abre fija, y Tab entra al arco del espesor y a las muestras
 —por eso `RadialMenu` va después de la burbuja en el documento—.
 
-**Tipografía, curvas y duraciones salen del sistema** (`--ds-*`); lo propio de esta
-capa, en `styles.css`, es el vidrio oscuro y el naranja del activo, que el diseño de
-Figma todavía no dibuja para el escritorio. Ya no hay hoja de tema aparte.
+**Se ve como lo demás**: superficies claras (`--ds-background`, `--ds-accent-light`),
+la marca oscura (`--ds-accent-dark`) para lo elegido y para el nombre de la muestra,
+tipografía, curvas y duraciones del sistema. Lo que flota sobre la pared lleva la
+sombra de las pastillas de la mesa de luz. El aro de la muestra elegida es doble —uno
+claro y otro oscuro— para que se lea sobre una pared clara y sobre una oscura. Ya no
+hay naranja ni hoja de tema aparte: el diseño de Figma todavía no dibuja el escritorio,
+así que es una interpretación del sistema, no una copia.
 
 ### En el celular
 
@@ -414,12 +440,11 @@ siempre; en un teléfono eso es batería gastada en una imagen quieta. Compara c
 está llegando a destino: mientras los dedos arrastran, la vista va pegada a ellos y
 "ya llegó" en cada cuadro, y con esa pregunta el pellizco no se pintaba nunca.
 
-**Sin dibujo, la pantalla de inicio de Referencia y la mesa** (`mobile/Welcome.tsx`):
-el saludo, qué es, qué hacer, el botón, y abajo volver y "Dejame sugerencias". **En el
-celular no hay dibujo de ejemplo**: hacía creer que ya había algo cargado. El
-escritorio lo conserva —ahí invita a tocar los controles, que se descubren pasando el
-mouse—. En el estado el ejemplo sigue siendo la obra por defecto; el celular lo lee
-como "no hay dibujo". `App` espera a IndexedDB (`ready`) antes de elegir entre la
+**Sin dibujo, la pantalla de inicio de Referencia y la mesa** (`components/Welcome.tsx`,
+la misma del escritorio): el saludo, qué es, qué hacer, el botón, y abajo volver y
+"Dejame sugerencias". **No hay dibujo de ejemplo**: hacía creer que ya había algo
+cargado. En el estado el ejemplo sigue siendo la obra por defecto; las dos capas lo
+leen como "no hay dibujo". `App` espera a IndexedDB (`ready`) antes de elegir entre la
 bienvenida y el cuadro: sin esa espera la bienvenida parpadearía con un dibujo
 guardado. Al subir uno se abre Obra: es lo que sigue.
 
@@ -564,8 +589,7 @@ abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fil
 sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz y
-Enmarcado también** (en el escritorio de Enmarcado, el vidrio oscuro y el naranja del
-activo son propios de su capa). No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
+Enmarcado también**. No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
 no hay un texto visible escrito adentro de un componente. Cuando se toque algo acá, se
 mantiene así: color y tipografía salen de `--ds-*`, y las frases de `copy`.
 
