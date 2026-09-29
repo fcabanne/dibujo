@@ -538,10 +538,11 @@ nuevo, aparece en los dos lados solo.
 (48 px de alto, letras de 16 a 18) y con un mouse sobra. En `.panel` se redefinen los
 tokens de tamaño (`--ds-text-*`, `--ds-control-*`, `--ds-icon`) y todo lo que cuelga de
 ellos se achica de una vez, sin tocar componentes; el celular y la barra de abajo no
-pasan por ahí porque `.panel` no existe en ellos. Dos cosas más viven ahí: cuando el
-primer control repite el título de la sección ("Grilla" sobre "Grilla", "Ajustes" sobre
-"Ajustes") se calla su nombre (`echo` en `Row`, `className="is-echo"` en `OptionPicker`),
-y "Cambiar foto" y quitar se apoyan sobre la miniatura y aparecen al pasar. Esto último
+pasan por ahí porque `.panel` no existe en ellos. Tres cosas más viven ahí: los
+títulos de sección (Foto, Grilla, Ajustes) no se dibujan —los dividers alcanzan, y la fila
+cerrada de cada picker ya lleva su nombre— pero siguen en el documento para el lector de
+pantalla (`ds-sr`); el encabezado centrado de las tarjetas abiertas tampoco se dibuja; y
+"Cambiar foto" y quitar se apoyan sobre la miniatura y aparecen al pasar. Esto último
 solo con `(hover: hover) and (pointer: fine)`, no con el ancho: un iPad acostado pasa de
 720 px, recibe la columna, y un botón que solo existe con hover no se alcanza con el dedo.
 

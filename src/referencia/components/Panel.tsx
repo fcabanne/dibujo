@@ -342,8 +342,7 @@ export function Panel({
     content:
       gridPicker === 'tipo' ? (
         <OptionPicker
-          className="is-echo"
-          label={copy.grid.type}
+            label={copy.grid.type}
           value={grid.mode}
           columns={2}
           options={TYPE_OPTIONS}
@@ -382,7 +381,7 @@ export function Panel({
         <>
           {/* Tipo y Color abren una pantalla propia (`OptionPicker`) en vez de un
               menú: no hay diseño de un menú flotante en el archivo. */}
-          <Row label={copy.grid.type} echo>
+          <Row label={copy.grid.type}>
             <Dropdown
               label={copy.grid.type}
               value={TYPE_NAMES[grid.mode]}
@@ -452,7 +451,6 @@ export function Panel({
       <Hint>{copy.adjust.unsupported}</Hint>
     ) : adjustPicker ? (
       <OptionPicker
-        className="is-echo"
         label={copy.adjust.title}
         value={effects.mode}
         columns={2}
@@ -471,7 +469,7 @@ export function Panel({
       <>
         {/* Igual que Tipo/Color de la grilla: la fila cerrada lleva a una
             pantalla propia en vez de abrir un menú acá mismo. */}
-        <Row label={copy.adjust.title} echo>
+        <Row label={copy.adjust.title}>
           <Dropdown
             label={copy.adjust.title}
             value={ADJUST_NAMES[effects.mode]}

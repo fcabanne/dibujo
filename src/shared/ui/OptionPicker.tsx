@@ -22,8 +22,6 @@ export interface OptionPickerProps<T extends string> {
    * en vez de un valor cerrado.
    */
   trailing?: ReactNode
-  /** Para que quien lo usa lo acomode a su lugar: el diseño no dibuja variantes. */
-  className?: string
 }
 
 /**
@@ -40,10 +38,9 @@ export function OptionPicker<T extends string>({
   columns,
   onChange,
   trailing,
-  className,
 }: OptionPickerProps<T>) {
   return (
-    <div className={'ds-option-picker' + (className ? ` ${className}` : '')}>
+    <div className="ds-option-picker">
       <p className="ds-option-header">{label}</p>
       <div className={`ds-option-grid ds-option-grid--${columns}`}>
         {options.map((option, index) => (

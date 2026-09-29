@@ -262,11 +262,15 @@ body {
   height: 150px;
 }
 
-/* El título de la sección ya dice de qué se trata: si el primer control
-   repite su nombre, se calla y el control ocupa la fila entera. */
-.panel .field-row.is-echo .field-name,
-.panel .ds-option-picker.is-echo .ds-option-header {
-  display: none;
+/* Ni el título de la sección ni el encabezado centrado del picker se dibujan:
+   la fila cerrada ya lleva su nombre, y las tarjetas no necesitan uno arriba.
+   Siguen en el documento para el lector de pantalla. */
+.panel .ds-option-header {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 /* Cambiar foto y quitar, sobre la miniatura y solo al pasar. Con foco también:
