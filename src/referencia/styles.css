@@ -235,6 +235,73 @@ body {
   text-transform: uppercase;
 }
 
+/* --- la columna de escritorio, a su escala --------------------------
+   La interfaz del diseño está medida para un dedo: 48 px de alto, letras de
+   16 a 18. Con un mouse sobra. En la columna se redefinen los tokens de
+   tamaño y todo lo que cuelga de ellos —botones, filas, tarjetas, íconos—
+   se achica de una vez, sin tocar un solo componente. El celular y la
+   barra de abajo no pasan por acá: `.panel` no existe en ellos. */
+
+.panel {
+  --ds-text-label: 700 14px/normal var(--ds-font-mono);
+  --ds-text-control: 700 13px/normal var(--ds-font-mono);
+  --ds-text-field: 700 12px/1.25 var(--ds-font-mono);
+  --ds-text-value: 400 14px/1.25 var(--ds-font-mono);
+  --ds-text-meta: 700 11px/1.3 var(--ds-font-mono);
+  --ds-control-min: 38px;
+  --ds-control-sm: 32px;
+  --ds-control-field: 28px;
+  --ds-icon: 20px;
+}
+
+.panel .ds-option {
+  padding: 12px 8px;
+}
+
+.panel .thumb {
+  height: 150px;
+}
+
+/* El título de la sección ya dice de qué se trata: si el primer control
+   repite su nombre, se calla y el control ocupa la fila entera. */
+.panel .field-row.is-echo .field-name,
+.panel .ds-option-picker.is-echo .ds-option-header {
+  display: none;
+}
+
+/* Cambiar foto y quitar, sobre la miniatura y solo al pasar. Con foco también:
+   quien navega con el teclado tiene que poder llegar. */
+@media (hover: hover) and (pointer: fine) {
+  .panel .photo-actions {
+    position: absolute;
+    top: var(--ds-space-2);
+    right: var(--ds-space-2);
+    opacity: 0;
+    transition: opacity var(--ds-dur-fast) var(--ds-ease);
+  }
+
+  .panel .photo-actions .ds-button {
+    flex: none;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 var(--ds-space-4);
+  }
+
+  .panel .photo-actions .ds-icon-button {
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    background: var(--ds-accent-light);
+  }
+
+  .panel .thumb:hover ~ .photo-actions,
+  .panel .photo-actions:hover,
+  .panel .photo-actions:focus-within {
+    opacity: 1;
+  }
+}
+
 /* --- los controles de abajo, en pantalla angosta ------------------- */
 
 /* En el flujo, como antes: su alto propio es constante (relleno + la barra de
@@ -481,6 +548,13 @@ body {
   font: var(--ds-text-meta);
   font-style: normal;
   color: var(--ds-accent-dark);
+}
+
+.photo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
 }
 
 .photo-actions {

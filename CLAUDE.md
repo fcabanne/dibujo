@@ -534,6 +534,17 @@ sola vez** (el arreglo `sections` de `Panel.tsx`) y se acomodan de dos formas: c
 al costado, o barra de pestañas abajo al estilo de Lightroom. Si aparece un control
 nuevo, aparece en los dos lados solo.
 
+**La columna de escritorio tiene su propia escala.** El diseño está medido para un dedo
+(48 px de alto, letras de 16 a 18) y con un mouse sobra. En `.panel` se redefinen los
+tokens de tamaño (`--ds-text-*`, `--ds-control-*`, `--ds-icon`) y todo lo que cuelga de
+ellos se achica de una vez, sin tocar componentes; el celular y la barra de abajo no
+pasan por ahí porque `.panel` no existe en ellos. Dos cosas más viven ahí: cuando el
+primer control repite el título de la sección ("Grilla" sobre "Grilla", "Ajustes" sobre
+"Ajustes") se calla su nombre (`echo` en `Row`, `className="is-echo"` en `OptionPicker`),
+y "Cambiar foto" y quitar se apoyan sobre la miniatura y aparecen al pasar. Esto último
+solo con `(hover: hover) and (pointer: fine)`, no con el ancho: un iPad acostado pasa de
+720 px, recibe la columna, y un botón que solo existe con hover no se alcanza con el dedo.
+
 **Son dos preguntas distintas, no una.** El **ancho** (`useCompact`, 720 px) decide el
 acomodo: que el panel y la foto no entren juntos pasa igual en una ventana angosta de
 escritorio, sin ningún dedo cerca. El **puntero** (`(hover: none)`, `(pointer:

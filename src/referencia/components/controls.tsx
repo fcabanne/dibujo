@@ -28,9 +28,21 @@ export function Section({ title, children }: { title: string; children: ReactNod
  * un panel que se toca de corrido buscando un punto eso es lo que decide si
  * hay que scrollear entre dos perillas que se comparan entre sí.
  */
-export function Row({ label, children }: { label: string; children: ReactNode }) {
+export function Row({
+  label,
+  echo,
+  children,
+}: {
+  label: string
+  /**
+   * El nombre repite el título de la sección: en la columna de escritorio, que sí
+   * dibuja el título, se esconde y el control se queda con la fila entera.
+   */
+  echo?: boolean
+  children: ReactNode
+}) {
   return (
-    <div className="field-row">
+    <div className={'field-row' + (echo ? ' is-echo' : '')}>
       <span className="field-name">{label}</span>
       {children}
     </div>

@@ -213,7 +213,7 @@ export function Panel({
     label: copy.photo.tab,
     icon: <PhotoIcon />,
     content: (
-      <>
+      <div className="photo">
         <div className="thumb">
           {thumb && <img src={thumb} alt={reference?.name ?? copy.canvas.alt} />}
         </div>
@@ -230,9 +230,11 @@ export function Panel({
           </p>
         )}
 
-        {/* Cambiar y quitar van juntos y visibles. Antes el botón aparecía al
-            pasar el puntero por encima de la miniatura, y donde no hay puntero
-            —un celular— no había forma de llegar a él. */}
+        {/* Cambiar y quitar van juntos y visibles. Solo donde hay un puntero que
+            pasa por encima —la columna de escritorio— se apoyan sobre la
+            miniatura y aparecen al pasar (ver `.photo-actions`): donde no lo hay
+            —un celular, un iPad— quedan abajo, porque un botón que solo existe
+            con hover es inalcanzable con el dedo. */}
         <div className="photo-actions">
           <Button variant="quiet" icon={<UploadIcon />} onClick={onPickFile}>
             {copy.photo.change}
@@ -241,7 +243,7 @@ export function Panel({
             <CloseIcon />
           </IconButton>
         </div>
-      </>
+      </div>
     ),
   }
 
@@ -340,6 +342,7 @@ export function Panel({
     content:
       gridPicker === 'tipo' ? (
         <OptionPicker
+          className="is-echo"
           label={copy.grid.type}
           value={grid.mode}
           columns={2}
@@ -379,7 +382,7 @@ export function Panel({
         <>
           {/* Tipo y Color abren una pantalla propia (`OptionPicker`) en vez de un
               menú: no hay diseño de un menú flotante en el archivo. */}
-          <Row label={copy.grid.type}>
+          <Row label={copy.grid.type} echo>
             <Dropdown
               label={copy.grid.type}
               value={TYPE_NAMES[grid.mode]}
@@ -449,6 +452,7 @@ export function Panel({
       <Hint>{copy.adjust.unsupported}</Hint>
     ) : adjustPicker ? (
       <OptionPicker
+        className="is-echo"
         label={copy.adjust.title}
         value={effects.mode}
         columns={2}
@@ -467,7 +471,7 @@ export function Panel({
       <>
         {/* Igual que Tipo/Color de la grilla: la fila cerrada lleva a una
             pantalla propia en vez de abrir un menú acá mismo. */}
-        <Row label={copy.adjust.title}>
+        <Row label={copy.adjust.title} echo>
           <Dropdown
             label={copy.adjust.title}
             value={ADJUST_NAMES[effects.mode]}
