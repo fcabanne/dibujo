@@ -600,7 +600,8 @@ body {
   lleva de 0 a 1, así que no hay una transición aparte.
 */
 .hud-back,
-.hud-link {
+.hud-link,
+.hud-save {
   position: absolute;
   bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom, 0px));
   z-index: 6;
@@ -619,6 +620,28 @@ body {
   transition:
     background var(--ds-dur-fast) var(--ease),
     scale var(--ds-dur) var(--spring);
+}
+
+/* Descargar va arriba: baja al aparecer en vez de subir. */
+.hud-save {
+  top: var(--ds-space-5);
+  right: var(--ds-space-5);
+  bottom: auto;
+  width: var(--ds-control-min);
+  padding: 0;
+  cursor: pointer;
+  translate: 0 calc((1 - var(--presence, 0)) * -12px);
+}
+
+.hud-save svg {
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+  transition: opacity var(--ds-dur-fast) var(--ease);
+}
+
+/* Mientras se arma la imagen, el ícono se apaga: el clic llegó. */
+.hud-save[aria-busy] svg {
+  opacity: 0.4;
 }
 
 .hud-back {
@@ -642,26 +665,30 @@ body {
 }
 
 .overlay.is-away .hud-back,
-.overlay.is-away .hud-link {
+.overlay.is-away .hud-link,
+.overlay.is-away .hud-save {
   pointer-events: none;
 }
 
 @media (hover: hover) {
   .hud-back:hover,
-  .hud-link:hover {
+  .hud-link:hover,
+  .hud-save:hover {
     background: var(--ds-accent-light);
   }
 }
 
 .hud-back:active,
-.hud-link:active {
+.hud-link:active,
+.hud-save:active {
   scale: 0.94;
   transition-duration: var(--ds-dur-press);
   transition-timing-function: var(--ease);
 }
 
 .hud-back:focus-visible,
-.hud-link:focus-visible {
+.hud-link:focus-visible,
+.hud-save:focus-visible {
   outline: 2px solid var(--ds-white);
   outline-offset: 3px;
   opacity: 1;

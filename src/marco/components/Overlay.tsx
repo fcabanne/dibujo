@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon } from '../../shared/ui'
+import { BackIcon, DownloadIcon } from '../../shared/ui'
 import {
   FRAME_PROFILES,
   MOLDING_FAMILIES,
@@ -60,7 +60,12 @@ interface Props {
   onPreview: (action: Action | null) => void
   /** Vuelve a la pantalla de inicio, sin tocar el enmarcado. */
   onRemove: () => void
+  /** Descargar la foto del cuadro colgado. */
+  onSave: () => Promise<void>
 }
+
+/** Lo que se lee el aviso de que no se pudo descargar. */
+const SAVE_ERROR_MS = 3600
 
 /** Un abanico ya resuelto: qué es, hacia dónde se abre y de dónde parte. */
 interface Fan {
@@ -106,6 +111,7 @@ export function Overlay({
   onOpenChange,
   onPreview,
   onRemove,
+  onSave,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const bubbleRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -116,6 +122,9 @@ export function Overlay({
   const fileRef = useRef<HTMLInputElement>(null)
   const backRef = useRef<HTMLButtonElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
+  const saveRef = useRef<HTMLButtonElement>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const presence = useRef(0)
   const litRef = useRef<HTMLDivElement>(null)
   const leaderRef = useRef<SVGSVGElement>(null)
@@ -145,6 +154,19 @@ export function Overlay({
   const leaveTimer = useRef(0)
   const lingerTimer = useRef(0)
 
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      await onSave()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : copy.marco.downloadFailed)
+      window.setTimeout(() => setSaveError(null), SAVE_ERROR_MS)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // La cartela tarda más en irse que las burbujas: se lee, no se opera.
   useEffect(() => {
     if (awake) {
@@ -172,7 +194,7 @@ export function Overlay({
     const o = scene.rects.outer
     const avoid: Box[] = [{ x: o.x, y: o.y, w: o.w, h: o.h }]
     const root = rootRef.current?.getBoundingClientRect()
-    for (const pill of [backRef.current, linkRef.current]) {
+    for (const pill of [backRef.current, linkRef.current, saveRef.current]) {
       const r = pill?.getBoundingClientRect()
       if (r && root) avoid.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height })
     }
@@ -706,6 +728,19 @@ export function Overlay({
       >
         {copy.welcome.suggestions}
       </a>
+      {/* Descargar, arriba a la derecha y solo: es de otra conversación que las
+          burbujas, y se va con ellas cuando queda el cuadro solo. */}
+      <button
+        ref={saveRef}
+        type="button"
+        className="hud-save"
+        onClick={save}
+        aria-label={copy.marco.download}
+        aria-busy={saving || undefined}
+      >
+        <DownloadIcon />
+      </button>
+      {saveError && <div className="canvas-error">{saveError}</div>}
 
       {/* Cargar el dibujo se pide sobre el dibujo: es donde mirás cuando querés
           reemplazarlo, y evita ir a buscarlo dentro de un menú. */}
