@@ -14,10 +14,16 @@ export interface Tilt {
   roll: number
 }
 
-/** Hasta dónde sigue el cuadro a la plomada: más es ya dar vuelta el teléfono. */
-const ROLL_LIMIT = (12 * Math.PI) / 180
+/**
+ * Cuánto de la plomada sigue el cuadro: un cuarto. Siguiéndola entera —girar el
+ * teléfono 10° y verlo girar 10°— era demasiado; un cuarto se lee como peso, no
+ * como un cuadro que se cae.
+ */
+const ROLL_FOLLOW = 0.25
+/** Hasta dónde llega a inclinarse en la pantalla. */
+const ROLL_LIMIT = (4 * Math.PI) / 180
 /** Lo que el sensor tiembla quieto, en radianes: por debajo, no se mueve nada. */
-const ROLL_STEP = (0.3 * Math.PI) / 180
+const ROLL_STEP = (0.1 * Math.PI) / 180
 
 /**
  * iOS informa la gravedad tal cual —derecho, y vale −9,8—; Android, como la pide la
@@ -72,7 +78,7 @@ export function useTilt(enabled: boolean): MutableRefObject<Tilt> {
       let target = Math.atan2(GRAVITY_SIGN * x, -GRAVITY_SIGN * y)
       // Más de 45° ya no es inclinar: es dar vuelta el teléfono, o una lectura rara.
       if (Math.abs(target) > Math.PI / 4) target = 0
-      target *= Math.min(1, Math.max(0, (inPlane - 0.25) / 0.35))
+      target *= ROLL_FOLLOW * Math.min(1, Math.max(0, (inPlane - 0.25) / 0.35))
       target = Math.max(-ROLL_LIMIT, Math.min(ROLL_LIMIT, target))
       roll += (target - roll) * 0.25
       // Cuantizado: el sensor tiembla quieto, y cada temblor sería un cuadro más que pintar.
