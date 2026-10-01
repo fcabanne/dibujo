@@ -1,4 +1,4 @@
-import { composeRects, computeLayout, type SceneRects } from '../domain/geometry'
+import { composeRects, computeLayout, layoutFromDims, type Dims, type SceneRects } from '../domain/geometry'
 import type { AppState, Layout } from '../types'
 import { drawArtwork } from './artwork'
 import { drawGlassClips } from './clips'
@@ -7,6 +7,7 @@ import { drawGlass, drawGlassEdge } from './glass'
 import { REST_LIGHT, type Light } from './light'
 import { drawMat } from './mat'
 import { drawCastShadow, standoff } from './shadow'
+import { GONE } from '../physics/body'
 import { applyObjectTransform, isRest, objectLight, REST_POSE, wallShift, type Pose } from './pose'
 import { drawObjectFalloff, drawWall } from './wall'
 
@@ -25,6 +26,11 @@ export interface SceneParams {
   anchor?: { x: number; y: number }
   /** Cuánto se apartó el cuadro de su reposo. Sin ella, cuelga quieto. */
   pose?: Pose
+  /**
+   * Las medidas tal como se ven, si no son las del estado: el cuerpo las lleva con
+   * resortes hacia las de verdad. Sin ellas se dibuja el estado tal cual.
+   */
+  dims?: Dims
 }
 
 export interface SceneResult {
@@ -46,7 +52,7 @@ export function renderScene(
 ): SceneResult {
   const { width, height, pxPerCm, parallax, anchor } = params
   const pose = params.pose ?? REST_POSE
-  const layout = computeLayout(state)
+  const layout = params.dims ? layoutFromDims(params.dims) : computeLayout(state)
   const light = REST_LIGHT
   const rects = composeRects(layout, { width, height }, pxPerCm, anchor)
   const { outer, glass, sight } = rects
@@ -65,9 +71,13 @@ export function renderScene(
   //    sombra y el canto se abre la rendija que dice que el cuadro está colgado.
   drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color)
 
-  const hasFrame = state.frame.width > 0
+  // Lo que existe es lo que se ve: una moldura que se está yendo a cero se sigue
+  // dibujando hasta que no queda nada de ella.
   const mat = state.mats[0]
-  const hasMat = Boolean(mat?.enabled)
+  const hasFrame = params.dims ? params.dims.frame > GONE : state.frame.width > 0
+  const hasMat = Boolean(mat) && (params.dims ? params.dims.mat > GONE : Boolean(mat?.enabled))
+  // Los ganchitos aparecen recién cuando la moldura terminó de irse.
+  const clipped = !hasFrame && state.frame.width === 0
 
   // De acá en más se dibuja el objeto, en su espacio: si el cuadro se balancea o se
   // despega, todo lo suyo lo acompaña. La luz y el ojo se llevan a ese espacio,
@@ -95,7 +105,7 @@ export function renderScene(
   // 7. Sombra del rebaje, o el canto del vidrio y los ganchitos si no hay marco
   if (hasFrame) {
     drawRebateShadow(ctx, glass, depthPx, objLight, hasMat ? mat.color : null)
-  } else {
+  } else if (clipped) {
     if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, objLight)
     drawGlassClips(ctx, glass, pxPerCm, objLight, light)
   }

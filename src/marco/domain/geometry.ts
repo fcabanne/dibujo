@@ -23,31 +23,56 @@ export const LIMITS = {
   artSide: { min: 5, max: 200 },
 } as const
 
-/** Resuelve toda la geometría del cuadro, en cm, desde afuera hacia adentro. */
-export function computeLayout(state: AppState): Layout {
+/**
+ * Las cuatro medidas que deciden todo el cuadro, en cm y como cuelga (con la obra ya
+ * girada): la obra, el passe-partout y la moldura. Cero es "no hay".
+ *
+ * Existen aparte del estado porque lo que se ve no siempre es lo que se encarga: el
+ * estado guarda la medida redondeada, y el lienzo dibuja una que la persigue con un
+ * resorte. Las dos pasan por la misma cuenta (`layoutFromDims`), así que no pueden
+ * desencontrarse.
+ */
+export interface Dims {
+  artW: number
+  artH: number
+  mat: number
+  frame: number
+}
+
+export function dimsOf(state: AppState): Dims {
   const { artwork, frame } = state
   const rotated = artwork.rotation === 90 || artwork.rotation === 270
-
-  const art: Size = rotated
-    ? { w: artwork.size.h, h: artwork.size.w }
-    : { w: artwork.size.w, h: artwork.size.h }
-
   const mat = state.mats[0]
-  const hasMat = Boolean(mat?.enabled)
+  return {
+    artW: rotated ? artwork.size.h : artwork.size.w,
+    artH: rotated ? artwork.size.w : artwork.size.h,
+    mat: mat?.enabled ? mat.width : 0,
+    frame: frame.width,
+  }
+}
+
+/**
+ * Resuelve toda la geometría del cuadro, en cm, desde afuera hacia adentro.
+ *
+ * Con un passe-partout de verdad (desde 1 cm) y una moldura de verdad la cuenta es la
+ * de siempre. Por debajo, el labio que pisa la obra y el espesor se achican con la
+ * medida: un passe-partout que se va a cero se encoge hasta desaparecer, en vez de
+ * cerrar de golpe la ventana medio centímetro por lado.
+ */
+export function layoutFromDims(d: Dims): Layout {
+  const art: Size = { w: d.artW, h: d.artH }
+  const mat = Math.max(0, d.mat)
+  const frame = Math.max(0, d.frame)
 
   // El passe-partout tapa MAT_OVERLAP por lado, así que la luz es menor que la obra.
-  const sight: Size = hasMat
-    ? { w: art.w - 2 * MAT_OVERLAP, h: art.h - 2 * MAT_OVERLAP }
-    : { ...art }
+  const overlap = MAT_OVERLAP * Math.min(1, mat / LIMITS.matWidth.min)
+  const sight: Size = { w: art.w - 2 * overlap, h: art.h - 2 * overlap }
+  const glass: Size = { w: sight.w + 2 * mat, h: sight.h + 2 * mat }
+  const outer: Size = { w: glass.w + 2 * frame, h: glass.h + 2 * frame }
 
-  const glass: Size = hasMat
-    ? { w: sight.w + 2 * mat.width, h: sight.h + 2 * mat.width }
-    : { ...art }
-
-  const outer: Size = {
-    w: glass.w + 2 * frame.width,
-    h: glass.h + 2 * frame.width,
-  }
+  // Sin marco queda el sándwich con ganchitos; el espesor pasa de uno al otro en el
+  // primer medio centímetro de moldura.
+  const t = Math.min(1, frame / 0.5)
 
   return {
     art,
@@ -55,8 +80,12 @@ export function computeLayout(state: AppState): Layout {
     glass,
     outer,
     diagonal: Math.hypot(outer.w, outer.h),
-    depth: frame.width > 0 ? frame.depth : CLIPPED_DEPTH,
+    depth: CLIPPED_DEPTH + (FRAME_DEPTH - CLIPPED_DEPTH) * t,
   }
+}
+
+export function computeLayout(state: AppState): Layout {
+  return layoutFromDims(dimsOf(state))
 }
 
 /** Centra un tamaño en cm alrededor de un punto en px. */

@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import {
   clamp,
   computeLayout,
+  layoutFromDims,
   fitScale,
   LIMITS,
   snap,
   type SceneRects,
 } from '../domain/geometry'
 import { loadArtworkFile } from '../../shared/imageFile'
-import { easeOut } from '../../shared/motion'
+import { easeOut, reducedMotionNow } from '../../shared/motion'
 import {
   draggableTarget,
   grabDistance,
@@ -20,6 +21,7 @@ import {
 import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
+import { createBody, shownDims, stepBody } from '../physics/body'
 import { REST_POSE, type Pose } from '../render/pose'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
@@ -188,22 +190,27 @@ function dragWidth(
   drag: DragState,
   p: Point,
   rects: SceneRects,
+  current: AppState,
   dispatch: (action: Action) => void,
 ) {
   const dist = grabDistance(p, rects)
   const delta = (dist - drag.startDist) / drag.frozenScale
   const raw = drag.startWidth + delta
 
+  // Solo se despacha cuando la medida redondeada cambia: entre muesca y muesca no
+  // pasa nada, y el resto de la app no tiene por qué volver a dibujarse.
   if (drag.target === 'frame') {
     const width = clamp(snap(raw, LIMITS.frameWidth.step), LIMITS.frameWidth.min, LIMITS.frameWidth.max)
-    dispatch({ type: 'frame/patch', patch: { width } })
+    if (width !== current.frame.width) dispatch({ type: 'frame/patch', patch: { width } })
   } else {
     // Por debajo del mínimo el passe-partout no se encoge: se apaga.
     const width = clamp(snap(raw, LIMITS.matWidth.step), 0, LIMITS.matWidth.max)
-    dispatch({
-      type: 'mat/patch',
-      patch: width < LIMITS.matWidth.min ? { enabled: false } : { enabled: true, width },
-    })
+    const mat = current.mats[0]
+    if (width < LIMITS.matWidth.min) {
+      if (mat?.enabled) dispatch({ type: 'mat/patch', patch: { enabled: false } })
+    } else if (!mat?.enabled || mat.width !== width) {
+      dispatch({ type: 'mat/patch', patch: { enabled: true, width } })
+    }
   }
 }
 
@@ -238,6 +245,10 @@ export function Canvas({
   const viewZoomRef = useRef(1)
   /** Cuánto se apartó el cuadro de su reposo. */
   const poseRef = useRef<Pose>({ ...REST_POSE })
+  /** El cuadro como cosa: las medidas que se ven, persiguiendo a las del estado. */
+  const bodyRef = useRef(createBody(state))
+  /** El cursor que se puso por última vez, para no tocar el estilo en cada cuadro. */
+  const cursorRef = useRef('')
 
   // --- solo en el celular ---------------------------------------------------
   const tilt = useTilt(compact)
@@ -318,10 +329,17 @@ export function Canvas({
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
         const current = stateRef.current
-        const layout = computeLayout(current)
         const touch = compactRef.current
         const drag = dragRef.current
         const k = 1 - Math.exp(-dt / 70)
+
+        // El cuerpo persigue al estado. En el celular llega en el acto: ahí la capa
+        // de controles todavía no sabe acompañarlo.
+        const body = bodyRef.current
+        body.dragging = Boolean(drag)
+        stepBody(body, current, dt, touch || reducedMotionNow())
+        const dims = shownDims(body)
+        const layout = layoutFromDims(dims)
 
         let labelMode: FreeArea['label'] = null
 
@@ -460,7 +478,7 @@ export function Canvas({
         }
 
         const t0 = PROBE.perf ? performance.now() : 0
-        const { layout: drawn, rects, light } = renderScene(ctx, current, imageRef.current, {
+        const { rects, light } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
           height: box.height,
           pxPerCm: scaleRef.current,
@@ -468,6 +486,7 @@ export function Canvas({
           parallax: par,
           anchor: touch && anchorRef.current ? anchorRef.current : undefined,
           pose: poseRef.current,
+          dims,
         })
         if (PROBE.perf) {
           perfRing.push(performance.now() - t0)
@@ -535,7 +554,16 @@ export function Canvas({
           awake: sceneRef.current.awake,
           label,
         }
-        onLayoutRef.current(drawn)
+        // La cartela recibe las medidas de verdad, no las que van llegando.
+        onLayoutRef.current(computeLayout(current))
+
+        if (!touch) {
+          const cursor = dragRef.current ? 'grabbing' : draggableTarget(zone) ? 'grab' : 'default'
+          if (cursor !== cursorRef.current) {
+            wrap.style.cursor = cursor
+            cursorRef.current = cursor
+          }
+        }
       }
 
       frame = requestAnimationFrame(loop)
@@ -546,6 +574,7 @@ export function Canvas({
       ;(window as unknown as { __marco: unknown }).__marco = {
         scene: sceneRef,
         pose: poseRef,
+        body: bodyRef,
         perf: perfReport,
         perfReset: () => (perfRing.length = 0),
       }
@@ -588,7 +617,7 @@ export function Canvas({
       const drag = dragRef.current
       const rects = sceneRef.current.rects
       if (!drag || !rects) return
-      dragWidth(drag, { x, y }, rects, dispatchRef.current)
+      dragWidth(drag, { x, y }, rects, stateRef.current, dispatchRef.current)
     }
 
     const onUp = () => {
@@ -724,7 +753,7 @@ export function Canvas({
       if (g.mode === 'band') {
         const drag = dragRef.current
         const rects = sceneRef.current.rects
-        if (drag && rects) dragWidth(drag, p, rects, dispatchRef.current)
+        if (drag && rects) dragWidth(drag, p, rects, stateRef.current, dispatchRef.current)
       } else if (g.mode === 'look') {
         // Relativo a donde apoyó: la luz arranca quieta y se corre con el dedo, en
         // vez de saltar hacia el lugar de la pantalla donde cayó el toque.
@@ -846,20 +875,10 @@ export function Canvas({
     [onArtworkDropped],
   )
 
-  const zone = sceneRef.current.zone
-  const cursor = compact
-    ? undefined
-    : dragRef.current
-      ? 'grabbing'
-      : draggableTarget(zone)
-        ? 'grab'
-        : 'default'
-
   return (
     <div
       ref={wrapRef}
       className={'canvas-wrap' + (dragOver ? ' is-dragging' : '')}
-      style={{ cursor }}
       onPointerDown={compact ? onTouchDown : onPointerDown}
       onPointerMove={compact ? onTouchMove : undefined}
       onPointerUp={compact ? (e) => onTouchEnd(e) : undefined}
