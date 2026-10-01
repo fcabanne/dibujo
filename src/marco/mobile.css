@@ -248,6 +248,29 @@
   box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
 }
 
+/* Descargar, arriba a la derecha y en su pastilla: abajo, al lado de volver y
+   de las cinco pestañas, no entra en un teléfono común. */
+.m-save {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + var(--ds-space-4));
+  right: calc(env(safe-area-inset-right, 0px) + var(--ds-space-4));
+  z-index: 3;
+  pointer-events: auto;
+  transition:
+    opacity var(--ds-dur) var(--ds-ease),
+    translate var(--ds-dur) var(--ds-ease);
+}
+
+.m-save .ds-icon-button svg {
+  stroke-width: 2;
+  transition: opacity var(--ds-dur-fast) var(--ds-ease);
+}
+
+/* Mientras se arma la imagen, el ícono se apaga: el toque llegó. */
+.m-save [aria-busy] svg {
+  opacity: 0.4;
+}
+
 /* Los íconos propios de Enmarcado se dibujaron con un trazo de 1,7. En la barra
    van con el del sistema, para que se lean de la misma familia que volver. */
 .m-bar .ds-icon-button svg {
@@ -756,6 +779,14 @@
 
   .m-drawer.is-open {
     max-height: calc(100dvh - 96px - env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Acostado, el cajón sube por la derecha hasta arriba y descargar quedaría
+     encima: se va mientras hay un cajón abierto, y vuelve al cerrarlo. */
+  .m-ui.has-tab .m-save {
+    opacity: 0;
+    translate: 0 -8px;
+    pointer-events: none;
   }
 }
 

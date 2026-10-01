@@ -133,3 +133,11 @@ export function glossOf(finish: string): number {
   if (finish === 'grained') return 0.28
   return 0.16
 }
+
+/**
+ * La altura del frente de la moldura en `t` (0 canto exterior, 1 interior), de 0 a 1.
+ * La usa el render 3D para levantar el perfil como una pieza de verdad.
+ */
+export function profileHeight(profile: FrameProfile, t: number): number {
+  return SHAPES[profile](Math.min(1, Math.max(0, t)))
+}

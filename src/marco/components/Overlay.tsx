@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon } from '../../shared/ui'
+import { BackIcon, DownloadIcon, SpeakerIcon, SpeakerOffIcon } from '../../shared/ui'
+import { setMuted, useMuted } from '../sound/engine'
+import { reducedMotionNow, settleSpring, stepSpring, type Spring, type SpringParams } from '../../shared/motion'
 import {
   FRAME_PROFILES,
   MOLDING_FAMILIES,
@@ -60,7 +62,12 @@ interface Props {
   onPreview: (action: Action | null) => void
   /** Vuelve a la pantalla de inicio, sin tocar el enmarcado. */
   onRemove: () => void
+  /** Descargar la foto del cuadro colgado. */
+  onSave: () => Promise<void>
 }
+
+/** Lo que se lee el aviso de que no se pudo descargar. */
+const SAVE_ERROR_MS = 3600
 
 /** Un abanico ya resuelto: qué es, hacia dónde se abre y de dónde parte. */
 interface Fan {
@@ -80,6 +87,10 @@ const LEAVE_MS = 140
 const LINGER_MS = 260
 /** La cartela se queda dos segundos más que el resto del HUD. */
 const LABEL_GRACE_MS = 2000
+
+/** Las burbujas y la cartela siguen al cuadro con resorte: llegan un poco después que él. */
+const BUBBLE_FOLLOW: SpringParams = { response: 0.24, damping: 0.85 }
+const LABEL_FOLLOW: SpringParams = { response: 0.3, damping: 0.85 }
 /** A qué distancia del puntero empieza a despertar una burbuja, y a cuál llega entera. */
 const NEAR = 40
 const FAR = 200
@@ -106,16 +117,24 @@ export function Overlay({
   onOpenChange,
   onPreview,
   onRemove,
+  onSave,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const bubbleRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const gizmoRef = useRef<HTMLDivElement>(null)
   const gizmoValueRef = useRef<HTMLSpanElement>(null)
+  /** La medida de la última vez, para notar cuándo la banda cae en otra muesca. */
+  const lastCmRef = useRef<number | null>(null)
   const labelRef = useRef<HTMLDivElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const backRef = useRef<HTMLButtonElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
+  const soundRef = useRef<HTMLButtonElement>(null)
+  const muted = useMuted()
+  const saveRef = useRef<HTMLButtonElement>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const presence = useRef(0)
   const litRef = useRef<HTMLDivElement>(null)
   const leaderRef = useRef<SVGSVGElement>(null)
@@ -137,6 +156,21 @@ export function Overlay({
   const fanRef = useRef(fan)
   fanRef.current = fan
   const anchorPos = useRef<Partial<Record<Category, Point>>>({})
+  /** Lo que acompaña al cuadro con resorte: dónde está cada cosa y a qué velocidad va. */
+  const followers = useRef(new Map<string, { x: Spring; y: Spring }>())
+  const follow = (key: string, to: { x: number; y: number }, params: SpringParams, dt: number) => {
+    let f = followers.current.get(key)
+    if (!f || reducedMotionNow()) {
+      f = { x: { x: to.x, v: 0 }, y: { x: to.y, v: 0 } }
+      followers.current.set(key, f)
+      return to
+    }
+    stepSpring(f.x, to.x, params, dt)
+    stepSpring(f.y, to.y, params, dt)
+    settleSpring(f.x, to.x, 0.05)
+    settleSpring(f.y, to.y, 0.05)
+    return { x: f.x.x, y: f.y.x }
+  }
   const pointer = useRef<Point | null>(null)
   const prox = useRef<Record<string, number>>({})
   /** Quién abrió la categoría abierta: si no fue el puntero, queda fija. */
@@ -144,6 +178,19 @@ export function Overlay({
   const intentTimer = useRef(0)
   const leaveTimer = useRef(0)
   const lingerTimer = useRef(0)
+
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      await onSave()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : copy.marco.downloadFailed)
+      window.setTimeout(() => setSaveError(null), SAVE_ERROR_MS)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // La cartela tarda más en irse que las burbujas: se lee, no se opera.
   useEffect(() => {
@@ -172,7 +219,7 @@ export function Overlay({
     const o = scene.rects.outer
     const avoid: Box[] = [{ x: o.x, y: o.y, w: o.w, h: o.h }]
     const root = rootRef.current?.getBoundingClientRect()
-    for (const pill of [backRef.current, linkRef.current]) {
+    for (const pill of [backRef.current, linkRef.current, soundRef.current, saveRef.current]) {
       const r = pill?.getBoundingClientRect()
       if (r && root) avoid.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height })
     }
@@ -369,7 +416,9 @@ export function Overlay({
         for (const { id } of CATEGORIES) {
           const node = bubbleRefs.current[id]
           if (!node) continue
-          const a = anchors[id]
+          // Cada burbuja es una cosa aparte que acompaña al cuadro: lo sigue con su
+          // propio resorte, un pelo atrasada, en vez de ir pegada a él.
+          const a = follow(`bubble-${id}`, anchors[id], BUBBLE_FOLLOW, dt)
           anchorPos.current[id] = a
           node.style.transform = `translate(${a.x}px, ${a.y}px)`
 
@@ -395,7 +444,10 @@ export function Overlay({
           // Lo que ocupa a la derecha del punto de anclaje: el papel entero, menos su relleno.
           const width = current === 'artwork' ? 316 : 226
           const x = Math.min(rects.outer.x + rects.outer.w + 46, v.w - width - 16)
-          labelRef.current.style.transform = `translate(${x}px, ${rects.outer.y + rects.outer.h}px)`
+          // Cuelga en la pared, al lado del cuadro: cuando el cuadro crece, el cuadro la
+          // corre, y ella llega un poco después, como algo que se empujó.
+          const at = follow('label', { x, y: rects.outer.y + rects.outer.h }, LABEL_FOLLOW, dt)
+          labelRef.current.style.transform = `translate(${at.x}px, ${at.y}px)`
         }
 
         // Solo cuando cruza el umbral: un setState por frame sería un re-render por frame.
@@ -431,6 +483,12 @@ export function Overlay({
 
         if (lit) lit.classList.toggle('is-on', part !== null && !scene.dragging)
         if (leader) leader.classList.toggle('is-on', part !== null && !scene.dragging)
+        // Con el cuadro fuera de su reposo un aro derecho mentiría: se aparta hasta que
+        // vuelva. Va en una clase aparte para no repetir el destello de aparecer.
+        const tilted = Boolean(scene.tilted)
+        lit?.classList.toggle('is-tilted', tilted)
+        leader?.classList.toggle('is-tilted', tilted)
+        gizmoRef.current?.classList.toggle('is-tilted', tilted)
 
         if (part && current) {
           const { band, hole } = part
@@ -489,14 +547,23 @@ export function Overlay({
 
         // Los centímetros aparecen solo mientras arrastrás: mientras probás mirás el
         // cuadro, y cuando decidís querés el número.
+        // Cada muesca late: el número y las flechas se agrandan un instante y vuelven,
+        // como el clic que se oye. Se reinicia la animación sacando y poniendo la clase.
+        if (gizmo && scene.dragCm !== null && lastCmRef.current !== null && scene.dragCm !== lastCmRef.current) {
+          gizmo.classList.remove('is-click')
+          void gizmo.offsetWidth
+          gizmo.classList.add('is-click')
+        }
+        lastCmRef.current = scene.dragCm
+
         if (gizmoValueRef.current) {
           gizmoValueRef.current.textContent =
             scene.dragCm === null
               ? ''
               : scene.dragCm === 0
                 ? scene.dragging === 'frame'
-                  ? 'sin marco'
-                  : 'sin passe-partout'
+                  ? copy.marco.noFrame.toLowerCase()
+                  : copy.marco.noMat.toLowerCase()
                 : cmLabel(scene.dragCm)
         }
       }
@@ -698,14 +765,41 @@ export function Overlay({
       >
         <BackIcon />
       </button>
-      <a
-        ref={linkRef}
-        className="hud-link"
-        href={copy.welcome.suggestionsUrl}
-        onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+      {/* El sonido se calla al lado de las sugerencias, en su propia pastilla: es de
+          otra conversación que el resto de los controles. */}
+      <div className="hud-corner">
+        <button
+          ref={soundRef}
+          type="button"
+          className="hud-sound"
+          aria-label={copy.marco.sound}
+          aria-pressed={!muted}
+          onClick={() => setMuted(!muted)}
+        >
+          {muted ? <SpeakerOffIcon /> : <SpeakerIcon />}
+        </button>
+        <a
+          ref={linkRef}
+          className="hud-link"
+          href={copy.welcome.suggestionsUrl}
+          onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+        >
+          {copy.welcome.suggestions}
+        </a>
+      </div>
+      {/* Descargar, arriba a la derecha y solo: es de otra conversación que las
+          burbujas, y se va con ellas cuando queda el cuadro solo. */}
+      <button
+        ref={saveRef}
+        type="button"
+        className="hud-save"
+        onClick={save}
+        aria-label={copy.marco.download}
+        aria-busy={saving || undefined}
       >
-        {copy.welcome.suggestions}
-      </a>
+        <DownloadIcon />
+      </button>
+      {saveError && <div className="canvas-error">{saveError}</div>}
 
       {/* Cargar el dibujo se pide sobre el dibujo: es donde mirás cuando querés
           reemplazarlo, y evita ir a buscarlo dentro de un menú. */}

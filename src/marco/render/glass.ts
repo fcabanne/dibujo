@@ -25,9 +25,13 @@ export function drawGlass(
   ctx: CanvasRenderingContext2D,
   rect: Rect,
   type: GlassType,
-  dpr: number,
   light: Light,
   parallax: { x: number; y: number },
+  /**
+   * La transformación de la pantalla, sin el cuadro. El reflejo es del cuarto: si el
+   * cuadro se balancea, el vidrio gira debajo de un reflejo que se queda quieto.
+   */
+  world?: DOMMatrix,
 ) {
   if (type === 'none') return
 
@@ -37,7 +41,7 @@ export function drawGlass(
   ctx.clip()
 
   if (type === 'matte') {
-    drawDiffusion(ctx, rect, dpr)
+    drawDiffusion(ctx, rect)
     ctx.fillStyle = 'rgba(236, 239, 242, 0.11)'
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
   }
@@ -51,50 +55,63 @@ export function drawGlass(
   if (type === 'clear') {
     ctx.fillStyle = 'rgba(196, 224, 214, 0.05)'
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
-    drawReflection(ctx, rect, light, parallax)
+    // El clip del vidrio, puesto en el espacio del cuadro, sigue valiendo.
+    if (world) ctx.setTransform(world)
+    drawReflection(ctx, rect, light, parallax, world ? 1.6 : 0)
   }
 
   ctx.restore()
 }
 
-/** Relee el área ya compuesta y la vuelve a pegar borrosa: difusión real. */
-function drawDiffusion(ctx: CanvasRenderingContext2D, rect: Rect, dpr: number) {
-  const dw = Math.max(1, Math.round(rect.w * dpr))
-  const dh = Math.max(1, Math.round(rect.h * dpr))
+/**
+ * Relee el área ya compuesta y la vuelve a pegar borrosa: difusión real.
+ *
+ * Trabaja en píxeles del dispositivo, a través de la transformación que tenga el
+ * contexto: si el cuadro está girado, lo que hay detrás del vidrio es la caja que
+ * ocupa en pantalla, no el rectángulo derecho. El recorte del vidrio, puesto antes,
+ * se encarga de que lo pegado no se salga.
+ */
+function drawDiffusion(ctx: CanvasRenderingContext2D, rect: Rect) {
+  const m = ctx.getTransform()
+  const corners = [
+    m.transformPoint(new DOMPoint(rect.x, rect.y)),
+    m.transformPoint(new DOMPoint(rect.x + rect.w, rect.y)),
+    m.transformPoint(new DOMPoint(rect.x + rect.w, rect.y + rect.h)),
+    m.transformPoint(new DOMPoint(rect.x, rect.y + rect.h)),
+  ]
+  const minX = Math.min(...corners.map((p) => p.x))
+  const minY = Math.min(...corners.map((p) => p.y))
+  const boxW = Math.max(...corners.map((p) => p.x)) - minX
+  const boxH = Math.max(...corners.map((p) => p.y)) - minY
+  const dw = Math.max(1, Math.round(boxW))
+  const dh = Math.max(1, Math.round(boxH))
   const sctx = getScratch(dw, dh)
   if (!sctx) return
 
   sctx.clearRect(0, 0, dw, dh)
-  sctx.drawImage(
-    ctx.canvas,
-    Math.round(rect.x * dpr),
-    Math.round(rect.y * dpr),
-    dw,
-    dh,
-    0,
-    0,
-    dw,
-    dh,
-  )
+  sctx.drawImage(ctx.canvas, Math.round(minX), Math.round(minY), dw, dh, 0, 0, dw, dh)
 
-  const radius = Math.min(rect.w, rect.h) * 0.006
+  // El radio del filtro no pasa por la transformación; el del respaldo sí.
+  const scale = Math.hypot(m.a, m.b) || 1
+  const radius = Math.min(rect.w, rect.h) * 0.0035
 
   ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.globalAlpha = 0.75
   if (canvasFilterSupported()) {
     ctx.filter = 'blur(' + radius.toFixed(2) + 'px)'
-    ctx.drawImage(sctx.canvas, rect.x, rect.y, rect.w, rect.h)
+    ctx.drawImage(sctx.canvas, minX, minY, boxW, boxH)
   } else {
     // Sin filtro (Safari): achicar y volver a agrandar. El suavizado del reescalado
     // es un desenfoque barato, y al radio chico del vidrio mate no se le nota la
     // diferencia con el gaussiano.
-    const shrink = Math.max(1.5, radius * dpr * 1.4)
+    const shrink = Math.max(1.5, radius * scale * 1.4)
     const small = getSmall(Math.max(1, Math.round(dw / shrink)), Math.max(1, Math.round(dh / shrink)))
     if (small) {
       small.imageSmoothingQuality = 'high'
       small.drawImage(sctx.canvas, 0, 0, small.canvas.width, small.canvas.height)
       ctx.imageSmoothingQuality = 'high'
-      ctx.drawImage(small.canvas, rect.x, rect.y, rect.w, rect.h)
+      ctx.drawImage(small.canvas, minX, minY, boxW, boxH)
     }
   }
   ctx.restore()
@@ -172,6 +189,8 @@ function drawReflection(
   rect: Rect,
   light: Light,
   parallax: { x: number; y: number },
+  /** Cuánto pintar de más alrededor, por si el vidrio está girado bajo el reflejo. */
+  pad = 0,
 ) {
   // El reflejo cae del lado opuesto a la fuente, como en un espejo, y el puntero
   // lo corre mucho más que a la luz.
@@ -200,8 +219,10 @@ function drawReflection(
   g.addColorStop(0.66, 'rgba(255, 255, 255, 0.12)')
   g.addColorStop(0.78, 'rgba(80, 86, 96, 0.06)')
   g.addColorStop(1, 'rgba(80, 86, 96, 0.12)')
+  const px = rect.w * pad
+  const py = rect.h * pad
   ctx.fillStyle = g
-  ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+  ctx.fillRect(rect.x - px, rect.y - py, rect.w + 2 * px, rect.h + 2 * py)
 
   // Brillo concentrado del lado de la fuente.
   const hotX = rect.x + rect.w * (0.5 - light.x * 0.34 - parallax.x * 0.4)
@@ -210,5 +231,5 @@ function drawReflection(
   hot.addColorStop(0, 'rgba(255, 253, 246, 0.1)')
   hot.addColorStop(1, 'rgba(255, 255, 255, 0)')
   ctx.fillStyle = hot
-  ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+  ctx.fillRect(rect.x - px, rect.y - py, rect.w + 2 * px, rect.h + 2 * py)
 }
