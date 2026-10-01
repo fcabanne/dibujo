@@ -165,3 +165,74 @@ export function roomIR(
   }
   return [make(101), make(202)]
 }
+
+export interface Resonance {
+  /** Dónde resuena, en Hz. */
+  f: number
+  /** Qué tan angosta es la resonancia: más alto, más tiempo canta. */
+  q: number
+  amp: number
+}
+
+export interface KnockRecipe {
+  /** Las resonancias del cuerpo que se golpea. */
+  resonances: Resonance[]
+  /** Cuánto dura el golpe que las excita, en segundos: unos pocos milisegundos. */
+  strike: number
+  /** Un golpe grave debajo: el peso de la pieza. */
+  thump?: { f: number; decay: number; amp: number }
+  seed: number
+  /** Cuánto se corren las resonancias en esta variante, ±fracción. */
+  detune?: number
+}
+
+/**
+ * Un golpe a un objeto de madera, cartón o lo que no cante.
+ *
+ * La madera no suena a nota: un seno puro que se apaga suena a xilofón de juguete.
+ * Suena a golpe con color, y ese color son unas pocas resonancias anchas del cuerpo
+ * que el golpe pone a vibrar un instante. Así está hecho acá: un chasquido de ruido
+ * cortísimo pasa por unos pasabandas angostos —cada uno resuena un poco y se apaga
+ * solo— y debajo va un golpe grave que es el peso de la pieza.
+ */
+export function knock(sampleRate: number, recipe: KnockRecipe): Float32Array<ArrayBuffer> {
+  const length = Math.ceil(sampleRate * 0.12)
+  const data = new Float32Array(length)
+  const rnd = noise(recipe.seed)
+
+  // El golpe: ruido que se apaga en unos milisegundos.
+  const strike = new Float32Array(length)
+  for (let i = 0; i < length; i++) strike[i] = rnd() * Math.exp(-i / sampleRate / recipe.strike)
+
+  const jitter = noise(recipe.seed * 7 + 3)
+  for (const r of recipe.resonances) {
+    const f = r.f * (1 + jitter() * (recipe.detune ?? 0))
+    const band = strike.slice()
+    // Dos pasadas: la resonancia queda más definida y el ruido de afuera, más lejos.
+    bandpass(band, sampleRate, f, r.q)
+    bandpass(band, sampleRate, f, r.q)
+    let peak = 0
+    for (let i = 0; i < length; i++) peak = Math.max(peak, Math.abs(band[i]))
+    const k = peak > 0 ? r.amp / peak : 0
+    for (let i = 0; i < length; i++) data[i] += band[i] * k
+  }
+
+  // Un poco del golpe crudo, filtrado, para el ataque: el contacto de las dos superficies.
+  const attack = strike.slice()
+  bandpass(attack, sampleRate, 3200, 0.7)
+  for (let i = 0; i < length; i++) data[i] += attack[i] * 0.35
+
+  if (recipe.thump) {
+    const t = recipe.thump
+    let phase = 0
+    for (let i = 0; i < length; i++) {
+      const s = i / sampleRate
+      // El golpe grave baja un poco de tono mientras se apaga, como uno de verdad.
+      const f = t.f * (1 + 0.4 * Math.exp(-s / 0.004))
+      phase += (2 * Math.PI * f) / sampleRate
+      data[i] += Math.sin(phase) * Math.exp(-s / t.decay) * t.amp * Math.min(1, i / (sampleRate * 0.0005))
+    }
+  }
+
+  return normalize(data)
+}

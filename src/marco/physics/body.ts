@@ -30,8 +30,11 @@ const DIM_KEYS: (keyof Dims)[] = ['artW', 'artH', 'mat', 'frame']
 
 /** Las medidas siguiendo un cambio: tipeado, elegido o al soltar un arrastre. Llegan con peso. */
 const FOLLOW: SpringParams = { response: 0.3, damping: 0.8 }
-/** Las medidas pegadas a la mano mientras se arrastra: rápidas, para no llegar tarde al puntero. */
-const HAND: SpringParams = { response: 0.085, damping: 0.6 }
+/**
+ * Las medidas pegadas a la mano mientras se arrastra: rápidas, para no llegar tarde al
+ * puntero, y con un poco de rebote para que cada muesca se sienta caer.
+ */
+const HAND: SpringParams = { response: 0.12, damping: 0.45 }
 /** El marco o el passe-partout yéndose a cero, o volviendo: sin pasarse, que por debajo de cero no hay nada. */
 const VANISH: SpringParams = { response: 0.22, damping: 0.9 }
 
@@ -102,4 +105,12 @@ export function shownDims(body: Body): Dims {
     mat: body.dims.mat.x,
     frame: body.dims.frame.x,
   }
+}
+
+/**
+ * La banda cayó en una muesca nueva: un empujón en el sentido en que venía, para que
+ * se pase un pelo y vuelva. Es el cuerpo del clic.
+ */
+export function detentKick(body: Body, key: 'frame' | 'mat', direction: number) {
+  body.dims[key].v += Math.sign(direction) * 8
 }

@@ -1,5 +1,5 @@
 import type { FrameMaterial } from '../types'
-import { modal, noiseBurst } from './synth'
+import { knock, modal, noiseBurst } from './synth'
 
 /**
  * Los sonidos de Enmarcado, cada uno con su receta, cuánto suena y cada cuánto puede
@@ -11,33 +11,40 @@ import { modal, noiseBurst } from './synth'
  * `MASTER` en `engine.ts`; esto es cómo suenan unos contra otros.
  */
 export interface Recipe {
-  build: (sampleRate: number) => Float32Array<ArrayBuffer>
+  /** Arma el sonido; `variant` elige cuál de las versiones (si hay más de una). */
+  build: (sampleRate: number, variant: number) => Float32Array<ArrayBuffer>
+  /** Cuántas versiones distintas hay, para turnarlas: dos golpes nunca son el mismo. */
+  variants?: number
   /** Volumen del pico, en dB. */
   level: number
   /** Lo mínimo entre dos veces seguidas, en ms: una ráfaga de clics se lee como ruido. */
   gap: number
 }
 
-/** La frecuencia a la que está construido el tic: el tono real sale de `playbackRate`. */
-export const TICK_BASE = 2000
+/** La frecuencia a la que está construido el tic de metal: el tono real sale de `playbackRate`. */
+const TICK_BASE = 2000
 
 export const RECIPES = {
   /**
-   * La muesca de la moldura de madera o pintada: un golpecito seco con cuerpo, como
-   * el de un trinquete de madera. Se apaga en unos veinte milisegundos.
+   * La muesca de la moldura de madera o pintada: el golpecito seco de un trinquete de
+   * madera. Es ruido haciendo resonar el cuerpo de la pieza —un golpe con color, sin
+   * nota—, y cuatro versiones que se turnan.
    */
   'tick-wood': {
-    build: (sr) =>
-      modal(sr, {
-        modes: [
-          { f: TICK_BASE, decay: 0.022, amp: 1 },
-          { f: TICK_BASE * 2.71, decay: 0.012, amp: 0.45 },
-          { f: TICK_BASE * 5.1, decay: 0.006, amp: 0.25 },
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 720, q: 9, amp: 1 },
+          { f: 1180, q: 11, amp: 0.55 },
+          { f: 2350, q: 14, amp: 0.35 },
         ],
-        click: { amp: 0.6, decay: 0.0015, freq: 4200 },
-        seed: 11,
+        strike: 0.0016,
+        thump: { f: 165, decay: 0.012, amp: 0.35 },
+        seed: 11 + v * 97,
+        detune: 0.06,
       }),
-    level: -32,
+    variants: 4,
+    level: -30,
     gap: 30,
   },
   /** La muesca de la moldura de metal: más aguda y con una cola corta que canta. */
@@ -65,33 +72,39 @@ export const RECIPES = {
    * pared. Grave y corto.
    */
   grab: {
-    build: (sr) =>
-      modal(sr, {
-        modes: [
-          { f: 190, decay: 0.045, amp: 1 },
-          { f: 470, decay: 0.025, amp: 0.55 },
-          { f: 1050, decay: 0.012, amp: 0.3 },
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 260, q: 6, amp: 1 },
+          { f: 540, q: 8, amp: 0.6 },
+          { f: 1250, q: 10, amp: 0.25 },
         ],
-        click: { amp: 0.35, decay: 0.003, freq: 2500 },
-        seed: 19,
+        strike: 0.003,
+        thump: { f: 110, decay: 0.03, amp: 0.8 },
+        seed: 19 + v * 53,
+        detune: 0.05,
       }),
+    variants: 3,
     level: -28,
     gap: 120,
   },
   /**
-   * Soltarlo pasado del máximo: la moldura que vuelve a su medida, un "tunk" más
-   * grave que la muesca.
+   * Soltarlo pasado del máximo: la moldura que vuelve a su medida, un golpe más sordo
+   * y más grave que la muesca.
    */
   stretch: {
-    build: (sr) =>
-      modal(sr, {
-        modes: [
-          { f: 150, decay: 0.06, amp: 1 },
-          { f: 380, decay: 0.03, amp: 0.4 },
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 330, q: 7, amp: 1 },
+          { f: 760, q: 9, amp: 0.45 },
         ],
-        click: { amp: 0.25, decay: 0.002, freq: 1800 },
-        seed: 23,
+        strike: 0.0025,
+        thump: { f: 95, decay: 0.04, amp: 0.9 },
+        seed: 23 + v * 41,
+        detune: 0.05,
       }),
+    variants: 2,
     level: -30,
     gap: 200,
   },
@@ -106,12 +119,11 @@ export function tickFor(target: 'frame' | 'mat', material: FrameMaterial): Sound
 }
 
 /**
- * El tono de la muesca según el ancho: una moldura angosta suena aguda y una ancha,
- * más grave, como una tabla más grande. De 2,6 kHz a medio centímetro a 1,4 kHz a
- * diez, en escala logarítmica, que es como se oye.
+ * El tono de la muesca según el ancho: una moldura angosta suena un poco más aguda
+ * y una ancha, un poco más grave, como una tabla más grande. Poco: tres semitonos
+ * para cada lado. Más que eso ya es una escala, y la madera no toca escalas.
  */
 export function tickRate(widthCm: number): number {
   const t = Math.min(1, Math.max(0, (widthCm - 0.5) / 9.5))
-  const f = 2600 * Math.pow(1400 / 2600, t)
-  return f / TICK_BASE
+  return Math.pow(2, (3 - 6 * t) / 12)
 }

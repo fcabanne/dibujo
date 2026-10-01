@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { RECIPES, type SoundName } from './recipes'
+import { RECIPES, type Recipe, type SoundName } from './recipes'
 import { roomIR } from './synth'
 
 /**
@@ -26,7 +26,9 @@ const MUTED_KEY = 'cuadros:sonido'
 interface Engine {
   ctx: AudioContext
   bus: GainNode
-  buffers: Map<SoundName, AudioBuffer>
+  buffers: Map<SoundName, AudioBuffer[]>
+  /** Qué versión de cada sonido toca la próxima vez. */
+  turn: Map<SoundName, number>
   last: Map<SoundName, number>
   voices: number
   /** Energía reciente, para bajar un poco el volumen cuando suena mucho seguido. */
@@ -123,15 +125,20 @@ export function unlockSound() {
   comp.connect(out)
   out.connect(ctx.destination)
 
-  const buffers = new Map<SoundName, AudioBuffer>()
+  const buffers = new Map<SoundName, AudioBuffer[]>()
   for (const name of Object.keys(RECIPES) as SoundName[]) {
-    const data = RECIPES[name].build(ctx.sampleRate)
-    const buffer = ctx.createBuffer(1, data.length, ctx.sampleRate)
-    buffer.copyToChannel(data, 0)
-    buffers.set(name, buffer)
+    const recipe: Recipe = RECIPES[name]
+    const list: AudioBuffer[] = []
+    for (let v = 0; v < (recipe.variants ?? 1); v++) {
+      const data = recipe.build(ctx.sampleRate, v)
+      const buffer = ctx.createBuffer(1, data.length, ctx.sampleRate)
+      buffer.copyToChannel(data, 0)
+      list.push(buffer)
+    }
+    buffers.set(name, list)
   }
 
-  engine = { ctx, bus, buffers, last: new Map(), voices: 0, energy: 0, energyAt: 0 }
+  engine = { ctx, bus, buffers, turn: new Map(), last: new Map(), voices: 0, energy: 0, energyAt: 0 }
 
   // En segundo plano no hay nada que oír: se suspende y vuelve con la pestaña.
   document.addEventListener('visibilitychange', () => {
@@ -180,7 +187,10 @@ export function play(name: SoundName, options: PlayOptions = {}) {
   if (logging) soundLog.push({ name, at: now, rate, gain: db })
 
   const source = e.ctx.createBufferSource()
-  source.buffer = e.buffers.get(name) ?? null
+  const versions = e.buffers.get(name) ?? []
+  const turn = e.turn.get(name) ?? 0
+  e.turn.set(name, (turn + 1) % Math.max(1, versions.length))
+  source.buffer = versions[turn] ?? null
   source.playbackRate.value = rate
   const gain = e.ctx.createGain()
   gain.gain.value = dbToGain(db)

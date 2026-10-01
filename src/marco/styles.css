@@ -850,6 +850,25 @@ body {
   border-color: rgba(255, 255, 255, 0.9);
 }
 
+/* Cada muesca late: el número y las flechas se agrandan un instante y vuelven. Va en
+   `scale`, aparte de `transform`, para que componga con lo que ya los ubica. */
+@keyframes gizmo-click {
+  0% {
+    scale: 1;
+  }
+  30% {
+    scale: 1.12;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.gizmo.is-click .gizmo-value,
+.gizmo.is-click .gizmo-arrow {
+  animation: gizmo-click var(--ds-dur) var(--spring);
+}
+
 /* Los centímetros aparecen solo mientras arrastrás. */
 .gizmo-value {
   position: absolute;

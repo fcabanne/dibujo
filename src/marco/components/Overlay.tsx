@@ -112,6 +112,8 @@ export function Overlay({
   const bubbleRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const gizmoRef = useRef<HTMLDivElement>(null)
   const gizmoValueRef = useRef<HTMLSpanElement>(null)
+  /** La medida de la última vez, para notar cuándo la banda cae en otra muesca. */
+  const lastCmRef = useRef<number | null>(null)
   const labelRef = useRef<HTMLDivElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -492,6 +494,15 @@ export function Overlay({
 
         // Los centímetros aparecen solo mientras arrastrás: mientras probás mirás el
         // cuadro, y cuando decidís querés el número.
+        // Cada muesca late: el número y las flechas se agrandan un instante y vuelven,
+        // como el clic que se oye. Se reinicia la animación sacando y poniendo la clase.
+        if (gizmo && scene.dragCm !== null && lastCmRef.current !== null && scene.dragCm !== lastCmRef.current) {
+          gizmo.classList.remove('is-click')
+          void gizmo.offsetWidth
+          gizmo.classList.add('is-click')
+        }
+        lastCmRef.current = scene.dragCm
+
         if (gizmoValueRef.current) {
           gizmoValueRef.current.textContent =
             scene.dragCm === null

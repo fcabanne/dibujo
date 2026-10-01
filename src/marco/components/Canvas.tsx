@@ -19,7 +19,7 @@ import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
-import { createBody, shownDims, stepBody } from '../physics/body'
+import { createBody, detentKick, shownDims, stepBody } from '../physics/body'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
 import { tickFor, tickRate } from '../sound/recipes'
 import { REST_POSE, type Pose } from '../render/pose'
@@ -268,8 +268,10 @@ export function Canvas({
   const handleDrag = (result: DragResult, x: number, width: number) => {
     const drag = dragRef.current
     if (!drag) return
+    const before = bodyRef.current.hand?.value ?? result.shown
     bodyRef.current.hand = { key: drag.target, value: result.shown, over: result.over }
     if (result.changed && !compactRef.current) {
+      detentKick(bodyRef.current, drag.target, result.shown - before)
       const current = stateRef.current
       play(tickFor(drag.target, current.frame.material), {
         rate: drag.target === 'frame' ? tickRate(result.snapped) : 1,

@@ -39,11 +39,20 @@ export function startDrag(
 }
 
 /**
- * Cuánto pesa, entre muesca y muesca, lo que la mano corrió de más. La banda sigue
- * apenas a la mano —un cuarto de lo que se movió— y al cruzar la mitad salta a la
- * muesca siguiente: ese salto es el clic que se siente.
+ * La muesca agarra. Cerca de ella la banda casi no se mueve aunque la mano sí; a
+ * medida que la mano se aleja la banda se estira hacia la siguiente, y al cruzar la
+ * mitad salta: ese salto, con su sonido, es el clic. `DETENT_PULL` es cuánto llega a
+ * estirarse justo antes de saltar, como fracción de la media muesca.
  */
-const DETENT_PULL = 0.25
+const DETENT_PULL = 0.6
+
+/** Lo que la banda se aparta de su muesca cuando la mano se pasó `r` (cm). */
+function detent(r: number, half: number): number {
+  const t = Math.min(1, Math.abs(r) / half)
+  const s = t * t * (3 - 2 * t)
+  return Math.sign(r) * half * DETENT_PULL * Math.pow(s, 1.5)
+}
+
 /** Cuánto deja estirarse pasado el máximo, en cm, antes de que no ceda más. */
 const STRETCH = 0.8
 
@@ -112,7 +121,7 @@ export function dragWidth(
   const shown =
     over > 0
       ? limits.max + STRETCH * (1 - 1 / (1 + over / STRETCH))
-      : Math.max(0, snapped + (raw - snapped) * DETENT_PULL)
+      : Math.max(0, snapped + detent(raw - snapped, limits.step / 2))
 
   return { snapped, shown, over, changed }
 }
