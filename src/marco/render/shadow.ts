@@ -61,9 +61,13 @@ interface Layer {
   alpha: number
 }
 
-/** De la más larga a la más corta. Los números son los de siempre: la forma es lo nuevo. */
+/**
+ * De la más larga a la más corta. La larga se desenfocaba tanto que se derramaba
+ * también hacia el foco, arriba y a la izquierda, y rodeaba el cuadro como un halo:
+ * se leía pegada, no proyectada. Ahora se abre lo que se corre, no más.
+ */
 const LAYERS: Layer[] = [
-  { spread: 1.7, blur: (z) => Math.min(MAX_BLUR, 9 + z * 2.1), alpha: 0.36 },
+  { spread: 1.7, blur: (z) => Math.min(MAX_BLUR, 4 + z * 1.1), alpha: 0.32 },
   { spread: 0.5, blur: (z) => Math.min(MAX_BLUR, 2.4 + z * 0.5), alpha: 0.48 },
   // Oclusión: la línea oscura donde el marco toca la pared.
   { spread: 0.04, blur: (z) => Math.max(1, z * 0.16), alpha: 0.43 },
