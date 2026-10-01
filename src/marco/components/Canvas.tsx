@@ -4,15 +4,12 @@ import {
   computeLayout,
   layoutFromDims,
   fitScale,
-  LIMITS,
-  snap,
   type SceneRects,
 } from '../domain/geometry'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { easeOut, reducedMotionNow } from '../../shared/motion'
 import {
   draggableTarget,
-  grabDistance,
   hitZone,
   touchZone,
   type Point,
@@ -21,7 +18,10 @@ import {
 import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
+import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
 import { createBody, shownDims, stepBody } from '../physics/body'
+import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
+import { tickFor, tickRate } from '../sound/recipes'
 import { REST_POSE, type Pose } from '../render/pose'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
@@ -130,14 +130,6 @@ function perfReport() {
   return { n: sorted.length, p50: at(0.5), p95: at(0.95), max: sorted[sorted.length - 1] ?? 0 }
 }
 
-interface DragState {
-  target: 'frame' | 'mat'
-  startWidth: number
-  startDist: number
-  /** Escala congelada: si se reajustara al crecer, el cuadro se escapa del cursor. */
-  frozenScale: number
-}
-
 type Gesture = 'idle' | 'band' | 'look' | 'pan' | 'pinch'
 
 /** Con qué se pintó el último cuadro: si nada de esto cambió, no hay que repintar. */
@@ -180,38 +172,6 @@ function partOf(zone: Zone): Part {
   if (zone === 'mat' || zone === 'mat-ghost') return 'mat'
   if (zone === 'art') return 'art'
   return 'wall'
-}
-
-/**
- * El ancho nuevo de la banda que se está arrastrando. Lo comparten el mouse y el
- * dedo: es la misma cota, y el mismo imán al medio centímetro.
- */
-function dragWidth(
-  drag: DragState,
-  p: Point,
-  rects: SceneRects,
-  current: AppState,
-  dispatch: (action: Action) => void,
-) {
-  const dist = grabDistance(p, rects)
-  const delta = (dist - drag.startDist) / drag.frozenScale
-  const raw = drag.startWidth + delta
-
-  // Solo se despacha cuando la medida redondeada cambia: entre muesca y muesca no
-  // pasa nada, y el resto de la app no tiene por qué volver a dibujarse.
-  if (drag.target === 'frame') {
-    const width = clamp(snap(raw, LIMITS.frameWidth.step), LIMITS.frameWidth.min, LIMITS.frameWidth.max)
-    if (width !== current.frame.width) dispatch({ type: 'frame/patch', patch: { width } })
-  } else {
-    // Por debajo del mínimo el passe-partout no se encoge: se apaga.
-    const width = clamp(snap(raw, LIMITS.matWidth.step), 0, LIMITS.matWidth.max)
-    const mat = current.mats[0]
-    if (width < LIMITS.matWidth.min) {
-      if (mat?.enabled) dispatch({ type: 'mat/patch', patch: { enabled: false } })
-    } else if (!mat?.enabled || mat.width !== width) {
-      dispatch({ type: 'mat/patch', patch: { enabled: true, width } })
-    }
-  }
 }
 
 export function Canvas({
@@ -299,6 +259,25 @@ export function Canvas({
   compactRef.current = compact
   freeAreaRef.current = freeArea
   onPartTapRef.current = onPartTap
+
+  /**
+   * Lo que pasa con cada movimiento de una banda agarrada: el cuerpo sigue a la mano
+   * —con el tirón entre muescas y la resistencia pasado el máximo—, y cada muesca
+   * nueva suena, más fuerte cuanto más rápido va la mano.
+   */
+  const handleDrag = (result: DragResult, x: number, width: number) => {
+    const drag = dragRef.current
+    if (!drag) return
+    bodyRef.current.hand = { key: drag.target, value: result.shown, over: result.over }
+    if (result.changed && !compactRef.current) {
+      const current = stateRef.current
+      play(tickFor(drag.target, current.frame.material), {
+        rate: drag.target === 'frame' ? tickRate(result.snapped) : 1,
+        gain: Math.min(5, drag.speed * 4) - 1,
+        pan: panOf(x, width),
+      })
+    }
+  }
 
   // --- loop de render -------------------------------------------------------
   useEffect(() => {
@@ -571,10 +550,12 @@ export function Canvas({
 
     frame = requestAnimationFrame(loop)
     if (PROBE.debug) {
+      logSounds(true)
       ;(window as unknown as { __marco: unknown }).__marco = {
         scene: sceneRef,
         pose: poseRef,
         body: bodyRef,
+        sounds: soundLog,
         perf: perfReport,
         perfReset: () => (perfRing.length = 0),
       }
@@ -617,10 +598,16 @@ export function Canvas({
       const drag = dragRef.current
       const rects = sceneRef.current.rects
       if (!drag || !rects) return
-      dragWidth(drag, { x, y }, rects, stateRef.current, dispatchRef.current)
+      handleDrag(dragWidth(drag, { x, y }, rects, stateRef.current, dispatchRef.current), x, box.width)
     }
 
     const onUp = () => {
+      const body = bodyRef.current
+      // Soltada pasada del máximo, la banda vuelve a su medida con un golpe sordo.
+      if (dragRef.current && body.hand && body.hand.over > 0) {
+        play('stretch', { pan: panOf(pointerRef.current.x, wrapRef.current?.clientWidth ?? 1) })
+      }
+      body.hand = null
       dragRef.current = null
       sceneRef.current.dragging = null
       sceneRef.current.dragCm = null
@@ -633,11 +620,17 @@ export function Canvas({
       sleepAfter(0)
     }
 
+    // El audio se despierta con el primer gesto, sea cual sea: el navegador no deja
+    // sonar antes. Así el primer clic sobre una burbuja ya puede sonar.
+    window.addEventListener('pointerdown', unlockSound, true)
+    window.addEventListener('keydown', unlockSound, true)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
     window.addEventListener('blur', onBlur)
     return () => {
+      window.removeEventListener('pointerdown', unlockSound, true)
+      window.removeEventListener('keydown', unlockSound, true)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
@@ -663,18 +656,10 @@ export function Canvas({
       )
       if (!target) return
 
-      dragRef.current = {
-        target,
-        startWidth:
-          target === 'frame'
-            ? current.frame.width
-            : current.mats[0]?.enabled
-              ? current.mats[0].width
-              : 0,
-        startDist: grabDistance(p, rects),
-        frozenScale: scaleRef.current,
-      }
+      dragRef.current = startDrag(target, current, p, rects, scaleRef.current)
       sceneRef.current.dragging = target
+      unlockSound()
+      play('grab', { pan: panOf(p.x, box.width) })
       e.preventDefault()
     },
     [sceneRef],
@@ -713,13 +698,7 @@ export function Canvas({
 
         const target = draggableTarget(zone)
         if (target && rects && scaleRef.current) {
-          dragRef.current = {
-            target,
-            startWidth:
-              target === 'frame' ? current.frame.width : hasMat ? current.mats[0].width : 0,
-            startDist: grabDistance(p, rects),
-            frozenScale: scaleRef.current,
-          }
+          dragRef.current = startDrag(target, current, p, rects, scaleRef.current)
           sceneRef.current.dragging = target
           g.mode = 'band'
         } else {
@@ -753,7 +732,10 @@ export function Canvas({
       if (g.mode === 'band') {
         const drag = dragRef.current
         const rects = sceneRef.current.rects
-        if (drag && rects) dragWidth(drag, p, rects, stateRef.current, dispatchRef.current)
+        if (drag && rects) {
+          const box = wrapRef.current?.getBoundingClientRect()
+          handleDrag(dragWidth(drag, p, rects, stateRef.current, dispatchRef.current), p.x, box?.width ?? 1)
+        }
       } else if (g.mode === 'look') {
         // Relativo a donde apoyó: la luz arranca quieta y se corre con el dedo, en
         // vez de saltar hacia el lugar de la pantalla donde cayó el toque.
@@ -798,6 +780,7 @@ export function Canvas({
       if (!g.pointers.delete(e.pointerId)) return
 
       if (g.mode === 'band' && g.pointers.size === 0) {
+        bodyRef.current.hand = null
         dragRef.current = null
         sceneRef.current.dragging = null
         sceneRef.current.dragCm = null
@@ -906,6 +889,11 @@ export function Canvas({
       {error && <div className="canvas-error">{error}</div>}
     </div>
   )
+}
+
+/** De dónde suena algo, según dónde está en pantalla: apenas corrido, nunca de un solo oído. */
+function panOf(x: number, width: number): number {
+  return ((x / Math.max(1, width)) * 2 - 1) * 0.35
 }
 
 /** Una copia de lo que hay pintado ahora, para fundirla sobre lo que venga. */

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon } from '../../shared/ui'
+import { BackIcon, SpeakerIcon, SpeakerOffIcon } from '../../shared/ui'
+import { setMuted, useMuted } from '../sound/engine'
 import {
   FRAME_PROFILES,
   MOLDING_FAMILIES,
@@ -116,6 +117,8 @@ export function Overlay({
   const fileRef = useRef<HTMLInputElement>(null)
   const backRef = useRef<HTMLButtonElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
+  const soundRef = useRef<HTMLButtonElement>(null)
+  const muted = useMuted()
   const presence = useRef(0)
   const litRef = useRef<HTMLDivElement>(null)
   const leaderRef = useRef<SVGSVGElement>(null)
@@ -172,7 +175,7 @@ export function Overlay({
     const o = scene.rects.outer
     const avoid: Box[] = [{ x: o.x, y: o.y, w: o.w, h: o.h }]
     const root = rootRef.current?.getBoundingClientRect()
-    for (const pill of [backRef.current, linkRef.current]) {
+    for (const pill of [backRef.current, linkRef.current, soundRef.current]) {
       const r = pill?.getBoundingClientRect()
       if (r && root) avoid.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height })
     }
@@ -495,8 +498,8 @@ export function Overlay({
               ? ''
               : scene.dragCm === 0
                 ? scene.dragging === 'frame'
-                  ? 'sin marco'
-                  : 'sin passe-partout'
+                  ? copy.marco.noFrame.toLowerCase()
+                  : copy.marco.noMat.toLowerCase()
                 : cmLabel(scene.dragCm)
         }
       }
@@ -698,14 +701,28 @@ export function Overlay({
       >
         <BackIcon />
       </button>
-      <a
-        ref={linkRef}
-        className="hud-link"
-        href={copy.welcome.suggestionsUrl}
-        onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
-      >
-        {copy.welcome.suggestions}
-      </a>
+      {/* El sonido se calla al lado de las sugerencias, en su propia pastilla: es de
+          otra conversación que el resto de los controles. */}
+      <div className="hud-corner">
+        <button
+          ref={soundRef}
+          type="button"
+          className="hud-sound"
+          aria-label={copy.marco.sound}
+          aria-pressed={!muted}
+          onClick={() => setMuted(!muted)}
+        >
+          {muted ? <SpeakerOffIcon /> : <SpeakerIcon />}
+        </button>
+        <a
+          ref={linkRef}
+          className="hud-link"
+          href={copy.welcome.suggestionsUrl}
+          onClick={(e) => openInstagram(e, copy.welcome.suggestionsUrl)}
+        >
+          {copy.welcome.suggestions}
+        </a>
+      </div>
 
       {/* Cargar el dibujo se pide sobre el dibujo: es donde mirás cuando querés
           reemplazarlo, y evita ir a buscarlo dentro de un menú. */}

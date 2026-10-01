@@ -18,6 +18,12 @@ export interface Body {
   dragging: boolean
   /** El giro de la obra la última vez que se miró: si cambia, el ancho y el alto se cruzan. */
   rotation: number
+  /**
+   * La banda que tiene la mano, y hasta dónde la tira: entre muescas, un poco más
+   * allá de la medida redondeada, y pasado el máximo, estirada. Al soltar se borra y
+   * la banda vuelve a la medida del estado.
+   */
+  hand: { key: 'frame' | 'mat'; value: number; over: number } | null
 }
 
 const DIM_KEYS: (keyof Dims)[] = ['artW', 'artH', 'mat', 'frame']
@@ -40,6 +46,7 @@ export function createBody(state: AppState): Body {
     pose: { ...REST_POSE },
     dragging: false,
     rotation: state.artwork.rotation,
+    hand: null,
   }
 }
 
@@ -67,7 +74,8 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
 
   for (const key of DIM_KEYS) {
     const s = body.dims[key]
-    const to = target[key]
+    const hand = body.hand && body.hand.key === key && !instant ? body.hand.value : null
+    const to = hand ?? target[key]
     if (instant) {
       s.x = to
       s.v = 0

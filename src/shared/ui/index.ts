@@ -36,6 +36,8 @@ export {
   PlusIcon,
   CloseIcon,
   FlashlightIcon,
+  SpeakerIcon,
+  SpeakerOffIcon,
   ChevronDownIcon,
   ProportionalIcon,
   SquareIcon,

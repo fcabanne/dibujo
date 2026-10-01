@@ -158,6 +158,7 @@
 
   "marco": {
     "name": "Enmarcado",
+    "sound": "Sonido",
     "tabs": {
       "artwork": "Obra",
       "frame": "Marco",

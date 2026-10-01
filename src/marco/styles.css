@@ -600,10 +600,8 @@ body {
   lleva de 0 a 1, así que no hay una transición aparte.
 */
 .hud-back,
-.hud-link {
-  position: absolute;
-  bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom, 0px));
-  z-index: 6;
+.hud-link,
+.hud-sound {
   display: grid;
   place-items: center;
   height: var(--ds-control-min);
@@ -621,6 +619,13 @@ body {
     scale var(--ds-dur) var(--spring);
 }
 
+.hud-back,
+.hud-corner {
+  position: absolute;
+  bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+}
+
 .hud-back {
   left: var(--ds-space-5);
   width: var(--ds-control-min);
@@ -628,13 +633,27 @@ body {
   cursor: pointer;
 }
 
-.hud-back svg {
+/* Abajo a la derecha: el sonido y las sugerencias, cada uno en su pastilla. */
+.hud-corner {
+  right: var(--ds-space-5);
+  display: flex;
+  gap: var(--ds-space-3);
+  pointer-events: none;
+}
+
+.hud-back svg,
+.hud-sound svg {
   width: var(--ds-icon);
   height: var(--ds-icon);
 }
 
+.hud-sound {
+  width: var(--ds-control-min);
+  padding: 0;
+  cursor: pointer;
+}
+
 .hud-link {
-  right: var(--ds-space-5);
   padding: 0 var(--ds-space-5);
   font: var(--ds-text-link);
   text-decoration: none;
@@ -642,26 +661,30 @@ body {
 }
 
 .overlay.is-away .hud-back,
-.overlay.is-away .hud-link {
+.overlay.is-away .hud-link,
+.overlay.is-away .hud-sound {
   pointer-events: none;
 }
 
 @media (hover: hover) {
   .hud-back:hover,
-  .hud-link:hover {
+  .hud-link:hover,
+  .hud-sound:hover {
     background: var(--ds-accent-light);
   }
 }
 
 .hud-back:active,
-.hud-link:active {
+.hud-link:active,
+.hud-sound:active {
   scale: 0.94;
   transition-duration: var(--ds-dur-press);
   transition-timing-function: var(--ease);
 }
 
 .hud-back:focus-visible,
-.hud-link:focus-visible {
+.hud-link:focus-visible,
+.hud-sound:focus-visible {
   outline: 2px solid var(--ds-white);
   outline-offset: 3px;
   opacity: 1;

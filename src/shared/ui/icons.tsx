@@ -1,7 +1,7 @@
 /**
  * Los íconos del sistema.
  *
- * Todos menos el último salen del archivo de Figma sin redibujar: el `d` es el
+ * Casi todos salen del archivo de Figma sin redibujar: el `d` es el
  * que exporta el archivo, tal cual. Todos comparten métrica —24×24, trazo
  * de 2, puntas y uniones redondas— y esa métrica es lo que los hace ver de
  * la misma familia, así que un ícono nuevo la respeta o no entra.
@@ -206,6 +206,29 @@ export function FlashlightIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
       <path d="M7 3H17V6L15 10V20C15 20.5523 14.5523 21 14 21H10C9.44772 21 9 20.5523 9 20V10L7 6V3ZM7 6H17M12 13V15" />
+    </svg>
+  )
+}
+
+/**
+ * El parlante: el sonido de Enmarcado, prendido. Y tachado, callado.
+ *
+ * **Tampoco vienen de Figma.** La bocina en la mitad izquierda —el mismo trapecio
+ * que dibuja cualquier set—, y a la derecha las dos ondas o la cruz, con la métrica
+ * del set. Cuando se dibujen en el archivo, se reemplazan los `d`.
+ */
+export function SpeakerIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M11 5L6 9H3V15H6L11 19V5ZM15.5 8.5C16.4 9.4 17 10.6 17 12C17 13.4 16.4 14.6 15.5 15.5M18.5 5.5C20.2 7.2 21 9.5 21 12C21 14.5 20.2 16.8 18.5 18.5" />
+    </svg>
+  )
+}
+
+export function SpeakerOffIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M11 5L6 9H3V15H6L11 19V5ZM16 9L22 15M22 9L16 15" />
     </svg>
   )
 }

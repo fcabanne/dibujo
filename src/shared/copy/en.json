@@ -158,6 +158,7 @@
 
   "marco": {
     "name": "Framing",
+    "sound": "Sound",
     "tabs": {
       "artwork": "Artwork",
       "frame": "Frame",
