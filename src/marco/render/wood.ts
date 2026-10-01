@@ -222,3 +222,17 @@ export function drawWood(
   ctx.restore()
   return true
 }
+
+/**
+ * La tabla horneada de la madera que sugiere el color, para el render 3D: la baldosa,
+ * cuánto oscurece en promedio, y cuántos centímetros de tabla tiene.
+ */
+export function woodTile(color: string) {
+  const tile = tileFor(speciesOf(color))
+  return { canvas: tile.canvas, mean: tile.mean, lengthCm: LENGTH_CM, widthCm: WIDTH_CM }
+}
+
+/** Cuánto se ve la veta: todo en "veteado", menos en "lisa", y poco en las maderas muy claras. */
+export function woodContrast(color: string, grained: boolean): number {
+  return (grained ? 1 : 0.45) * (1 - 0.5 * smoothstep(0.6, 0.9, luminance(color)))
+}

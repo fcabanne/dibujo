@@ -21,6 +21,7 @@ import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
 import {
+  GONE,
   createBody,
   detentKick,
   hang,
@@ -36,7 +37,8 @@ import {
   type BodyEvent,
 } from '../physics/body'
 import { DEGREES } from '../physics/pendulum'
-import { nailOf, toObject } from '../render/pose'
+import { eyeOf, nailOf, toObject } from '../render/pose'
+import { createObjectRenderer, type ObjectRenderer } from '../gl/renderer'
 import { massOf } from '../physics/mass'
 import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
@@ -155,8 +157,16 @@ const FADE_DESK_MS = 110
  */
 const PROBE = (() => {
   const q = new URLSearchParams(window.location.search)
-  return { debug: q.has('debug') || q.has('perf'), perf: q.has('perf') }
+  return { debug: q.has('debug') || q.has('perf'), perf: q.has('perf'), gl: q.get('gl') }
 })()
+
+/**
+ * El cuadro en 3D, todavía un prototipo (`gl/`): con `?gl` en la dirección lo dibuja
+ * WebGL encima de la pared; con `?gl=split`, mitad y mitad, para comparar con el 2D.
+ * La tecla G pasa de uno a otro. Sin el parámetro no existe.
+ */
+type GlMode = 'off' | 'gl' | 'split'
+const GL_MODES: GlMode[] = ['gl', 'split', 'off']
 
 /** Los últimos tiempos de cuadro, en ms, para `__marco.perf()`. */
 const perfRing: number[] = []
@@ -225,6 +235,9 @@ export function Canvas({
   onPartTap,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const glCanvasRef = useRef<HTMLCanvasElement>(null)
+  const glModeRef = useRef<GlMode>(PROBE.gl === null ? 'off' : PROBE.gl === 'split' ? 'split' : 'gl')
+  const glRef = useRef<ObjectRenderer | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const image = useImage(state.artwork.src)
   const [dragOver, setDragOver] = useState(false)
@@ -378,6 +391,17 @@ export function Canvas({
 
     let frame = 0
     let last = performance.now()
+
+    if (PROBE.gl !== null && glCanvasRef.current && !glRef.current) {
+      glRef.current = createObjectRenderer(glCanvasRef.current)
+      if (!glRef.current) glModeRef.current = 'off'
+    }
+    const onGlKey = (e: KeyboardEvent) => {
+      if (PROBE.gl === null || e.key.toLowerCase() !== 'g' || e.target instanceof HTMLInputElement) return
+      const i = GL_MODES.indexOf(glModeRef.current)
+      glModeRef.current = GL_MODES[(i + 1) % GL_MODES.length]
+    }
+    window.addEventListener('keydown', onGlKey)
 
     const loop = (now: number) => {
       const dt = Math.min(64, now - last)
@@ -573,6 +597,7 @@ export function Canvas({
           }
         }
 
+        const glMode: GlMode = touch ? 'off' : glModeRef.current
         const t0 = PROBE.perf ? performance.now() : 0
         const { rects, light } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
@@ -583,7 +608,28 @@ export function Canvas({
           anchor: touch && anchorRef.current ? anchorRef.current : undefined,
           pose: body.pose,
           dims,
+          objectArea: glMode === 'gl' ? null : glMode === 'split' ? { x: 0, y: 0, w: box.width / 2, h: box.height } : undefined,
         })
+
+        const gl = glRef.current
+        const glCanvas = glCanvasRef.current
+        if (glCanvas) glCanvas.style.visibility = glMode === 'off' ? 'hidden' : 'visible'
+        if (gl && glMode !== 'off') {
+          gl.render({
+            state: current,
+            rects,
+            pose: body.pose,
+            pxPerCm: scaleRef.current,
+            dpr,
+            width: box.width,
+            height: box.height,
+            eye: eyeOf(par),
+            image: imageRef.current,
+            hasFrame: dims.frame > GONE,
+            hasMat: Boolean(current.mats[0]) && dims.mat > GONE,
+            scissor: glMode === 'split' ? { x: box.width / 2, y: 0, w: box.width / 2, h: box.height } : undefined,
+          })
+        }
         if (PROBE.perf) {
           perfRing.push(performance.now() - t0)
           if (perfRing.length > 240) perfRing.shift()
@@ -686,7 +732,10 @@ export function Canvas({
         perfReset: () => (perfRing.length = 0),
       }
     }
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('keydown', onGlKey)
+    }
   }, [sceneRef, tilt])
 
   // --- puntero --------------------------------------------------------------
@@ -1051,6 +1100,7 @@ export function Canvas({
       }}
     >
       <canvas ref={canvasRef} />
+      {PROBE.gl !== null && <canvas ref={glCanvasRef} className="gl-layer" aria-hidden />}
       {dragOver && (
         <div className="drop-hint">
           <span>Soltá tu dibujo acá</span>

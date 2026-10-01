@@ -1,5 +1,5 @@
 import { composeRects, computeLayout, layoutFromDims, type Dims, type SceneRects } from '../domain/geometry'
-import type { AppState, Layout } from '../types'
+import type { AppState, Layout, Rect } from '../types'
 import { drawArtwork } from './artwork'
 import { drawGlassClips } from './clips'
 import { drawFrame, drawRebateShadow, type Parallax } from './frame'
@@ -26,6 +26,13 @@ export interface SceneParams {
   anchor?: { x: number; y: number }
   /** Cuánto se apartó el cuadro de su reposo. Sin ella, cuelga quieto. */
   pose?: Pose
+  /**
+   * Dónde pintar el objeto —marco, passe-partout, obra, vidrio— en 2D. Sin esto, en
+   * toda la pantalla; con `null`, en ningún lado: lo pinta el render 3D encima
+   * (`gl/`) y acá quedan solo la pared y la sombra. Con un rectángulo, solo ahí: es la
+   * mitad 2D de la comparación lado a lado.
+   */
+  objectArea?: Rect | null
   /**
    * Las medidas tal como se ven, si no son las del estado: el cuerpo las lleva con
    * resortes hacia las de verdad. Sin ellas se dibuja el estado tal cual.
@@ -96,11 +103,18 @@ export function renderScene(
   // De acá en más se dibuja el objeto, en su espacio: si el cuadro se balancea o se
   // despega, todo lo suyo lo acompaña. La luz y el ojo se llevan a ese espacio,
   // porque lo que importa es de dónde les llegan a los listones.
+  if (params.objectArea === null) return { layout, rects, light }
   const world = ctx.getTransform()
   const moved = !isRest(pose)
   const objLight = objectLight(light, pose)
   const objParallax = moved ? toObjectVector(parallax, pose) : parallax
   ctx.save()
+  if (params.objectArea) {
+    const a = params.objectArea
+    ctx.beginPath()
+    ctx.rect(a.x, a.y, a.w, a.h)
+    ctx.clip()
+  }
   applyObjectTransform(ctx, pose, rects, pxPerCm)
 
   // 3. Marco, con su cara lateral asomando según el puntero
