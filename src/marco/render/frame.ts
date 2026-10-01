@@ -238,7 +238,9 @@ function drawGlint(
   const top = Math.max(...along)
   if (top * gloss < 0.004) return
 
-  const k = ctx.getTransform().a || 1
+  // La escala real del contexto, aunque el cuadro esté girado.
+  const m = ctx.getTransform()
+  const k = Math.hypot(m.a, m.b) || 1
   const w = Math.ceil(rect.w * k)
   const h = Math.ceil(rect.h * k)
   if (!glintCanvas) glintCanvas = document.createElement('canvas')

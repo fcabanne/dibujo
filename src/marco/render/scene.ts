@@ -7,6 +7,7 @@ import { drawGlass, drawGlassEdge } from './glass'
 import { lightFor, type Light } from './light'
 import { drawMat } from './mat'
 import { drawCastShadow } from './shadow'
+import { applyObjectTransform, isRest, objectLight, REST_POSE, type Pose } from './pose'
 import { drawObjectFalloff, drawWall } from './wall'
 
 export interface SceneParams {
@@ -22,6 +23,8 @@ export interface SceneParams {
    * controles sube y el cuadro se acomoda arriba de él—.
    */
   anchor?: { x: number; y: number }
+  /** Cuánto se apartó el cuadro de su reposo. Sin ella, cuelga quieto. */
+  pose?: Pose
 }
 
 export interface SceneResult {
@@ -41,7 +44,8 @@ export function renderScene(
   image: HTMLImageElement | null,
   params: SceneParams,
 ): SceneResult {
-  const { width, height, pxPerCm, dpr, parallax, anchor } = params
+  const { width, height, pxPerCm, parallax, anchor } = params
+  const pose = params.pose ?? REST_POSE
   const layout = computeLayout(state)
   const light = lightFor(parallax.x, parallax.y)
   const rects = composeRects(layout, { width, height }, pxPerCm, parallax, anchor)
@@ -59,28 +63,53 @@ export function renderScene(
   const mat = state.mats[0]
   const hasMat = Boolean(mat?.enabled)
 
+  // De acá en más se dibuja el objeto, en su espacio: si el cuadro se balancea o se
+  // despega, todo lo suyo lo acompaña. La luz y el ojo se llevan a ese espacio,
+  // porque lo que importa es de dónde les llegan a los listones.
+  const world = ctx.getTransform()
+  const moved = !isRest(pose)
+  const objLight = objectLight(light, pose)
+  const objParallax = moved ? toObjectVector(parallax, pose) : parallax
+  ctx.save()
+  applyObjectTransform(ctx, pose, rects, pxPerCm)
+
   // 3. Marco, con su cara lateral asomando según el puntero
   if (hasFrame) {
-    drawFrame(ctx, outer, glass, state.frame, light, depthPx, parallax, pxPerCm)
+    drawFrame(ctx, outer, glass, state.frame, objLight, depthPx, objParallax, pxPerCm)
   }
 
   // 4. Obra y 5. passe-partout por encima de su borde
   if (image) drawArtwork(ctx, sight, image, state.artwork)
-  if (hasMat) drawMat(ctx, glass, sight, mat, pxPerCm, light)
+  if (hasMat) drawMat(ctx, glass, sight, mat, pxPerCm, objLight)
 
-  // 6. Vidrio, sobre todo el contenido del rebaje
-  drawGlass(ctx, glass, state.glass, dpr, light, parallax)
+  // 6. Vidrio, sobre todo el contenido del rebaje. El reflejo es del cuarto y no
+  //    del cuadro, así que se pinta en el espacio de la pantalla.
+  drawGlass(ctx, glass, state.glass, light, parallax, world)
 
   // 7. Sombra del rebaje, o el canto del vidrio y los ganchitos si no hay marco
   if (hasFrame) {
-    drawRebateShadow(ctx, glass, depthPx, light, hasMat ? mat.color : null)
+    drawRebateShadow(ctx, glass, depthPx, objLight, hasMat ? mat.color : null)
   } else {
-    if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, light)
-    drawGlassClips(ctx, glass, pxPerCm, light)
+    if (state.glass !== 'none') drawGlassEdge(ctx, glass, pxPerCm, objLight)
+    drawGlassClips(ctx, glass, pxPerCm, objLight, light)
   }
 
-  // 8. El foco también cae sobre el cuadro, no solo sobre la pared
-  drawObjectFalloff(ctx, outer, light)
+  // 8. El foco también cae sobre el cuadro, no solo sobre la pared. El foco está
+  //    quieto en el cuarto: se recorta al cuadro, pero se pinta en la pantalla.
+  ctx.beginPath()
+  ctx.rect(outer.x, outer.y, outer.w, outer.h)
+  ctx.clip()
+  if (moved) ctx.setTransform(world)
+  drawObjectFalloff(ctx, outer, light, moved ? { x: 0, y: 0, w: width, h: height } : outer)
+  ctx.restore()
 
   return { layout, rects, light }
+}
+
+/** El ojo, o cualquier dirección de pantalla, vista desde el cuadro girado. */
+function toObjectVector(v: { x: number; y: number }, pose: Pose) {
+  const a = -(pose.roll + pose.turn)
+  const c = Math.cos(a)
+  const s = Math.sin(a)
+  return { x: v.x * c - v.y * s, y: v.x * s + v.y * c }
 }

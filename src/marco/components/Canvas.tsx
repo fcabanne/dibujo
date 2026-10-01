@@ -20,6 +20,7 @@ import {
 import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
+import { REST_POSE, type Pose } from '../render/pose'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -107,6 +108,25 @@ const TAP = { px: 8, ms: 350 }
 const DOUBLE_TAP = { px: 30, ms: 320 }
 /** Cuánto dura el fundido entre un material y otro. */
 const FADE_MS = 240
+
+/**
+ * Sondas para mirar desde afuera, solo con `?debug` o `?perf` en la dirección. No
+ * cambian nada de lo que se ve: exponen la escena y el cuerpo en `window.__marco`, y
+ * con `?perf` además miden cuánto tarda cada cuadro.
+ */
+const PROBE = (() => {
+  const q = new URLSearchParams(window.location.search)
+  return { debug: q.has('debug') || q.has('perf'), perf: q.has('perf') }
+})()
+
+/** Los últimos tiempos de cuadro, en ms, para `__marco.perf()`. */
+const perfRing: number[] = []
+
+function perfReport() {
+  const sorted = [...perfRing].sort((a, b) => a - b)
+  const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0
+  return { n: sorted.length, p50: at(0.5), p95: at(0.95), max: sorted[sorted.length - 1] ?? 0 }
+}
 
 interface DragState {
   target: 'frame' | 'mat'
@@ -216,6 +236,8 @@ export function Canvas({
    * y no tiene por qué guardarse con el proyecto.
    */
   const viewZoomRef = useRef(1)
+  /** Cuánto se apartó el cuadro de su reposo. */
+  const poseRef = useRef<Pose>({ ...REST_POSE })
 
   // --- solo en el celular ---------------------------------------------------
   const tilt = useTilt(compact)
@@ -437,6 +459,7 @@ export function Canvas({
           }
         }
 
+        const t0 = PROBE.perf ? performance.now() : 0
         const { layout: drawn, rects, light } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
           height: box.height,
@@ -444,7 +467,12 @@ export function Canvas({
           dpr,
           parallax: par,
           anchor: touch && anchorRef.current ? anchorRef.current : undefined,
+          pose: poseRef.current,
         })
+        if (PROBE.perf) {
+          perfRing.push(performance.now() - t0)
+          if (perfRing.length > 240) perfRing.shift()
+        }
 
         if (touch) {
           const fade = fadeRef.current
@@ -514,6 +542,14 @@ export function Canvas({
     }
 
     frame = requestAnimationFrame(loop)
+    if (PROBE.debug) {
+      ;(window as unknown as { __marco: unknown }).__marco = {
+        scene: sceneRef,
+        pose: poseRef,
+        perf: perfReport,
+        perfReset: () => (perfRing.length = 0),
+      }
+    }
     return () => cancelAnimationFrame(frame)
   }, [sceneRef, tilt])
 

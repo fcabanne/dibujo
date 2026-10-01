@@ -36,6 +36,12 @@ export function drawGlassClips(
   rect: Rect,
   pxPerCm: number,
   light: Light,
+  /**
+   * La luz en el espacio de la pantalla. La sombra de cada clip se corre en píxeles
+   * del dispositivo, que no giran con el cuadro: si el cuadro se balancea, la sombra
+   * sigue cayendo lejos del foco del cuarto.
+   */
+  shadowLight: Light = light,
 ) {
   const wCm = rect.w / pxPerCm
   const hCm = rect.h / pxPerCm
@@ -93,8 +99,8 @@ export function drawGlassClips(
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0.34)'
     ctx.shadowBlur = Math.max(1.5, pxPerCm * 0.14) * scale
-    ctx.shadowOffsetX = -light.x * LIFT * pxPerCm * scale
-    ctx.shadowOffsetY = -light.y * LIFT * pxPerCm * scale
+    ctx.shadowOffsetX = -shadowLight.x * LIFT * pxPerCm * scale
+    ctx.shadowOffsetY = -shadowLight.y * LIFT * pxPerCm * scale
     ctx.fillStyle = g
     ctx.fill()
 
