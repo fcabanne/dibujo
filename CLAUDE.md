@@ -91,8 +91,12 @@ animación a medio correr. Para medir estado final: desactivar transiciones, o f
 cuadros con capturas de pantalla.
 
 **El audio nace con un gesto.** Un `AudioContext` creado antes de que la persona toque
-algo nace suspendido y no suena. Enmarcado lo crea recién en el primer `pointerdown` o
-`keydown` (`unlockSound` en `sound/engine.ts`), y hasta entonces `play` no hace nada.
+algo nace suspendido y no suena. Enmarcado lo crea recién en el primer gesto
+(`unlockSound` en `sound/engine.ts`), y hasta entonces `play` no hace nada. El que lo
+escucha es un efecto propio del lienzo, para las dos capas: cuando vivía con los
+manejadores del mouse, el celular no lo despertaba nunca y no sonaba nada. Safari de
+iPhone cuenta como gesto el final del toque, así que se escucha también `touchend`.
+En un iPhone con la llave de silencio puesta, el audio de una página no suena.
 En pruebas automáticas, cargar el dibujo con `setInputFiles` no cuenta como gesto:
 sin un clic del mouse no hay sonidos que contar.
 
@@ -285,7 +289,7 @@ cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto
 - **En el celular también**, con tres diferencias:
   - El lienzo GL va a densidad 1,5: casi no se distingue de 2 y es la mitad de píxeles que sombrear.
   - Se pinta solo cuando el 2D se pinta (`paintedRef`), así que quieto no gasta nada.
-  - El cuerpo sigue llegando en el acto. La inclinación del teléfono y el dedo sobre la pared mueven el ojo, como el mouse.
+  - La inclinación del teléfono y el dedo sobre la pared mueven el ojo, como el mouse.
 - **Las muestras del celular salen del mismo 3D:** la tira de colores mira el material de frente, con un listón plano y la muestra en el medio de la banda. Las tarjetas de perfil miran el listón de abajo (`look` en `paintGlChip`).
 
 ### El cuadro tiene cuerpo
@@ -336,8 +340,14 @@ de lo de alrededor, no de deformarlo.
   transformadas, y lo que es del cuarto —el reflejo del vidrio, la caída del foco, la
   sombra de los ganchitos— queda en el espacio de la pantalla. El puntero se lleva al
   espacio del cuadro antes de preguntar qué hay debajo (`toObject`).
-- **En el celular todo llega en el acto**, como antes; y con `prefers-reduced-motion`
-  también, en las dos capas. El sonido sí suena: no es movimiento.
+- **En el celular, el mismo cuerpo**: se asienta, se balancea, gira con peso y se
+  cuelga, y suena igual que en la compu. Lo que no hay es empujarlo con el dedo —el
+  dedo sobre la obra abre la obra—; en cambio, **inclinar el teléfono lo balancea**
+  (`TILT_SWING` en `Canvas.tsx`): la pared se mueve con el teléfono y el cuadro se queda
+  atrás un instante sobre el clavo. Empuja el cambio de inclinación, no la postura. El
+  lienzo sigue pintando mientras el cuerpo se mueve y se duerme cuando se queda quieto.
+- **Con `prefers-reduced-motion` todo llega en el acto**, en las dos capas. El sonido
+  sí suena: no es movimiento.
 
 **La luz está quieta; lo que se mueve es el ojo.** El foco está atornillado al cuarto
 (`REST_LIGHT`): el puntero —o la inclinación del teléfono— corre el ojo (`eyeOf`), y
@@ -357,7 +367,8 @@ cuerpo (`knock`), con varias versiones que se turnan para que dos clics nunca se
 mismo. El vidrio es un golpecito bajo de la misma familia: como campanita se oía como
 una notificación. Todo muy bajo, con un pelo de sala, y el motor (`sound/engine.ts`)
 cuida que una ráfaga no lastime. Se calla con el parlante al lado de "Dejame
-sugerencias", y la elección se recuerda (`cuadros:sonido`).
+sugerencias" —en el celular, en la pastilla de arriba, al lado de descargar—, y la
+elección se recuerda (`cuadros:sonido`).
 
 Para afinar de oído: `MASTER` en `engine.ts` sube o baja todo junto, y cada receta
 tiene su nivel. Con `?debug` en la dirección, `window.__marco` expone la escena, el

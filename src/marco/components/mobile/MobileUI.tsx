@@ -11,7 +11,8 @@ import {
 import { flushSync } from 'react-dom'
 import { copy } from '../../../shared/copy'
 import { loadArtworkFile } from '../../../shared/imageFile'
-import { BackIcon, DownloadIcon, IconButton, PhotoIcon } from '../../../shared/ui'
+import { BackIcon, DownloadIcon, IconButton, PhotoIcon, SpeakerIcon, SpeakerOffIcon } from '../../../shared/ui'
+import { setMuted, useMuted } from '../../sound/engine'
 import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
 import type { FreeArea, SceneSnapshot } from '../Canvas'
@@ -191,6 +192,7 @@ export function MobileUI({
 
   const pickFile = useCallback(() => fileRef.current?.click(), [])
 
+  const muted = useMuted()
   const [saving, setSaving] = useState(false)
   const save = useCallback(async () => {
     if (saving) return
@@ -414,8 +416,12 @@ export function MobileUI({
       <div ref={safeRef} className="m-safe" aria-hidden />
 
       {/* Descargar va arriba y aparte: abajo no entra al lado de las pestañas en un
-          teléfono común, y es de otra conversación que elegir la moldura. */}
+          teléfono común, y es de otra conversación que elegir la moldura. El sonido,
+          en la misma pastilla: tampoco es del enmarcado. */}
       <nav ref={saveRef} className="m-pill m-save">
+        <IconButton label={copy.marco.sound} aria-pressed={!muted} onClick={() => setMuted(!muted)}>
+          {muted ? <SpeakerOffIcon /> : <SpeakerIcon />}
+        </IconButton>
         <IconButton label={copy.marco.download} onClick={save} aria-busy={saving || undefined}>
           <DownloadIcon />
         </IconButton>

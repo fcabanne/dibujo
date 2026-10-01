@@ -36,7 +36,7 @@ import {
   sway,
   type BodyEvent,
 } from '../physics/body'
-import { DEGREES } from '../physics/pendulum'
+import { DEGREES, nudge } from '../physics/pendulum'
 import { eyeOf, nailOf, toObject } from '../render/pose'
 import { createObjectRenderer, type ObjectRenderer } from '../gl/renderer'
 import { massOf } from '../physics/mass'
@@ -160,6 +160,13 @@ const FADE_MS = 240
  * ser corto, o barrer el abanico deja una estela de materiales.
  */
 const FADE_DESK_MS = 110
+
+/**
+ * Cuánto balancea el cuadro inclinar el teléfono, en radianes por unidad de
+ * inclinación (una unidad son 18°): un giro firme de la muñeca lo mueve uno o dos
+ * grados, y el clavo y el alambre lo frenan y lo dejan derecho.
+ */
+const TILT_SWING = 0.12
 
 /**
  * Sondas para mirar desde afuera, solo con `?debug` o `?perf` en la dirección. No
@@ -314,6 +321,8 @@ export function Canvas({
   const looksRef = useRef('')
   /** Lo último que se pintó: si nada cambió desde entonces, no se vuelve a pintar. */
   const paintedRef = useRef<Painted | null>(null)
+  /** La inclinación del teléfono en el cuadro anterior: lo que empuja el balanceo es cuánto cambió. */
+  const tiltSeenRef = useRef<number | null>(null)
 
   const committedRef = useRef(committed)
   committedRef.current = committed
@@ -470,19 +479,31 @@ export function Canvas({
         const confirmed = committedRef.current ?? current
         const kg = massOf(confirmed, dimsOf(confirmed)).kg
         const seen = seenRef.current
-        if (seen && !touch) {
+        if (seen) {
           for (const reaction of diffScenes(seen, { shown: current, committed: confirmed }, Boolean(drag))) {
             react(reaction, seen.committed, confirmed, kg - body.kg)
           }
         }
         seenRef.current = { shown: current, committed: confirmed }
         body.kg = kg
-        const instant = touch || reducedMotionNow()
+        const instant = reducedMotionNow()
         if (arrivalRef.current !== hungRef.current) {
           hungRef.current = arrivalRef.current
           if (!instant) hang(body, Math.random() < 0.5 ? -1 : 1)
         }
-        stepBody(body, current, dt, instant)
+        // El teléfono que se inclina mueve la pared donde cuelga: el cuadro se queda
+        // atrás un instante y se balancea sobre el clavo, como uno de verdad. Lo que
+        // empuja es el cambio de inclinación, no la postura.
+        const t0tilt = tilt.current
+        if (touch && t0tilt.active && !lookRef.current && !instant) {
+          const prev = tiltSeenRef.current
+          if (prev !== null) {
+            const kick = Math.max(-0.25, Math.min(0.25, t0tilt.x - prev))
+            if (kick !== 0) nudge(body.swing, body.omega, -kick * TILT_SWING)
+          }
+          tiltSeenRef.current = t0tilt.x
+        }
+        const moving = stepBody(body, current, dt, instant)
         for (const event of body.events) play(EVENT_SOUND[event], { pan: 0 })
         const dims = shownDims(body)
         const layout = layoutFromDims(dims)
@@ -638,6 +659,7 @@ export function Canvas({
             anchor &&
             !resized &&
             !drag &&
+            !moving &&
             !fadeRef.current &&
             painted.state === current &&
             painted.image === imageRef.current &&
@@ -807,6 +829,18 @@ export function Canvas({
     }
   }, [sceneRef, tilt])
 
+  // El audio se despierta con el primer gesto, sea cual sea, en la compu y en el
+  // celular: el navegador no deja sonar antes. Así el primer clic sobre una burbuja
+  // ya puede sonar. Safari de iPhone cuenta como gesto el final del toque, no el
+  // comienzo, así que se escuchan los dos.
+  useEffect(() => {
+    const events = ['pointerdown', 'touchend', 'click', 'keydown']
+    for (const e of events) window.addEventListener(e, unlockSound, true)
+    return () => {
+      for (const e of events) window.removeEventListener(e, unlockSound, true)
+    }
+  }, [])
+
   // --- puntero --------------------------------------------------------------
   // A nivel ventana para que el paralaje no se congele al pasar por una burbuja.
   // Es del escritorio: en el celular no hay un puntero que pase por encima, y los
@@ -884,17 +918,11 @@ export function Canvas({
       sleepAfter(0)
     }
 
-    // El audio se despierta con el primer gesto, sea cual sea: el navegador no deja
-    // sonar antes. Así el primer clic sobre una burbuja ya puede sonar.
-    window.addEventListener('pointerdown', unlockSound, true)
-    window.addEventListener('keydown', unlockSound, true)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
     window.addEventListener('blur', onBlur)
     return () => {
-      window.removeEventListener('pointerdown', unlockSound, true)
-      window.removeEventListener('keydown', unlockSound, true)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
