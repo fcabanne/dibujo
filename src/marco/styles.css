@@ -1169,10 +1169,15 @@ body {
 
 
 /* El cuadro en 3D, encima del lienzo de la pared (prototipo, con ?gl). */
-.gl-layer {
+.gl-layer,
+.fade-layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.fade-layer {
+  opacity: 0;
 }

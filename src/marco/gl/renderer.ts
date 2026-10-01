@@ -16,7 +16,7 @@ import { FRAGMENT, VERTEX } from './shaders'
  * frente cae exactamente donde caía el dibujo plano, así que las burbujas, la cartela y
  * lo que se agarra con el mouse no se enteran de cuál de los dos está dibujando.
  *
- * Es un prototipo: se prende con `?gl` en la dirección, para compararlo con el 2D.
+ * En escritorio es el que se ve; `?2d` en la dirección vuelve al plano para comparar.
  */
 
 export interface ObjectFrame {
@@ -262,7 +262,13 @@ const SHADOW_RAKE = 0.4
 const SHADOW_STRENGTH = 0.72
 
 export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer | null {
-  const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: true, alpha: true })
+  const gl = canvas.getContext('webgl2', {
+    premultipliedAlpha: true,
+    antialias: true,
+    alpha: true,
+    // Para poder copiarlo fuera del cuadro en que se pintó: el fundido de materiales.
+    preserveDrawingBuffer: true,
+  })
   if (!gl) return null
 
   let program: WebGLProgram

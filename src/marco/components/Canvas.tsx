@@ -158,13 +158,19 @@ const FADE_DESK_MS = 110
  */
 const PROBE = (() => {
   const q = new URLSearchParams(window.location.search)
-  return { debug: q.has('debug') || q.has('perf'), perf: q.has('perf'), gl: q.get('gl') }
+  return {
+    debug: q.has('debug') || q.has('perf'),
+    perf: q.has('perf'),
+    flat: q.has('2d'),
+    split: q.get('gl') === 'split',
+  }
 })()
 
 /**
- * El cuadro en 3D, todavía un prototipo (`gl/`): con `?gl` en la dirección lo dibuja
- * WebGL encima de la pared; con `?gl=split`, mitad y mitad, para comparar con el 2D.
- * La tecla G pasa de uno a otro. Sin el parámetro no existe.
+ * El cuadro en 3D (`gl/`): en escritorio lo dibuja WebGL encima de la pared, que
+ * sigue siendo 2D. Sin WebGL2, o si el contexto se pierde, queda el 2D de siempre.
+ * Para comparar: `?2d` en la dirección fuerza el plano, `?gl=split` muestra mitad y
+ * mitad, y con `?debug` (o `?gl=split`) la tecla G pasa de uno a otro.
  */
 type GlMode = 'off' | 'gl' | 'split'
 const GL_MODES: GlMode[] = ['gl', 'split', 'off']
@@ -237,8 +243,11 @@ export function Canvas({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const glCanvasRef = useRef<HTMLCanvasElement>(null)
-  const glModeRef = useRef<GlMode>(PROBE.gl === null ? 'off' : PROBE.gl === 'split' ? 'split' : 'gl')
+  const fadeLayerRef = useRef<HTMLCanvasElement>(null)
+  const glModeRef = useRef<GlMode>(PROBE.flat ? 'off' : PROBE.split ? 'split' : 'gl')
   const glRef = useRef<ObjectRenderer | null>(null)
+  /** Si el 3D no anda en este navegador: no se vuelve a intentar en cada cuadro. */
+  const glFailedRef = useRef(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const image = useImage(state.artwork.src)
   const [dragOver, setDragOver] = useState(false)
@@ -290,6 +299,8 @@ export function Canvas({
   const lastTapRef = useRef({ time: 0, x: 0, y: 0 })
   /** El cuadro de antes de un cambio de material, fundiéndose sobre el nuevo. */
   const fadeRef = useRef<{ canvas: HTMLCanvasElement; start: number } | null>(null)
+  /** Si el último cuadro lo pintó también el 3D: el fundido tiene que copiar los dos lienzos. */
+  const glVisibleRef = useRef(false)
   const looksRef = useRef('')
   /** Lo último que se pintó: si nada cambió desde entonces, no se vuelve a pintar. */
   const paintedRef = useRef<Painted | null>(null)
@@ -393,12 +404,23 @@ export function Canvas({
     let frame = 0
     let last = performance.now()
 
-    if (PROBE.gl !== null && glCanvasRef.current && !glRef.current) {
-      glRef.current = createObjectRenderer(glCanvasRef.current)
-      if (!glRef.current) glModeRef.current = 'off'
+    // El 3D nace recién cuando hace falta —en el celular todavía no—, y si el
+    // navegador pierde el contexto (se quedó sin memoria de video, cambió de placa)
+    // se vuelve al 2D hasta que lo devuelva.
+    const glCanvas = glCanvasRef.current
+    const onLost = (e: Event) => {
+      e.preventDefault()
+      glRef.current = null
+      glFailedRef.current = true
     }
+    const onRestored = () => {
+      glFailedRef.current = false
+    }
+    glCanvas?.addEventListener('webglcontextlost', onLost)
+    glCanvas?.addEventListener('webglcontextrestored', onRestored)
+
     const onGlKey = (e: KeyboardEvent) => {
-      if (PROBE.gl === null || e.key.toLowerCase() !== 'g' || e.target instanceof HTMLInputElement) return
+      if (!(PROBE.debug || PROBE.split) || e.key.toLowerCase() !== 'g' || e.target instanceof HTMLInputElement) return
       const i = GL_MODES.indexOf(glModeRef.current)
       glModeRef.current = GL_MODES[(i + 1) % GL_MODES.length]
     }
@@ -562,7 +584,7 @@ export function Canvas({
         if (looks !== looksRef.current) {
           const sized = targetKey !== targetKeyRef.current
           if (looksRef.current && !resized && (touch || !sized) && !reducedMotionNow()) {
-            fadeRef.current = snapshot(canvas, now)
+            fadeRef.current = snapshot(fadeLayerRef.current, canvas, glVisibleRef.current ? glCanvasRef.current : null, now)
           }
           looksRef.current = looks
         }
@@ -598,7 +620,11 @@ export function Canvas({
           }
         }
 
-        const glMode: GlMode = touch ? 'off' : glModeRef.current
+        if (!touch && glModeRef.current !== 'off' && !glRef.current && !glFailedRef.current && glCanvasRef.current) {
+          glRef.current = createObjectRenderer(glCanvasRef.current)
+          if (!glRef.current) glFailedRef.current = true
+        }
+        const glMode: GlMode = touch || !glRef.current ? 'off' : glModeRef.current
         const t0 = PROBE.perf ? performance.now() : 0
         const { rects, light, layout: shown } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
@@ -615,6 +641,7 @@ export function Canvas({
         const gl = glRef.current
         const glCanvas = glCanvasRef.current
         if (glCanvas) glCanvas.style.visibility = glMode === 'off' ? 'hidden' : 'visible'
+        glVisibleRef.current = glMode !== 'off'
         if (gl && glMode !== 'off') {
           gl.render({
             state: current,
@@ -639,16 +666,16 @@ export function Canvas({
           if (perfRing.length > 240) perfRing.shift()
         }
 
+        // El fundido va en su propia capa, encima de la pared y del cuadro en 3D: si
+        // se pintara en el lienzo de la pared, el 3D lo taparía.
         const fade = fadeRef.current
         if (fade) {
           const t = (now - fade.start) / (touch ? FADE_MS : FADE_DESK_MS)
-          if (t >= 1) fadeRef.current = null
-          else {
-            ctx.save()
-            ctx.setTransform(1, 0, 0, 1, 0, 0)
-            ctx.globalAlpha = 1 - easeOut(t)
-            ctx.drawImage(fade.canvas, 0, 0)
-            ctx.restore()
+          if (t >= 1) {
+            fadeRef.current = null
+            fade.canvas.style.opacity = '0'
+          } else {
+            fade.canvas.style.opacity = String(1 - easeOut(t))
           }
         }
 
@@ -739,6 +766,8 @@ export function Canvas({
     return () => {
       cancelAnimationFrame(frame)
       window.removeEventListener('keydown', onGlKey)
+      glCanvas?.removeEventListener('webglcontextlost', onLost)
+      glCanvas?.removeEventListener('webglcontextrestored', onRestored)
     }
   }, [sceneRef, tilt])
 
@@ -1104,7 +1133,8 @@ export function Canvas({
       }}
     >
       <canvas ref={canvasRef} />
-      {PROBE.gl !== null && <canvas ref={glCanvasRef} className="gl-layer" aria-hidden />}
+      <canvas ref={glCanvasRef} className="gl-layer" aria-hidden />
+      <canvas ref={fadeLayerRef} className="fade-layer" aria-hidden />
       {dragOver && (
         <div className="drop-hint">
           <span>Soltá tu dibujo acá</span>
@@ -1138,17 +1168,25 @@ function panOf(x: number, width: number): number {
   return ((x / Math.max(1, width)) * 2 - 1) * 0.35
 }
 
-/** Una copia de lo que hay pintado ahora, para fundirla sobre lo que venga. */
-let fadeCanvas: HTMLCanvasElement | null = null
-
-function snapshot(canvas: HTMLCanvasElement, start: number) {
-  if (!fadeCanvas) fadeCanvas = document.createElement('canvas')
-  if (fadeCanvas.width !== canvas.width || fadeCanvas.height !== canvas.height) {
-    fadeCanvas.width = canvas.width
-    fadeCanvas.height = canvas.height
+/**
+ * Una copia de lo que hay pintado ahora —la pared y, si está, el cuadro en 3D—, en
+ * la capa del fundido, para que se apague encima de lo que venga.
+ */
+function snapshot(
+  layer: HTMLCanvasElement | null,
+  canvas: HTMLCanvasElement,
+  gl: HTMLCanvasElement | null,
+  start: number,
+) {
+  if (!layer) return null
+  if (layer.width !== canvas.width || layer.height !== canvas.height) {
+    layer.width = canvas.width
+    layer.height = canvas.height
   }
-  const ctx = fadeCanvas.getContext('2d')
-  ctx?.clearRect(0, 0, fadeCanvas.width, fadeCanvas.height)
+  const ctx = layer.getContext('2d')
+  ctx?.clearRect(0, 0, layer.width, layer.height)
   ctx?.drawImage(canvas, 0, 0)
-  return { canvas: fadeCanvas, start }
+  if (gl && gl.width > 0) ctx?.drawImage(gl, 0, 0, layer.width, layer.height)
+  layer.style.opacity = '1'
+  return { canvas: layer, start }
 }
