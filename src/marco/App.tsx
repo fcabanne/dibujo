@@ -143,6 +143,7 @@ export function App() {
       {showCanvas && (
         <Canvas
           state={shown}
+          committed={state}
           dispatch={dispatch}
           sceneRef={sceneRef}
           onLayout={handleLayout}

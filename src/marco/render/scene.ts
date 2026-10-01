@@ -69,7 +69,7 @@ export function renderScene(
 
   // 2. Sombra proyectada. Está sobre la pared, así que se corre con ella: entre la
   //    sombra y el canto se abre la rendija que dice que el cuadro está colgado.
-  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color)
+  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color, pose.lean)
 
   // Lo que existe es lo que se ve: una moldura que se está yendo a cero se sigue
   // dibujando hasta que no queda nada de ella.

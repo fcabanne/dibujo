@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import {
   clamp,
   computeLayout,
+  dimsOf,
   layoutFromDims,
   fitScale,
   type SceneRects,
@@ -19,10 +20,11 @@ import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
-import { createBody, detentKick, shownDims, stepBody } from '../physics/body'
+import { createBody, detentKick, press, release, settle, shownDims, stepBody } from '../physics/body'
+import { massOf } from '../physics/mass'
+import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
-import { tickFor, tickRate } from '../sound/recipes'
-import { REST_POSE, type Pose } from '../render/pose'
+import { commitFor, tickFor, tickRate } from '../sound/recipes'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -69,7 +71,10 @@ export interface FreeArea {
 }
 
 interface Props {
+  /** Lo que se ve: el estado con la vista previa del puntero encima. */
   state: AppState
+  /** Lo confirmado, sin vista previa. Con los dos se sabe si algo se eligió o se está mirando. */
+  committed?: AppState
   dispatch: (action: Action) => void
   sceneRef: React.MutableRefObject<SceneSnapshot>
   onLayout: (layout: Layout) => void
@@ -110,6 +115,11 @@ const TAP = { px: 8, ms: 350 }
 const DOUBLE_TAP = { px: 30, ms: 320 }
 /** Cuánto dura el fundido entre un material y otro. */
 const FADE_MS = 240
+/**
+ * En escritorio el fundido acompaña al puntero que pasa por las muestras: tiene que
+ * ser corto, o barrer el abanico deja una estela de materiales.
+ */
+const FADE_DESK_MS = 110
 
 /**
  * Sondas para mirar desde afuera, solo con `?debug` o `?perf` en la dirección. No
@@ -176,6 +186,7 @@ function partOf(zone: Zone): Part {
 
 export function Canvas({
   state,
+  committed,
   dispatch,
   sceneRef,
   onLayout,
@@ -203,8 +214,6 @@ export function Canvas({
    * y no tiene por qué guardarse con el proyecto.
    */
   const viewZoomRef = useRef(1)
-  /** Cuánto se apartó el cuadro de su reposo. */
-  const poseRef = useRef<Pose>({ ...REST_POSE })
   /** El cuadro como cosa: las medidas que se ven, persiguiendo a las del estado. */
   const bodyRef = useRef(createBody(state))
   /** El cursor que se puso por última vez, para no tocar el estilo en cada cuadro. */
@@ -243,6 +252,14 @@ export function Canvas({
   /** Lo último que se pintó: si nada cambió desde entonces, no se vuelve a pintar. */
   const paintedRef = useRef<Painted | null>(null)
 
+  const committedRef = useRef(committed)
+  committedRef.current = committed
+  /** Lo que se vio y se confirmó en el cuadro anterior, para saber qué cambió. */
+  const seenRef = useRef<Seen | null>(null)
+  /** El peso del cuadro al agarrar una banda: al soltar, se asienta con la diferencia. */
+  const dragKgRef = useRef(0)
+  /** Las medidas que pedía el estado en el cuadro anterior: si cambian, no hay fundido. */
+  const targetKeyRef = useRef('')
   const stateRef = useRef(state)
   const imageRef = useRef(image)
   const onLayoutRef = useRef(onLayout)
@@ -259,6 +276,38 @@ export function Canvas({
   compactRef.current = compact
   freeAreaRef.current = freeArea
   onPartTapRef.current = onPartTap
+
+  /**
+   * Lo que hace el cuadro cuando alguien elige algo o pasa por una muestra: suena
+   * según el material, y si cambió el peso se asienta en el alambre. La pared no pesa
+   * nada del cuadro: suena, y el cuadro no se mueve.
+   */
+  const react = (reaction: Reaction, before: AppState, after: AppState, deltaKg: number) => {
+    if (reaction.kind === 'hover') {
+      play('hover', { pan: 0 })
+      return
+    }
+    const pan = reaction.part === 'glass' || reaction.part === 'wall' ? 0.25 : reaction.part === 'art' ? 0 : -0.25
+    const weight = Math.max(-3, Math.min(4, deltaKg * 6))
+    switch (reaction.part) {
+      case 'frame':
+        play(commitFor(after.frame.material), { pan, gain: weight, rate: after.frame.width === 0 ? 1.2 : 1 })
+        break
+      case 'mat':
+        play('commit-mat', { pan })
+        break
+      case 'glass':
+        play(after.glass === 'none' ? 'commit-unglass' : 'commit-glass', { pan })
+        break
+      case 'wall':
+        play('commit-wall', { pan })
+        return
+      case 'art':
+        // El tamaño se tipea: sonar en cada tecla sería un teclado. Solo se asienta.
+        break
+    }
+    if (before !== after) settle(bodyRef.current, deltaKg)
+  }
 
   /**
    * Lo que pasa con cada movimiento de una banda agarrada: el cuerpo sigue a la mano
@@ -318,6 +367,19 @@ export function Canvas({
         // de controles todavía no sabe acompañarlo.
         const body = bodyRef.current
         body.dragging = Boolean(drag)
+
+        // Qué pasó desde el cuadro anterior: se eligió algo, o se está pasando por
+        // encima de una muestra. Cada cosa suena y, si cambia el peso, se asienta.
+        const confirmed = committedRef.current ?? current
+        const kg = massOf(confirmed, dimsOf(confirmed)).kg
+        const seen = seenRef.current
+        if (seen && !touch) {
+          for (const reaction of diffScenes(seen, { shown: current, committed: confirmed }, Boolean(drag))) {
+            react(reaction, seen.committed, confirmed, kg - body.kg)
+          }
+        }
+        seenRef.current = { shown: current, committed: confirmed }
+        body.kg = kg
         stepBody(body, current, dt, touch || reducedMotionNow())
         const dims = shownDims(body)
         const layout = layoutFromDims(dims)
@@ -420,19 +482,26 @@ export function Canvas({
         par.x += (aimX - par.x) * kp
         par.y += (aimY - par.y) * kp
 
+        // Un material nuevo se funde sobre el anterior en vez de saltar: se copia lo
+        // último que se pintó y se lo va apagando encima de la escena nueva. Si además
+        // cambiaron las medidas no: el cuadro viejo y el nuevo no coinciden, y el
+        // fundido se vería doble. Las medidas ya llegan con su resorte.
+        const looks = looksKey(current)
+        const targetKey = Object.values(dimsOf(current)).join('|')
+        if (looks !== looksRef.current) {
+          const sized = targetKey !== targetKeyRef.current
+          if (looksRef.current && !resized && (touch || !sized) && !reducedMotionNow()) {
+            fadeRef.current = snapshot(canvas, now)
+          }
+          looksRef.current = looks
+        }
+        targetKeyRef.current = targetKey
+
         if (touch) {
           // Llega y se queda quieto, en vez de acercarse para siempre sin llegar: es
           // lo que deja reconocer que no hay nada nuevo que pintar.
           if (Math.abs(aimX - par.x) < 0.001) par.x = aimX
           if (Math.abs(aimY - par.y) < 0.001) par.y = aimY
-
-          // Un material nuevo se funde sobre el anterior en vez de saltar: se copia
-          // lo último que se pintó y se lo va apagando encima de la escena nueva.
-          const looks = looksKey(current)
-          if (looks !== looksRef.current) {
-            if (looksRef.current && !resized) fadeRef.current = snapshot(canvas, now)
-            looksRef.current = looks
-          }
 
           // Nada se movió y nada cambió desde el último cuadro pintado: la escena de
           // la pantalla ya es la correcta. En un teléfono, pintar sesenta veces por
@@ -466,7 +535,7 @@ export function Canvas({
           dpr,
           parallax: par,
           anchor: touch && anchorRef.current ? anchorRef.current : undefined,
-          pose: poseRef.current,
+          pose: body.pose,
           dims,
         })
         if (PROBE.perf) {
@@ -474,19 +543,20 @@ export function Canvas({
           if (perfRing.length > 240) perfRing.shift()
         }
 
-        if (touch) {
-          const fade = fadeRef.current
-          if (fade) {
-            const t = (now - fade.start) / FADE_MS
-            if (t >= 1) fadeRef.current = null
-            else {
-              ctx.save()
-              ctx.setTransform(1, 0, 0, 1, 0, 0)
-              ctx.globalAlpha = 1 - easeOut(t)
-              ctx.drawImage(fade.canvas, 0, 0)
-              ctx.restore()
-            }
+        const fade = fadeRef.current
+        if (fade) {
+          const t = (now - fade.start) / (touch ? FADE_MS : FADE_DESK_MS)
+          if (t >= 1) fadeRef.current = null
+          else {
+            ctx.save()
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
+            ctx.globalAlpha = 1 - easeOut(t)
+            ctx.drawImage(fade.canvas, 0, 0)
+            ctx.restore()
           }
+        }
+
+        if (touch) {
           paintedRef.current = {
             state: current,
             image: imageRef.current,
@@ -555,7 +625,6 @@ export function Canvas({
       logSounds(true)
       ;(window as unknown as { __marco: unknown }).__marco = {
         scene: sceneRef,
-        pose: poseRef,
         body: bodyRef,
         sounds: soundLog,
         perf: perfReport,
@@ -610,6 +679,12 @@ export function Canvas({
         play('stretch', { pan: panOf(pointerRef.current.x, wrapRef.current?.clientWidth ?? 1) })
       }
       body.hand = null
+      if (dragRef.current) {
+        release(body)
+        // El cuadro quedó con otro peso: al soltarlo se asienta con la diferencia.
+        const delta = body.kg - dragKgRef.current
+        if (Math.abs(delta) > 0.001) settle(body, delta)
+      }
       dragRef.current = null
       sceneRef.current.dragging = null
       sceneRef.current.dragCm = null
@@ -660,6 +735,8 @@ export function Canvas({
 
       dragRef.current = startDrag(target, current, p, rects, scaleRef.current)
       sceneRef.current.dragging = target
+      press(bodyRef.current, (p.y - rects.outer.y) / Math.max(1, rects.outer.h))
+      dragKgRef.current = bodyRef.current.kg
       unlockSound()
       play('grab', { pan: panOf(p.x, box.width) })
       e.preventDefault()

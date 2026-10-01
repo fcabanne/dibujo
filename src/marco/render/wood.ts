@@ -38,7 +38,7 @@ interface Figure {
   seed: number
 }
 
-type Species = 'pine' | 'oak' | 'walnut'
+export type Species = 'pine' | 'oak' | 'walnut'
 
 const FIGURES: Record<Species, Figure> = {
   pine: { spacing: 0.42, rings: 0.4, pores: 0, streaks: 0.05, depth: 2.4, seed: 3 },
@@ -52,7 +52,7 @@ const FIGURES: Record<Species, Figure> = {
  * medios los poros del roble, y en los oscuros —nogal, caoba— los anillos casi no se
  * ven y manda la raya fina.
  */
-function speciesOf(color: string): Species {
+export function speciesOf(color: string): Species {
   const l = luminance(color)
   if (l > 0.55) return 'pine'
   if (l > 0.33) return 'oak'

@@ -108,6 +108,112 @@ export const RECIPES = {
     level: -30,
     gap: 200,
   },
+  /**
+   * Elegir una moldura de madera: la pieza que se apoya en el cuadro, un golpe con
+   * más cuerpo que la muesca.
+   */
+  'commit-wood': {
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 420, q: 8, amp: 1 },
+          { f: 780, q: 10, amp: 0.6 },
+          { f: 1650, q: 12, amp: 0.3 },
+        ],
+        strike: 0.0025,
+        thump: { f: 120, decay: 0.03, amp: 0.7 },
+        seed: 31 + v * 61,
+        detune: 0.05,
+      }),
+    variants: 3,
+    level: -24,
+    gap: 60,
+  },
+  /** Pintada: la misma madera con una capa de laca encima, más apagada y más corta. */
+  'commit-painted': {
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 380, q: 6, amp: 1 },
+          { f: 700, q: 7, amp: 0.45 },
+        ],
+        strike: 0.002,
+        thump: { f: 115, decay: 0.025, amp: 0.7 },
+        seed: 37 + v * 59,
+        detune: 0.05,
+      }),
+    variants: 3,
+    level: -24,
+    gap: 60,
+  },
+  /** Metal: el perfil de aluminio, que sí canta un momento. */
+  'commit-metal': {
+    build: (sr, v) =>
+      modal(sr, {
+        modes: [
+          { f: 1250 * (1 + v * 0.03), decay: 0.38, amp: 1 },
+          { f: 3460 * (1 + v * 0.02), decay: 0.24, amp: 0.5 },
+          { f: 6820, decay: 0.12, amp: 0.2 },
+        ],
+        click: { amp: 0.5, decay: 0.002, freq: 3000 },
+        seed: 41 + v,
+      }),
+    variants: 2,
+    level: -30,
+    gap: 60,
+  },
+  /** El passe-partout: un cartón que se desliza en su lugar. */
+  'commit-mat': {
+    build: (sr, v) =>
+      noiseBurst(sr, { from: 1200, to: 2800, q: 1.4, attack: 0.03, decay: 0.05, length: 0.16, seed: 43 + v }),
+    variants: 2,
+    level: -30,
+    gap: 60,
+  },
+  /** El vidrio: un "clink" corto, el canto que toca la moldura. */
+  'commit-glass': {
+    build: (sr, v) =>
+      modal(sr, {
+        modes: [
+          { f: 2650 * (1 + v * 0.02), decay: 0.42, amp: 1 },
+          { f: 6100, decay: 0.26, amp: 0.45 },
+          { f: 9400, decay: 0.16, amp: 0.2 },
+        ],
+        click: { amp: 0.3, decay: 0.001, freq: 5000 },
+        seed: 47 + v,
+      }),
+    variants: 2,
+    level: -32,
+    gap: 60,
+  },
+  /** Sacar el vidrio: se desliza afuera, un roce. */
+  'commit-unglass': {
+    build: (sr) => noiseBurst(sr, { from: 2600, to: 1400, q: 1.1, attack: 0.04, decay: 0.08, length: 0.22, seed: 53 }),
+    level: -34,
+    gap: 60,
+  },
+  /** La pared: una pasada de pincel, casi nada. */
+  'commit-wall': {
+    build: (sr) => noiseBurst(sr, { from: 250, to: 900, q: 0.8, attack: 0.05, decay: 0.08, length: 0.24, seed: 59 }),
+    level: -36,
+    gap: 60,
+  },
+  /**
+   * Pasar por encima de una muestra: un clic mínimo, como pasar el dedo por un
+   * muestrario. Tiene que oírse solo si se lo busca.
+   */
+  hover: {
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [{ f: 3200, q: 4, amp: 1 }],
+        strike: 0.0008,
+        seed: 61 + v * 13,
+        detune: 0.08,
+      }),
+    variants: 3,
+    level: -40,
+    gap: 45,
+  },
 } satisfies Record<string, Recipe>
 
 export type SoundName = keyof typeof RECIPES
@@ -126,4 +232,9 @@ export function tickFor(target: 'frame' | 'mat', material: FrameMaterial): Sound
 export function tickRate(widthCm: number): number {
   const t = Math.min(1, Math.max(0, (widthCm - 0.5) / 9.5))
   return Math.pow(2, (3 - 6 * t) / 12)
+}
+
+/** El golpe de elegir una moldura, según de qué es. */
+export function commitFor(material: FrameMaterial): SoundName {
+  return material === 'metal' ? 'commit-metal' : material === 'painted' ? 'commit-painted' : 'commit-wood'
 }
