@@ -113,3 +113,34 @@ export function objectLight(light: Light, pose: Pose): Light {
   const [x, y] = rotate(light.x, light.y, -a)
   return { x, y, z: light.z }
 }
+
+/**
+ * Dónde está el ojo, en cm respecto del centro del cuadro: parado enfrente, a la
+ * distancia a la que se mira un cuadro, y corrido de costado por el puntero —o por
+ * la inclinación del teléfono—. Va al revés que el puntero, como siempre fue: mover
+ * el mouse a la derecha es asomarse por la izquierda.
+ */
+export const EYE = { sway: { x: 20, y: 12 }, distance: VIEW_CM }
+
+export function eyeOf(parallax: { x: number; y: number }) {
+  return { x: -parallax.x * EYE.sway.x, y: -parallax.y * EYE.sway.y, z: EYE.distance }
+}
+
+/**
+ * Cuánto se corre la pared detrás del cuadro cuando el ojo se mueve, en px.
+ *
+ * El frente del cuadro está a un par de centímetros de la pared. Al correr la cabeza,
+ * lo lejano se desplaza respecto de lo cercano, en el mismo sentido que el ojo:
+ * entre la sombra y el canto del cuadro se abre o se cierra una rendija. Es la señal
+ * de profundidad más barata que hay, y la que dice que el cuadro está colgado y no
+ * pegado. Con el cuadro quieto en pantalla, lo que se mueve es la pared.
+ */
+export function wallShift(
+  parallax: { x: number; y: number },
+  frontCm: number,
+  pxPerCm: number,
+): { x: number; y: number } {
+  const eye = eyeOf(parallax)
+  const k = (frontCm / EYE.distance) * pxPerCm
+  return { x: eye.x * k, y: eye.y * k }
+}

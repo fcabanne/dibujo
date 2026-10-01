@@ -18,8 +18,9 @@ import { REST_LIGHT, shadowTint, spotPosition } from './light'
  * nítida —la penumbra se abre con la distancia a la pared—. Y la luz es un foco, no
  * el sol: cada esquina tira su sombra alejándose de él, así que la sombra sale un
  * poco más grande que el cuadro y más larga del lado que queda más lejos del foco.
- * Se hornea con la luz quieta (`REST_LIGHT`): lo que el puntero la corre no alcanza
- * para mover una sombra desenfocada, y hornear en cada cuadro sí se notaría.
+ * Se hornea con la luz de la escena (`REST_LIGHT`), que está quieta: el puntero mueve
+ * el ojo y no el foco, así que la forma de la sombra no cambia; lo que cambia es
+ * dónde se la ve, porque está sobre la pared (ver `wallShift`).
  */
 
 type Pt = { x: number; y: number }
@@ -49,7 +50,7 @@ const cache = new Map<string, Baked>()
  * Cuánto se despega de la pared el canto de arriba, en cm. Un cuadro chico cuelga
  * casi derecho; uno grande, con el alambre más largo, se inclina más.
  */
-function standoff(heightCm: number): number {
+export function standoff(heightCm: number): number {
   return Math.min(2, Math.max(0.6, heightCm * 0.03))
 }
 

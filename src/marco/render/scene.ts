@@ -4,10 +4,10 @@ import { drawArtwork } from './artwork'
 import { drawGlassClips } from './clips'
 import { drawFrame, drawRebateShadow, type Parallax } from './frame'
 import { drawGlass, drawGlassEdge } from './glass'
-import { lightFor, type Light } from './light'
+import { REST_LIGHT, type Light } from './light'
 import { drawMat } from './mat'
-import { drawCastShadow } from './shadow'
-import { applyObjectTransform, isRest, objectLight, REST_POSE, type Pose } from './pose'
+import { drawCastShadow, standoff } from './shadow'
+import { applyObjectTransform, isRest, objectLight, REST_POSE, wallShift, type Pose } from './pose'
 import { drawObjectFalloff, drawWall } from './wall'
 
 export interface SceneParams {
@@ -47,17 +47,23 @@ export function renderScene(
   const { width, height, pxPerCm, parallax, anchor } = params
   const pose = params.pose ?? REST_POSE
   const layout = computeLayout(state)
-  const light = lightFor(parallax.x, parallax.y)
-  const rects = composeRects(layout, { width, height }, pxPerCm, parallax, anchor)
+  const light = REST_LIGHT
+  const rects = composeRects(layout, { width, height }, pxPerCm, anchor)
   const { outer, glass, sight } = rects
   const depthPx = layout.depth * pxPerCm
 
-  // 1. Pared, con el foco apuntado al cuadro
-  drawWall(ctx, width, height, state.wall, light, outer, pxPerCm)
+  // La pared, vista desde donde está el ojo: el frente del cuadro está a su espesor
+  // más media cuña de la pared, y lo de atrás se corre respecto de él.
+  const front = layout.depth + standoff(layout.outer.h) / 2
+  const shift = wallShift(parallax, front, pxPerCm)
+  const behind = { ...outer, x: outer.x + shift.x, y: outer.y + shift.y }
 
-  // 2. Sombra proyectada. Se desplaza más que el cuadro: esa diferencia es la
-  //    señal de profundidad más barata que hay.
-  drawCastShadow(ctx, outer, layout.depth, pxPerCm, state.wall.color)
+  // 1. Pared, con el foco apuntado al cuadro
+  drawWall(ctx, width, height, state.wall, light, behind, pxPerCm)
+
+  // 2. Sombra proyectada. Está sobre la pared, así que se corre con ella: entre la
+  //    sombra y el canto se abre la rendija que dice que el cuadro está colgado.
+  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color)
 
   const hasFrame = state.frame.width > 0
   const mat = state.mats[0]
