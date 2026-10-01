@@ -214,10 +214,15 @@ vec4 wallShadow(vec2 p) {
   vec2 ax = uSpan.zw - uSpan.xy;
   float v = clamp(dot(p - uSpan.xy, ax) / max(dot(ax, ax), 1e-3), 0.0, 1.0);
   float gap = mix(uGap.x, uGap.y, v);
-  float pen = max(0.6, gap * uPen);
-  float direct = 1.0 - smoothstep(-pen, pen, sd);
-  // Más lejos de la pared, más luz del cuarto se mete debajo: más pálida.
-  direct *= uStrength / (1.0 + gap / (12.0 * uPxPerCm));
+  float pen = max(0.8, gap * uPen);
+  // El borde cae con una curva suave de los dos lados, sin escalón: la penumbra de
+  // un foco grande no es una rampa.
+  float direct = 1.0 / (1.0 + exp(sd * 2.2 / pen));
+  // Densa pegada al cuadro y más tenue lejos: lo que está cerca tapa más del foco
+  // y deja entrar menos luz del cuarto.
+  float rimDist = max(sdQuad(p, uOutline[0], uOutline[1], uOutline[2], uOutline[3]), 0.0);
+  direct *= uStrength * (0.45 + 0.55 * exp(-rimDist / (0.7 * uPxPerCm)));
+  direct /= 1.0 + gap / (12.0 * uPxPerCm);
 
   // El contacto: donde el canto de abajo apoya, una línea que se abre poco.
   vec2 b0 = uOutline[3];

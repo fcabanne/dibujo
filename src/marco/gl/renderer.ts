@@ -231,7 +231,9 @@ function shadowOf(f: ObjectFrame, model: Mat4, light: [number, number, number]) 
   const project = (x: number, y: number, gap: number): V2 => {
     const z = wallZ + gap
     const t = (light[2] - wallZ) / Math.max(1, light[2] - z)
-    return [light[0] + (x - light[0]) * t, light[1] + (y - light[1]) * t]
+    // Proyectada tal cual desde un foco tan alto caía a más del doble de la
+    // separación; se aplana el ángulo y se conserva la dirección.
+    return [x + (light[0] + (x - light[0]) * t - x) * SHADOW_RAKE, y + (light[1] + (y - light[1]) * t - y) * SHADOW_RAKE]
   }
   const posed = corners.map(([x, y]) => apply(model, x, y, 0))
   const front = posed.map((p, i) => project(p[0], p[1], backGap[i] + depth))
@@ -249,9 +251,15 @@ function shadowOf(f: ObjectFrame, model: Mat4, light: [number, number, number]) 
 }
 
 /** Cuánto se abre la penumbra por cada px que el cuadro se separa de la pared: un foco grande y cerca. */
-const PENUMBRA = 0.9
+const PENUMBRA = 1.1
+/**
+ * Cuánto del corrimiento de la sombra se respeta. El foco de la escena es muy
+ * empinado —está pensado para el brillo de la moldura— y su sombra caía lejos del
+ * cuadro; con esto queda a poco menos de una vez la separación de la pared.
+ */
+const SHADOW_RAKE = 0.4
 /** Lo oscura que es la sombra pegada a la pared: lo que queda es la luz del cuarto. */
-const SHADOW_STRENGTH = 0.5
+const SHADOW_STRENGTH = 0.72
 
 export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer | null {
   const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: true, alpha: true })
