@@ -15,13 +15,13 @@ export interface Tilt {
 }
 
 /**
- * Cuánto de la plomada sigue el cuadro: un cuarto. Siguiéndola entera —girar el
- * teléfono 10° y verlo girar 10°— era demasiado; un cuarto se lee como peso, no
+ * Cuánto de la plomada sigue el cuadro: un décimo. Siguiéndola entera —girar el
+ * teléfono 10° y verlo girar 10°— era demasiado, y un cuarto también; poco se lee como peso, no
  * como un cuadro que se cae.
  */
-const ROLL_FOLLOW = 0.25
+const ROLL_FOLLOW = 0.1
 /** Hasta dónde llega a inclinarse en la pantalla. */
-const ROLL_LIMIT = (4 * Math.PI) / 180
+const ROLL_LIMIT = (2 * Math.PI) / 180
 /** Lo que el sensor tiembla quieto, en radianes: por debajo, no se mueve nada. */
 const ROLL_STEP = (0.1 * Math.PI) / 180
 

@@ -347,8 +347,8 @@ de lo de alrededor, no de deformarlo.
   empujarlo con el dedo —el dedo sobre la obra abre la obra—. En cambio, **cuelga a
   plomo** (`plumb` en `body.ts`): si el teléfono gira en su plano, el cuadro sigue
   derecho respecto del mundo y en la pantalla se lo ve girar al revés, con un resorte
-  que lo hace llegar con peso. Sigue un cuarto del giro (`ROLL_FOLLOW`), hasta 4°:
-  entero era demasiado. Sale del acelerómetro (`roll` en `useTilt`), sin recentrar
+  que lo hace llegar con peso. Sigue un décimo del giro (`ROLL_FOLLOW`), hasta 2°:
+  entero, y aun un cuarto, era demasiado. Sale del acelerómetro (`roll` en `useTilt`), sin recentrar
   —la plomada es absoluta—, y se suelta con el teléfono acostado.
   Antes cada movimiento del teléfono lo empujaba y se sacudía todo el tiempo. El
   lienzo sigue pintando mientras el cuerpo se mueve y se duerme cuando se queda quieto.
