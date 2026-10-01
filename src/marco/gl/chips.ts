@@ -1,6 +1,7 @@
 import { DEFAULT_STATE } from '../state/defaults'
 import type { FrameFinish, FrameMaterial, FrameProfile } from '../types'
 import { REST_POSE } from '../render/pose'
+import type { ChipLook } from '../render/chip'
 import { createObjectRenderer, type ObjectRenderer } from './renderer'
 
 /**
@@ -26,6 +27,11 @@ export function paintGlChip(
   material: FrameMaterial,
   finish: FrameFinish,
   profile: FrameProfile | undefined,
+  /**
+   * Qué se mira (ver `ChipLook` en `render/chip.ts`): el listón de arriba, el de
+   * abajo, o el material de frente —un listón plano, para que el color se lea parejo—.
+   */
+  look: ChipLook = 'top',
 ): boolean {
   if (renderer === undefined) {
     canvas = document.createElement('canvas')
@@ -35,25 +41,37 @@ export function paintGlChip(
 
   const dpr = Math.min(2, window.devicePixelRatio || 1)
   const pxPerCm = size / CHIP_CM
-  // Un cuadro enorme del que solo entra en la muestra el listón de arriba: la banda
-  // de la moldura ocupa la muestra entera y las esquinas quedan lejos.
+  // Un cuadro enorme del que solo entra en la muestra un listón —el de arriba o el de
+  // abajo—: la banda de la moldura ocupa la muestra entera y las esquinas quedan lejos.
   const big = size * 9
-  const outer = { x: (size - big) / 2, y: 0, w: big, h: big }
-  const glass = { x: outer.x + size, y: size, w: big - 2 * size, h: big - 2 * size }
+  const below = look === 'bottom'
+  // De frente se mira solo el material: la banda es más ancha que la muestra y la
+  // muestra cae en su medio, lejos de los cantos.
+  const face = look === 'face'
+  const band = face ? size * 1.6 : size
+  const outer = {
+    x: (size - big) / 2,
+    y: below ? size - big : face ? -size * 0.3 : 0,
+    w: big,
+    h: big,
+  }
+  const glass = { x: outer.x + band, y: outer.y + band, w: big - 2 * band, h: big - 2 * band }
+  const shape = look === 'face' ? 'flat' : (profile ?? DEFAULT_STATE.frame.profile)
   const state = {
     ...DEFAULT_STATE,
-    frame: { ...DEFAULT_STATE.frame, color, material, finish, profile: profile ?? DEFAULT_STATE.frame.profile, width: CHIP_CM },
+    frame: { ...DEFAULT_STATE.frame, color, material, finish, profile: shape, width: CHIP_CM },
     glass: 'none' as const,
   }
   renderer.render({
     state,
-    rects: { outer, glass, sight: glass, center: { x: outer.x + big / 2, y: big / 2 } },
+    rects: { outer, glass, sight: glass, center: { x: outer.x + big / 2, y: outer.y + big / 2 } },
     pose: REST_POSE,
     pxPerCm,
     dpr,
     width: size,
     height: size,
-    eye: { x: 0, y: -big / 2 / pxPerCm, z: 150 },
+    // El ojo, frente a la muestra: del centro del cuadro enorme hasta el listón.
+    eye: { x: 0, y: ((below ? 1 : -1) * (big - size)) / 2 / pxPerCm, z: 150 },
     image: null,
     hasFrame: true,
     hasMat: false,

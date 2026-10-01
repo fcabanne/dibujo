@@ -151,7 +151,7 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
-- `src/marco/gl/` — el cuadro en 3D, con WebGL2: lo que se ve en escritorio. Ver "El
+- `src/marco/gl/` — el cuadro en 3D, con WebGL2: lo que se ve. Ver "El
   cuadro en 3D".
 - `src/marco/interaction/` — qué parte del cuadro está bajo el puntero, o bajo el dedo.
 - `src/marco/components/` — el lienzo y las dos capas de controles que se apoyan
@@ -170,8 +170,8 @@ Las referencias visuales son Tiny Glade y Outside the Blocks.
 fijos en píxeles: con un margen constante los controles se despegan de su esquina
 apenas se hace zoom.
 
-**Lo que se sumó al render 2D para que se vea más real.** Es el render del celular,
-de la pared en escritorio, y del cuadro entero en un escritorio sin WebGL2:
+**Lo que se sumó al render 2D para que se vea más real.** Es el render de la pared, y
+el del cuadro entero donde no hay WebGL2 (o con `?2d`):
 
 - **El foco cae también sobre el cuadro** (`drawObjectFalloff` en `wall.ts`), no solo
   sobre la pared: unos pocos puntos de caída hacia los bordes lejanos del pozo de luz.
@@ -234,7 +234,7 @@ de la pared en escritorio, y del cuadro entero en un escritorio sin WebGL2:
 
 ### El cuadro en 3D
 
-En escritorio el cuadro —moldura, passe-partout, obra, vidrio, clips— lo dibuja WebGL2
+En escritorio y en el celular el cuadro —moldura, passe-partout, obra, vidrio, clips— lo dibuja WebGL2
 (`gl/`) en un lienzo encima del de la pared, que sigue siendo 2D. Lo mueve el mismo
 cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto no.
 
@@ -280,7 +280,11 @@ cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto
   contexto, el lienzo de siempre dibuja el cuadro entero. Para comparar: `?2d` fuerza
   el plano, `?gl=split` muestra mitad y mitad, y con `?debug` la tecla G pasa de uno a
   otro.
-- **El celular todavía no**: sigue con el 2D.
+- **En el celular también**, con tres diferencias:
+  - El lienzo GL va a densidad 1,5: casi no se distingue de 2 y es la mitad de píxeles que sombrear.
+  - Se pinta solo cuando el 2D se pinta (`paintedRef`), así que quieto no gasta nada.
+  - El cuerpo sigue llegando en el acto. La inclinación del teléfono y el dedo sobre la pared mueven el ojo, como el mouse.
+- **Las muestras del celular salen del mismo 3D:** la tira de colores mira el material de frente, con un listón plano y la muestra en el medio de la banda. Las tarjetas de perfil miran el listón de abajo (`look` en `paintGlChip`).
 
 ### El cuadro tiene cuerpo
 

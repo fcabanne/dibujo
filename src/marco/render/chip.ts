@@ -57,7 +57,7 @@ export function paintMoldingChip(
     return
   }
 
-  if (glChips && look === 'top' && paintGlChip(canvas, size, color, material, finish, profile)) return
+  if (glChips && paintGlChip(canvas, size, color, material, finish, profile, look)) return
 
   // Un pedazo de unos dos centímetros y medio: la veta a la escala en que se la ve.
   drawMaterial(ctx, { x: 0, y: 0, w: size, h: size }, false, color, material, finish, 11, size / 2.5)

@@ -621,11 +621,11 @@ export function Canvas({
           }
         }
 
-        if (!touch && glModeRef.current !== 'off' && !glRef.current && !glFailedRef.current && glCanvasRef.current) {
+        if (glModeRef.current !== 'off' && !glRef.current && !glFailedRef.current && glCanvasRef.current) {
           glRef.current = createObjectRenderer(glCanvasRef.current)
           if (!glRef.current) glFailedRef.current = true
         }
-        const glMode: GlMode = touch || !glRef.current ? 'off' : glModeRef.current
+        const glMode: GlMode = !glRef.current ? 'off' : glModeRef.current
         const t0 = PROBE.perf ? performance.now() : 0
         const { rects, light, layout: shown } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
@@ -650,7 +650,9 @@ export function Canvas({
             rects,
             pose: body.pose,
             pxPerCm: scaleRef.current,
-            dpr,
+            // En el teléfono, a densidad 1,5: casi no se distingue de 2 y es la mitad
+            // de píxeles que sombrear.
+            dpr: touch ? Math.min(1.5, dpr) : dpr,
             width: box.width,
             height: box.height,
             eye: eyeOf(par),
