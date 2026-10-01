@@ -1,4 +1,3 @@
-import type { FrameMaterial } from '../types'
 import { knock, modal, noiseBurst } from './synth'
 
 /**
@@ -21,13 +20,11 @@ export interface Recipe {
   gap: number
 }
 
-/** La frecuencia a la que está construido el tic de metal: el tono real sale de `playbackRate`. */
-const TICK_BASE = 2000
-
 export const RECIPES = {
   /**
-   * La muesca de la moldura de madera o pintada: el golpecito seco de un trinquete de
-   * madera. Es ruido haciendo resonar el cuerpo de la pieza —un golpe con color, sin
+   * La muesca de la moldura, sea del material que sea: el golpecito seco de un
+   * trinquete de madera. Que el metal sonara a metal se probó, y distraía: el sonido
+   * acompaña el gesto, no describe el material. Es ruido haciendo resonar el cuerpo de la pieza —un golpe con color, sin
    * nota—, y cuatro versiones que se turnan.
    */
   'tick-wood': {
@@ -45,20 +42,6 @@ export const RECIPES = {
       }),
     variants: 4,
     level: -30,
-    gap: 30,
-  },
-  /** La muesca de la moldura de metal: más aguda y con una cola corta que canta. */
-  'tick-metal': {
-    build: (sr) =>
-      modal(sr, {
-        modes: [
-          { f: TICK_BASE * 1.55, decay: 0.06, amp: 1 },
-          { f: TICK_BASE * 3.7, decay: 0.035, amp: 0.5 },
-        ],
-        click: { amp: 0.4, decay: 0.001, freq: 6000 },
-        seed: 13,
-      }),
-    level: -36,
     gap: 30,
   },
   /** La muesca del passe-partout: papel, un roce de seis milisegundos. */
@@ -109,8 +92,8 @@ export const RECIPES = {
     gap: 200,
   },
   /**
-   * Elegir una moldura de madera: la pieza que se apoya en el cuadro, un golpe con
-   * más cuerpo que la muesca.
+   * Elegir una moldura —de madera, pintada o de metal, suenan igual—: la pieza que se
+   * apoya en el cuadro, un golpe con más cuerpo que la muesca.
    */
   'commit-wood': {
     build: (sr, v) =>
@@ -129,39 +112,6 @@ export const RECIPES = {
     level: -24,
     gap: 60,
   },
-  /** Pintada: la misma madera con una capa de laca encima, más apagada y más corta. */
-  'commit-painted': {
-    build: (sr, v) =>
-      knock(sr, {
-        resonances: [
-          { f: 380, q: 6, amp: 1 },
-          { f: 700, q: 7, amp: 0.45 },
-        ],
-        strike: 0.002,
-        thump: { f: 115, decay: 0.025, amp: 0.7 },
-        seed: 37 + v * 59,
-        detune: 0.05,
-      }),
-    variants: 3,
-    level: -24,
-    gap: 60,
-  },
-  /** Metal: el perfil de aluminio, que sí canta un momento. */
-  'commit-metal': {
-    build: (sr, v) =>
-      modal(sr, {
-        modes: [
-          { f: 1250 * (1 + v * 0.03), decay: 0.38, amp: 1 },
-          { f: 3460 * (1 + v * 0.02), decay: 0.24, amp: 0.5 },
-          { f: 6820, decay: 0.12, amp: 0.2 },
-        ],
-        click: { amp: 0.5, decay: 0.002, freq: 3000 },
-        seed: 41 + v,
-      }),
-    variants: 2,
-    level: -30,
-    gap: 60,
-  },
   /** El passe-partout: un cartón que se desliza en su lugar. */
   'commit-mat': {
     build: (sr, v) =>
@@ -170,26 +120,41 @@ export const RECIPES = {
     level: -30,
     gap: 60,
   },
-  /** El vidrio: un "clink" corto, el canto que toca la moldura. */
+  /**
+   * El vidrio que entra en el marco: un golpecito seco y bajo, de la misma familia
+   * que los de madera. Un vidrio de verdad suena a campanita, pero acá se oía como
+   * una notificación.
+   */
   'commit-glass': {
     build: (sr, v) =>
-      modal(sr, {
-        modes: [
-          { f: 2650 * (1 + v * 0.02), decay: 0.42, amp: 1 },
-          { f: 6100, decay: 0.26, amp: 0.45 },
-          { f: 9400, decay: 0.16, amp: 0.2 },
+      knock(sr, {
+        resonances: [
+          { f: 1500, q: 8, amp: 1 },
+          { f: 3100, q: 10, amp: 0.4 },
         ],
-        click: { amp: 0.3, decay: 0.001, freq: 5000 },
-        seed: 47 + v,
+        strike: 0.0012,
+        thump: { f: 180, decay: 0.01, amp: 0.3 },
+        seed: 47 + v * 17,
+        detune: 0.05,
       }),
     variants: 2,
-    level: -32,
+    level: -36,
     gap: 60,
   },
-  /** Sacar el vidrio: se desliza afuera, un roce. */
+  /** Sacar el vidrio: el mismo golpecito, más apagado. */
   'commit-unglass': {
-    build: (sr) => noiseBurst(sr, { from: 2600, to: 1400, q: 1.1, attack: 0.04, decay: 0.08, length: 0.22, seed: 53 }),
-    level: -34,
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 1100, q: 6, amp: 1 },
+          { f: 2300, q: 8, amp: 0.3 },
+        ],
+        strike: 0.0015,
+        seed: 53 + v * 19,
+        detune: 0.05,
+      }),
+    variants: 2,
+    level: -38,
     gap: 60,
   },
   /** La pared: una pasada de pincel, casi nada. */
@@ -274,9 +239,8 @@ export const RECIPES = {
 export type SoundName = keyof typeof RECIPES
 
 /** El tic que corresponde a cada material: el passe-partout aparte, que es de cartón. */
-export function tickFor(target: 'frame' | 'mat', material: FrameMaterial): SoundName {
-  if (target === 'mat') return 'tick-mat'
-  return material === 'metal' ? 'tick-metal' : 'tick-wood'
+export function tickFor(target: 'frame' | 'mat'): SoundName {
+  return target === 'mat' ? 'tick-mat' : 'tick-wood'
 }
 
 /**
@@ -287,9 +251,4 @@ export function tickFor(target: 'frame' | 'mat', material: FrameMaterial): Sound
 export function tickRate(widthCm: number): number {
   const t = Math.min(1, Math.max(0, (widthCm - 0.5) / 9.5))
   return Math.pow(2, (3 - 6 * t) / 12)
-}
-
-/** El golpe de elegir una moldura, según de qué es. */
-export function commitFor(material: FrameMaterial): SoundName {
-  return material === 'metal' ? 'commit-metal' : material === 'painted' ? 'commit-painted' : 'commit-wood'
 }

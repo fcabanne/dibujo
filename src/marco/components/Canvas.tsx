@@ -26,7 +26,7 @@ import { toObject } from '../render/pose'
 import { massOf } from '../physics/mass'
 import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
-import { commitFor, tickFor, tickRate, type SoundName } from '../sound/recipes'
+import { tickFor, tickRate, type SoundName } from '../sound/recipes'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -276,6 +276,8 @@ export function Canvas({
   const seenRef = useRef<Seen | null>(null)
   /** El peso del cuadro al agarrar una banda: al soltar, se asienta con la diferencia. */
   const dragKgRef = useRef(0)
+  /** De qué lado del cuadro se agarró la banda: al soltarla, el vaivén sale de ahí. */
+  const dragSideRef = useRef(0)
   /** Las medidas que pedía el estado en el cuadro anterior: si cambian, no hay fundido. */
   const targetKeyRef = useRef('')
   const stateRef = useRef(state)
@@ -309,7 +311,7 @@ export function Canvas({
     const weight = Math.max(-3, Math.min(4, deltaKg * 6))
     switch (reaction.part) {
       case 'frame':
-        play(commitFor(after.frame.material), { pan, gain: weight, rate: after.frame.width === 0 ? 1.2 : 1 })
+        play('commit-wood', { pan, gain: weight, rate: after.frame.width === 0 ? 1.2 : 1 })
         break
       case 'mat':
         play('commit-mat', { pan })
@@ -344,8 +346,7 @@ export function Canvas({
     bodyRef.current.hand = { key: drag.target, value: result.shown, over: result.over }
     if (result.changed && !compactRef.current) {
       detentKick(bodyRef.current, drag.target, result.shown - before)
-      const current = stateRef.current
-      play(tickFor(drag.target, current.frame.material), {
+      play(tickFor(drag.target), {
         rate: drag.target === 'frame' ? tickRate(result.snapped) : 1,
         gain: Math.min(5, drag.speed * 4) - 1,
         pan: panOf(x, width),
@@ -715,8 +716,11 @@ export function Canvas({
       if (dragRef.current) {
         release(body)
         // El cuadro quedó con otro peso: al soltarlo se asienta con la diferencia.
+        // Soltar la banda es sacarle la mano de encima: un vaivén chico del lado de
+        // donde se la tiraba, aunque haya vuelto a la misma medida.
         const delta = body.kg - dragKgRef.current
         if (Math.abs(delta) > 0.001) settle(body, delta)
+        sway(body, delta, dragSideRef.current, 0.45)
       }
       dragRef.current = null
       sceneRef.current.dragging = null
@@ -775,6 +779,7 @@ export function Canvas({
       sceneRef.current.dragging = target
       press(bodyRef.current, (p.y - rects.outer.y) / Math.max(1, rects.outer.h))
       dragKgRef.current = bodyRef.current.kg
+      dragSideRef.current = p.x < rects.center.x ? -1 : 1
       unlockSound()
       play('grab', { pan: panOf(p.x, box.width) })
       e.preventDefault()

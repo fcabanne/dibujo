@@ -320,9 +320,9 @@ export function hang(body: Body, side: number) {
  * más cambió el peso, que el clavo frena y el alambre endereza en un segundo.
  * `side` es de dónde viene la mano: -1 izquierda, 1 derecha, 0 de abajo.
  */
-export function sway(body: Body, deltaKg: number, side: number) {
+export function sway(body: Body, deltaKg: number, side: number, floor = 0.25) {
   if (side === 0) return
   const kg = Math.max(0.2, body.kg)
-  const amplitude = Math.min(0.45, (0.25 * Math.abs(deltaKg)) / Math.sqrt(kg) + 0.15) * DEGREES
+  const amplitude = Math.min(0.6, (0.25 * Math.abs(deltaKg)) / Math.sqrt(kg) + floor) * DEGREES
   nudge(body.swing, body.omega, amplitude * side)
 }
