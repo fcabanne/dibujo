@@ -78,7 +78,15 @@ export function renderScene(
   //    sombra y el canto se abre la rendija que dice que el cuadro está colgado.
   //    Si el cuadro gira o se despega, la sombra lo acompaña: gira sobre el mismo
   //    clavo, y despegado de la pared se aleja del foco, crece y se apaga.
+  // Con el cuadro en 3D la sombra también es suya (gl/): proyectada de verdad desde
+  // el foco. Acá se dibuja solo donde el objeto es 2D.
   ctx.save()
+  if (params.objectArea) {
+    const a = params.objectArea
+    ctx.beginPath()
+    ctx.rect(a.x, a.y, a.w, a.h)
+    ctx.clip()
+  }
   if (!isRest(pose)) {
     const lift = Math.max(0, pose.lift)
     const nail = nailOf({ ...rects, outer: behind, center: { x: behind.x + behind.w / 2, y: behind.y + behind.h / 2 } })
@@ -89,7 +97,9 @@ export function renderScene(
     ctx.scale(1 + 0.015 * lift, 1 + 0.015 * lift)
     ctx.translate(-nail.x, -nail.y)
   }
-  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color, pose.lean, 1 / (1 + 0.25 * Math.max(0, pose.lift)))
+  if (params.objectArea !== null) {
+    drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color, pose.lean, 1 / (1 + 0.25 * Math.max(0, pose.lift)))
+  }
   ctx.restore()
 
   // Lo que existe es lo que se ve: una moldura que se está yendo a cero se sigue

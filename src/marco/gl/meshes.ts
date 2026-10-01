@@ -93,7 +93,10 @@ export function frameMesh(rects: SceneRects, profile: FrameProfile, pxPerCm: num
   const z = (t: number) => (profileHeight(profile, t) - 1) * d.relief
   const cm = 1 / pxPerCm
 
-  for (const side of sidesOf(rects.outer)) {
+  for (const [k, side] of sidesOf(rects.outer).entries()) {
+    // Cada listón en su franja de la tabla, a 20 cm de la anterior: el shader saca de
+    // ahí qué pieza es, para darle su tono.
+    const piece = k * 20
     const length = Math.hypot(side.p1[0] - side.p0[0], side.p1[1] - side.p0[1])
     const [ix, iy] = side.inward
     const [ax, ay] = side.along
@@ -105,8 +108,8 @@ export function frameMesh(rects: SceneRects, profile: FrameProfile, pxPerCm: num
       const slope = (z(t + eps) - z(t - eps)) / (2 * eps * band)
       const n: [number, number, number] = [-slope * ix, -slope * iy, 1]
       const zz = z(t)
-      const a = vertex(m, [start[0], start[1], zz], n, [(dd + side.seed * 7) * cm, dd * cm])
-      const b = vertex(m, [end[0], end[1], zz], n, [(length - dd + side.seed * 7) * cm, dd * cm])
+      const a = vertex(m, [start[0], start[1], zz], n, [(dd + side.seed * 7) * cm, dd * cm + piece])
+      const b = vertex(m, [end[0], end[1], zz], n, [(length - dd + side.seed * 7) * cm, dd * cm + piece])
       return [a, b]
     }
 
@@ -119,20 +122,20 @@ export function frameMesh(rects: SceneRects, profile: FrameProfile, pxPerCm: num
 
     // El canto de afuera: de la cara hacia la pared.
     const out: [number, number, number] = [-ix, -iy, 0]
-    const o0 = vertex(m, [side.p0[0], side.p0[1], z(0)], out, [side.seed * 7 * cm, 0])
-    const o1 = vertex(m, [side.p1[0], side.p1[1], z(0)], out, [(length + side.seed * 7) * cm, 0])
-    const o2 = vertex(m, [side.p1[0], side.p1[1], d.back], out, [(length + side.seed * 7) * cm, 1])
-    const o3 = vertex(m, [side.p0[0], side.p0[1], d.back], out, [side.seed * 7 * cm, 1])
+    const o0 = vertex(m, [side.p0[0], side.p0[1], z(0)], out, [side.seed * 7 * cm, piece])
+    const o1 = vertex(m, [side.p1[0], side.p1[1], z(0)], out, [(length + side.seed * 7) * cm, piece])
+    const o2 = vertex(m, [side.p1[0], side.p1[1], d.back], out, [(length + side.seed * 7) * cm, piece + 1])
+    const o3 = vertex(m, [side.p0[0], side.p0[1], d.back], out, [side.seed * 7 * cm, piece + 1])
     quad(m, o0, o1, o2, o3)
 
     // El labio de adentro: de la cara hacia el rebaje, donde apoya el vidrio.
     const inner0: [number, number] = [side.p0[0] + (ix + ax) * band, side.p0[1] + (iy + ay) * band]
     const inner1: [number, number] = [side.p1[0] + (ix - ax) * band, side.p1[1] + (iy - ay) * band]
     const into: [number, number, number] = [ix, iy, 0]
-    const i0 = vertex(m, [inner0[0], inner0[1], z(1)], into, [0, 0])
-    const i1 = vertex(m, [inner1[0], inner1[1], z(1)], into, [length * cm, 0])
-    const i2 = vertex(m, [inner1[0], inner1[1], d.glass - 0.2 * pxPerCm], into, [length * cm, 0.2])
-    const i3 = vertex(m, [inner0[0], inner0[1], d.glass - 0.2 * pxPerCm], into, [0, 0.2])
+    const i0 = vertex(m, [inner0[0], inner0[1], z(1)], into, [0, piece])
+    const i1 = vertex(m, [inner1[0], inner1[1], z(1)], into, [length * cm, piece])
+    const i2 = vertex(m, [inner1[0], inner1[1], d.glass - 0.2 * pxPerCm], into, [length * cm, piece + 0.2])
+    const i3 = vertex(m, [inner0[0], inner0[1], d.glass - 0.2 * pxPerCm], into, [0, piece + 0.2])
     quad(m, i0, i1, i2, i3)
   }
   return m

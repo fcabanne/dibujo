@@ -93,7 +93,7 @@ function drawDiffusion(ctx: CanvasRenderingContext2D, rect: Rect) {
 
   // El radio del filtro no pasa por la transformación; el del respaldo sí.
   const scale = Math.hypot(m.a, m.b) || 1
-  const radius = Math.min(rect.w, rect.h) * 0.006
+  const radius = Math.min(rect.w, rect.h) * 0.0035
 
   ctx.save()
   ctx.setTransform(1, 0, 0, 1, 0, 0)

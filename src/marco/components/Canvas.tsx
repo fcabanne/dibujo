@@ -44,6 +44,7 @@ import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
 import { tickFor, tickRate, type SoundName } from '../sound/recipes'
 import { renderScene } from '../render/scene'
+import { standoff } from '../render/shadow'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
 import type { AppState, Layout } from '../types'
@@ -599,7 +600,7 @@ export function Canvas({
 
         const glMode: GlMode = touch ? 'off' : glModeRef.current
         const t0 = PROBE.perf ? performance.now() : 0
-        const { rects, light } = renderScene(ctx, current, imageRef.current, {
+        const { rects, light, layout: shown } = renderScene(ctx, current, imageRef.current, {
           width: box.width,
           height: box.height,
           pxPerCm: scaleRef.current,
@@ -627,6 +628,9 @@ export function Canvas({
             image: imageRef.current,
             hasFrame: dims.frame > GONE,
             hasMat: Boolean(current.mats[0]) && dims.mat > GONE,
+            depthCm: shown.depth,
+            wallCm: shown.depth + standoff(shown.outer.h) / 2,
+            standoffCm: standoff(shown.outer.h),
             scissor: glMode === 'split' ? { x: box.width / 2, y: 0, w: box.width / 2, h: box.height } : undefined,
           })
         }
