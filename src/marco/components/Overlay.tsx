@@ -4,6 +4,7 @@ import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
 import { BackIcon, SpeakerIcon, SpeakerOffIcon } from '../../shared/ui'
 import { setMuted, useMuted } from '../sound/engine'
+import { reducedMotionNow, settleSpring, stepSpring, type Spring, type SpringParams } from '../../shared/motion'
 import {
   FRAME_PROFILES,
   MOLDING_FAMILIES,
@@ -81,6 +82,10 @@ const LEAVE_MS = 140
 const LINGER_MS = 260
 /** La cartela se queda dos segundos más que el resto del HUD. */
 const LABEL_GRACE_MS = 2000
+
+/** Las burbujas y la cartela siguen al cuadro con resorte: llegan un poco después que él. */
+const BUBBLE_FOLLOW: SpringParams = { response: 0.24, damping: 0.85 }
+const LABEL_FOLLOW: SpringParams = { response: 0.3, damping: 0.85 }
 /** A qué distancia del puntero empieza a despertar una burbuja, y a cuál llega entera. */
 const NEAR = 40
 const FAR = 200
@@ -142,6 +147,21 @@ export function Overlay({
   const fanRef = useRef(fan)
   fanRef.current = fan
   const anchorPos = useRef<Partial<Record<Category, Point>>>({})
+  /** Lo que acompaña al cuadro con resorte: dónde está cada cosa y a qué velocidad va. */
+  const followers = useRef(new Map<string, { x: Spring; y: Spring }>())
+  const follow = (key: string, to: { x: number; y: number }, params: SpringParams, dt: number) => {
+    let f = followers.current.get(key)
+    if (!f || reducedMotionNow()) {
+      f = { x: { x: to.x, v: 0 }, y: { x: to.y, v: 0 } }
+      followers.current.set(key, f)
+      return to
+    }
+    stepSpring(f.x, to.x, params, dt)
+    stepSpring(f.y, to.y, params, dt)
+    settleSpring(f.x, to.x, 0.05)
+    settleSpring(f.y, to.y, 0.05)
+    return { x: f.x.x, y: f.y.x }
+  }
   const pointer = useRef<Point | null>(null)
   const prox = useRef<Record<string, number>>({})
   /** Quién abrió la categoría abierta: si no fue el puntero, queda fija. */
@@ -374,7 +394,9 @@ export function Overlay({
         for (const { id } of CATEGORIES) {
           const node = bubbleRefs.current[id]
           if (!node) continue
-          const a = anchors[id]
+          // Cada burbuja es una cosa aparte que acompaña al cuadro: lo sigue con su
+          // propio resorte, un pelo atrasada, en vez de ir pegada a él.
+          const a = follow(`bubble-${id}`, anchors[id], BUBBLE_FOLLOW, dt)
           anchorPos.current[id] = a
           node.style.transform = `translate(${a.x}px, ${a.y}px)`
 
@@ -400,7 +422,10 @@ export function Overlay({
           // Lo que ocupa a la derecha del punto de anclaje: el papel entero, menos su relleno.
           const width = current === 'artwork' ? 316 : 226
           const x = Math.min(rects.outer.x + rects.outer.w + 46, v.w - width - 16)
-          labelRef.current.style.transform = `translate(${x}px, ${rects.outer.y + rects.outer.h}px)`
+          // Cuelga en la pared, al lado del cuadro: cuando el cuadro crece, el cuadro la
+          // corre, y ella llega un poco después, como algo que se empujó.
+          const at = follow('label', { x, y: rects.outer.y + rects.outer.h }, LABEL_FOLLOW, dt)
+          labelRef.current.style.transform = `translate(${at.x}px, ${at.y}px)`
         }
 
         // Solo cuando cruza el umbral: un setState por frame sería un re-render por frame.
