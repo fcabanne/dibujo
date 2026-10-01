@@ -61,7 +61,8 @@ de enmarcado ni de software de diseño. Trabaja en desktop.
 
 ### 5.1 Lienzo / preview
 
-- Render **2D frontal** (nada de 3D) con **sombras trabajadas**.
+- Render **frontal** con **sombras trabajadas**: en escritorio el cuadro es 3D (WebGL2), visto
+  de frente, sobre la pared en 2D; sin WebGL2, todo 2D.
 - La escena muestra: **pared de fondo + cuadro + sombra proyectada del cuadro sobre la pared**.
 - La sombra **cambia según el espesor total** del cuadro (más espesor = sombra más
   larga/marcada). Es la señal visual de profundidad.
@@ -190,7 +191,7 @@ Zonas:
 ## 7. Fuera de alcance (MVP)
 
 - Mobile / responsive (desktop only)
-- 3D o perspectiva
+- Una cámara libre o vistas en perspectiva: el 3D es para que el cuadro se vea real de frente
 - Multi-nivel de passe-partout
 - Exportación PDF (stand-by)
 - Backend, cuentas, sincronización, compartir

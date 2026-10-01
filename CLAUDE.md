@@ -151,6 +151,8 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
+- `src/marco/gl/` — el cuadro en 3D, con WebGL2: lo que se ve en escritorio. Ver "El
+  cuadro en 3D".
 - `src/marco/interaction/` — qué parte del cuadro está bajo el puntero, o bajo el dedo.
 - `src/marco/components/` — el lienzo y las dos capas de controles que se apoyan
   encima: la de escritorio (`Overlay` y `hud/`) y la del celular (`mobile/`).
@@ -168,8 +170,8 @@ Las referencias visuales son Tiny Glade y Outside the Blocks.
 fijos en píxeles: con un margen constante los controles se despegan de su esquina
 apenas se hace zoom.
 
-**Lo que se sumó al render para que se vea más real**, y que ve también el escritorio
-porque es el mismo render:
+**Lo que se sumó al render 2D para que se vea más real.** Es el render del celular,
+de la pared en escritorio, y del cuadro entero en un escritorio sin WebGL2:
 
 - **El foco cae también sobre el cuadro** (`drawObjectFalloff` en `wall.ts`), no solo
   sobre la pared: unos pocos puntos de caída hacia los bordes lejanos del pozo de luz.
@@ -229,6 +231,56 @@ porque es el mismo render:
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
   para el mate. Chrome sigue por el camino de siempre y da lo mismo que antes.
+
+### El cuadro en 3D
+
+En escritorio el cuadro —moldura, passe-partout, obra, vidrio, clips— lo dibuja WebGL2
+(`gl/`) en un lienzo encima del de la pared, que sigue siendo 2D. Lo mueve el mismo
+cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto no.
+
+- **Proyección de ventana** (`VERTEX` en `gl/shaders.ts`): el plano del frente del
+  cuadro cae exactamente sobre los rectángulos del 2D (`composeRects`), y lo que sale
+  hacia el ojo se agranda y se corre como se vería desde ahí. Por eso las burbujas, la
+  cartela, las cotas y lo que se agarra con el mouse no se enteran de cuál de los dos
+  dibuja.
+- **Las mallas se rearman en cada cuadro** (`gl/meshes.ts`): son unos pocos cientos de
+  vértices, y así las medidas que llegan con resorte no piden nada. La moldura es el
+  perfil de `profile.ts` levantado a lo ancho y cortado a 45°; la normal sale de su
+  pendiente, así que la luz cae sobre la forma y no sobre un degradé pintado.
+- **Un solo programa para todo**, y el material por uniforms (`uMode`). Luz física
+  (GGX), el papel y el cartón dejan pasar un poco de luz (`wrap`), y el foco cae hacia
+  los bordes como en el 2D.
+- **Un estudio que se refleja** (`gl/environment.ts`), horneado una vez: la silueta del
+  que mira, una ventana con parantes, una caja de luz y un riel de focos, en un pedazo
+  chico del cuarto, porque un vidrio a metro y medio refleja solo lo que está detrás de
+  quien mira. La pared del cuarto se pinta en el shader con el color elegido. Lo leen
+  el vidrio, el metal y las lacas, más borroso cuanto más rugosos.
+- **Los vidrios** (`GLASS` en `gl/renderer.ts`): el común refleja claro; el antirreflejo
+  refleja poco y borroso y tiene una piel de puntitos —la cáscara de naranja del
+  acrílico—, que se ve donde le pega el reflejo; el mate, la misma piel más marcada y
+  una bruma, y desenfoca la obra poco, que está a milímetros del vidrio.
+- **La madera tiene dos tonos**: la baldosa de `wood.ts` dice dónde cae el anillo y el
+  shader pone la madera temprana más clara y amarilla y la tardía más oscura y roja, con
+  el promedio en el color de la muestra. Cada listón tiene su tono, el tono va y viene a
+  lo largo, la fibra brilla a lo largo de la veta y se mueve con el ojo, el roble tiene
+  poro y "brillante" y "satinado" llevan una laca encima.
+- **La sombra en la pared también es del 3D** (`shadowOf` y `wallShadow`): el cuadro
+  —ya con su pose— proyectado desde el foco sobre el plano de la pared, lo que barre
+  entre su cara de atrás y la de adelante. Del lado del foco no hay nada, la penumbra
+  se abre con la separación de la pared y es más densa pegada al canto. El ángulo se
+  aplana (`SHADOW_RAKE`): proyectada tal cual desde un foco tan alto caía lejos y se
+  leía despegada.
+- **Las muestras de moldura del abanico las pinta el mismo 3D** (`gl/chips.ts`): un
+  listón de arriba en un contexto aparte, compartido por todas. Lo que se elige es lo
+  que se ve enmarcado.
+- **El fundido de materiales tiene su capa** (`.fade-layer`), encima de los dos
+  lienzos: pintado en el de la pared, el 3D lo tapaba. Por eso el contexto WebGL
+  conserva su imagen (`preserveDrawingBuffer`), para poder copiarla.
+- **Si no hay 3D, hay 2D**: sin WebGL2, si no compila, o si el navegador pierde el
+  contexto, el lienzo de siempre dibuja el cuadro entero. Para comparar: `?2d` fuerza
+  el plano, `?gl=split` muestra mitad y mitad, y con `?debug` la tecla G pasa de uno a
+  otro.
+- **El celular todavía no**: sigue con el 2D.
 
 ### El cuadro tiene cuerpo
 
