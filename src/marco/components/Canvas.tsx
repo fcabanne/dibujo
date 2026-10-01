@@ -20,9 +20,23 @@ import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
-import { createBody, detentKick, hang, press, release, settle, shownDims, stepBody, sway, type BodyEvent } from '../physics/body'
+import {
+  createBody,
+  detentKick,
+  hang,
+  press,
+  pushEnd,
+  pushMove,
+  pushStart,
+  release,
+  settle,
+  shownDims,
+  stepBody,
+  sway,
+  type BodyEvent,
+} from '../physics/body'
 import { DEGREES } from '../physics/pendulum'
-import { toObject } from '../render/pose'
+import { nailOf, toObject } from '../render/pose'
 import { massOf } from '../physics/mass'
 import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
@@ -276,6 +290,8 @@ export function Canvas({
   const seenRef = useRef<Seen | null>(null)
   /** El peso del cuadro al agarrar una banda: al soltar, se asienta con la diferencia. */
   const dragKgRef = useRef(0)
+  /** La mano empujando el cuadro por la obra: el ángulo al que lo agarró, respecto del clavo. */
+  const pushRef = useRef<{ from: number } | null>(null)
   /** De qué lado del cuadro se agarró la banda: al soltarla, el vaivén sale de ahí. */
   const dragSideRef = useRef(0)
   /** Las medidas que pedía el estado en el cuadro anterior: si cambian, no hay fundido. */
@@ -643,7 +659,12 @@ export function Canvas({
         onLayoutRef.current(computeLayout(current))
 
         if (!touch) {
-          const cursor = dragRef.current ? 'grabbing' : draggableTarget(zone) ? 'grab' : 'default'
+          const cursor =
+            dragRef.current || pushRef.current
+              ? 'grabbing'
+              : draggableTarget(zone) || zone === 'art'
+                ? 'grab'
+                : 'default'
           if (cursor !== cursorRef.current) {
             wrap.style.cursor = cursor
             cursorRef.current = cursor
@@ -700,14 +721,25 @@ export function Canvas({
         sleepAfter(LEAVE_MS)
       }
 
-      const drag = dragRef.current
       const rects = sceneRef.current.rects
+      const push = pushRef.current
+      if (push && rects) {
+        const nail = nailOf(rects)
+        nail.y += bodyRef.current.pose.drop * (scaleRef.current ?? 1)
+        pushMove(bodyRef.current, Math.atan2(y - nail.y, x - nail.x) - push.from)
+        return
+      }
+      const drag = dragRef.current
       if (!drag || !rects) return
       handleDrag(dragWidth(drag, { x, y }, rects, stateRef.current, dispatchRef.current), x, box.width)
     }
 
     const onUp = () => {
       const body = bodyRef.current
+      if (pushRef.current) {
+        pushRef.current = null
+        pushEnd(body)
+      }
       // Soltada pasada del máximo, la banda vuelve a su medida con un golpe sordo.
       if (dragRef.current && body.hand && body.hand.over > 0) {
         play('stretch', { pan: panOf(pointerRef.current.x, wrapRef.current?.clientWidth ?? 1) })
@@ -765,14 +797,30 @@ export function Canvas({
 
       // La zona se resuelve desde el evento, no desde la que calculó el último
       // frame: apretar sin haber movido antes dejaría una zona vieja.
-      const target = draggableTarget(
-        hitZone(
-          toObject(p, bodyRef.current.pose, rects, scaleRef.current),
-          rects,
-          current.frame.width > 0,
-          Boolean(current.mats[0]?.enabled),
-        ),
+      const zone = hitZone(
+        toObject(p, bodyRef.current.pose, rects, scaleRef.current),
+        rects,
+        current.frame.width > 0,
+        Boolean(current.mats[0]?.enabled),
       )
+
+      // Agarrado por la obra, el cuadro se empuja: se inclina sobre el clavo hacia
+      // donde va la mano, y al soltarlo se balancea. Un juguete, no una función: no
+      // cambia nada de lo que se encarga.
+      if (zone === 'art') {
+        const body = bodyRef.current
+        const nail = nailOf(rects)
+        nail.y += body.pose.drop * scaleRef.current
+        if (Math.hypot(p.x - nail.x, p.y - nail.y) < 24) return
+        pushRef.current = { from: Math.atan2(p.y - nail.y, p.x - nail.x) - body.swing.angle }
+        pushStart(body)
+        unlockSound()
+        play('grab', { pan: panOf(p.x, box.width), gain: -6 })
+        e.preventDefault()
+        return
+      }
+
+      const target = draggableTarget(zone)
       if (!target) return
 
       dragRef.current = startDrag(target, current, p, rects, scaleRef.current)

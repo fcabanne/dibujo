@@ -38,6 +38,8 @@ export interface Body {
   hanging: number
   /** Lo que pasó en el último paso y suena: apoyó, se enganchó en el clavo. */
   events: BodyEvent[]
+  /** La mano empujando el cuadro: hacia qué ángulo lo lleva. */
+  push: { target: number } | null
   /** La mano está arrastrando una banda: las medidas la siguen más rápido. */
   dragging: boolean
   /** El giro de la obra la última vez que se miró: si cambia, el ancho y el alto se cruzan. */
@@ -84,6 +86,9 @@ function omegaOf(d: Dims): number {
   return naturalFrequency(outer.w, outer.h)
 }
 
+/** Cuánto se despega de la pared mientras la mano lo empuja, en cm. */
+const PUSH_LIFT = 0.6
+
 /** Un peso de referencia, en kg: el de un 30 × 40 con passe-partout, marco y vidrio. */
 const REFERENCE_KG = 1.5
 
@@ -116,6 +121,7 @@ export function createBody(state: AppState): Body {
     lift: spring(0),
     hanging: 0,
     events: [],
+    push: null,
     dragging: false,
     rotation: state.artwork.rotation,
     hand: null,
@@ -222,7 +228,8 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
     const liftWait = body.hanging > 0 && performance.now() - body.hanging < 120
     if (!liftWait) {
       const wasOff = body.lift.x > 0.15
-      stepSpring(body.lift, 0, HANG_LIFT, dt)
+      // La mano que lo empuja lo despega un poco de la pared.
+      stepSpring(body.lift, body.push ? PUSH_LIFT : 0, HANG_LIFT, dt)
       if (body.hanging > 0 && wasOff && body.lift.x <= 0.15) {
         body.events.push('hang-wall')
         body.hanging = 0
@@ -230,7 +237,16 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
     }
     if (!atRest(body.lift, 0, 0.002)) moving = true
 
-    if (stepPendulum(body.swing, body.omega, dt)) moving = true
+    // La mano tira del cuadro hacia donde apunta, como un resorte: contra el peso, que
+    // lo devuelve. Uno pesado se deja llevar menos.
+    let torque = 0
+    if (body.push) {
+      const w2 = body.omega * body.omega
+      const k = 1.2 * w2 * Math.sqrt(REFERENCE_KG / Math.max(0.2, body.kg))
+      torque = k * (body.push.target - body.swing.angle) - 2 * Math.sqrt(k) * 0.6 * body.swing.velocity
+      moving = true
+    }
+    if (stepPendulum(body.swing, body.omega, dt, torque)) moving = true
   }
 
   // Apretado contra la pared, el cuadro está un poco más lejos del ojo: se achica un
@@ -325,4 +341,21 @@ export function sway(body: Body, deltaKg: number, side: number, floor = 0.25) {
   const kg = Math.max(0.2, body.kg)
   const amplitude = Math.min(0.6, (0.25 * Math.abs(deltaKg)) / Math.sqrt(kg) + floor) * DEGREES
   nudge(body.swing, body.omega, amplitude * side)
+}
+
+/** La mano agarra el cuadro por la obra. */
+export function pushStart(body: Body) {
+  body.push = { target: body.swing.angle }
+}
+
+/** La mano lo lleva hacia `angle` (rad): el cuadro va, pero el peso lo tira de vuelta. */
+export function pushMove(body: Body, angle: number) {
+  if (!body.push) return
+  const limit = 7 * DEGREES
+  body.push.target = Math.max(-limit, Math.min(limit, angle))
+}
+
+/** La mano lo suelta: queda balanceándose, y el clavo y el alambre hacen el resto. */
+export function pushEnd(body: Body) {
+  body.push = null
 }
