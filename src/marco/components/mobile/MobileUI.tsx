@@ -11,7 +11,7 @@ import {
 import { flushSync } from 'react-dom'
 import { copy } from '../../../shared/copy'
 import { loadArtworkFile } from '../../../shared/imageFile'
-import { BackIcon, IconButton, PhotoIcon } from '../../../shared/ui'
+import { BackIcon, DownloadIcon, IconButton, PhotoIcon } from '../../../shared/ui'
 import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
 import type { FreeArea, SceneSnapshot } from '../Canvas'
@@ -55,6 +55,8 @@ interface Props {
   onArtwork: (src: string, aspect: number) => void
   /** Quitar el dibujo: vuelve a la pantalla de inicio. */
   onRemove: () => void
+  /** Descargar la foto del cuadro colgado. */
+  onSave: () => Promise<void>
 }
 
 /** Cuánto tiempo se muestran las cotas sobre el marco al abrir su pestaña. */
@@ -115,9 +117,11 @@ export function MobileUI({
   freeArea,
   onArtwork,
   onRemove,
+  onSave,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const safeRef = useRef<HTMLDivElement>(null)
+  const saveRef = useRef<HTMLElement>(null)
   const dockRef = useRef<HTMLDivElement>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLDivElement>(null)
@@ -187,6 +191,19 @@ export function MobileUI({
 
   const pickFile = useCallback(() => fileRef.current?.click(), [])
 
+  const [saving, setSaving] = useState(false)
+  const save = useCallback(async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      await onSave()
+    } catch (error) {
+      notify(error instanceof Error ? error.message : copy.marco.downloadFailed)
+    } finally {
+      setSaving(false)
+    }
+  }, [notify, onSave, saving])
+
   /**
    * Abrir el editor con el teclado ya arriba. En iPhone el teclado solo sale si el
    * foco llega **en el mismo toque**: si el campo aparece en el render siguiente y
@@ -241,12 +258,19 @@ export function MobileUI({
 
       const h = dockTop - top
       const wide = box.width > h * 1.25
+      const pill = saveRef.current?.getBoundingClientRect()
       return {
         x: 0,
         y: top,
         w: box.width,
         h,
         label: tabRef.current ? null : wide ? 'side' : 'below',
+        avoid: pill && {
+          x: pill.left - box.left,
+          y: pill.top - box.top,
+          w: pill.width,
+          h: pill.height,
+        },
       }
     }
     return () => {
@@ -386,8 +410,16 @@ export function MobileUI({
   const thumbIndex = TABS.findIndex((t) => t.id === shown)
 
   return (
-    <div ref={rootRef} className="m-ui">
+    <div ref={rootRef} className={'m-ui' + (tab ? ' has-tab' : '')}>
       <div ref={safeRef} className="m-safe" aria-hidden />
+
+      {/* Descargar va arriba y aparte: abajo no entra al lado de las pestañas en un
+          teléfono común, y es de otra conversación que elegir la moldura. */}
+      <nav ref={saveRef} className="m-pill m-save">
+        <IconButton label={copy.marco.download} onClick={save} aria-busy={saving || undefined}>
+          <DownloadIcon />
+        </IconButton>
+      </nav>
 
       <div ref={labelRef} className="m-label">
         <WallLabel state={state} layout={layout} wallLuma={wallLuma} />

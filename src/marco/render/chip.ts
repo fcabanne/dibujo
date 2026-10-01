@@ -5,17 +5,6 @@ import { drawMaterial } from './textures'
 import { paintGlChip } from '../gl/chips'
 
 /**
- * Si el cuadro se está dibujando en 3D, las muestras de la sección también: lo prende
- * el lienzo cuando el 3D anda. Las muestras que ya estaban pintadas no cambian; las
- * del abanico se pintan al abrirlo.
- */
-let glChips = false
-
-export function setGlChips(on: boolean) {
-  glChips = on
-}
-
-/**
  * Cómo se mira la muestra:
  * - `top` / `bottom`: la sección de la moldura, iluminada como el lado de arriba
  *   (que en una caveta mira para abajo y queda en sombra) o como el de abajo (que
@@ -57,7 +46,8 @@ export function paintMoldingChip(
     return
   }
 
-  if (glChips && paintGlChip(canvas, size, color, material, finish, profile, look)) return
+  // Si el cuadro se está viendo en 3D, la muestra también (ver `gl/offscreen.ts`).
+  if (paintGlChip(canvas, size, color, material, finish, profile, look)) return
 
   // Un pedazo de unos dos centímetros y medio: la veta a la escala en que se la ve.
   drawMaterial(ctx, { x: 0, y: 0, w: size, h: size }, false, color, material, finish, 11, size / 2.5)

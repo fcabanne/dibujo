@@ -122,6 +122,8 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/shared/referenceImage.ts` — la foto en dos versiones a la vez: el Blob
   original intacto (lo que se exporta) y una copia liviana rasterizada (lo que se ve).
   Lo usa Referencia, que promete devolver la foto en su tamaño.
+- `src/shared/deliver.ts` — entrega un archivo hecho en el navegador: la hoja de
+  compartir donde existe (en un celular guarda en Fotos), si no la descarga común.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio. Guarda data
@@ -438,6 +440,21 @@ aplica al salir del campo y no en cada tecla (acotar en cada tecla hace imposibl
 **Volver abajo a la izquierda y "Dejame sugerencias" abajo a la derecha** (`.hud-back`,
 `.hud-link`), como en la mesa de luz y en Referencia, cada uno en su pastilla. Aparecen
 con los controles y se van con ellos. Los abanicos las esquivan.
+
+**Descargar va arriba a la derecha, solo, en su pastilla** (`.hud-save` en escritorio,
+`.m-save` en el celular). Abajo no entra: en el celular, al lado de volver y las cinco
+pestañas, se sale de un teléfono de 390 px. Baja la foto del cuadro colgado
+(`src/marco/export.ts`) sin preguntar nada: JPG, 9:16 a 1440×2560 en el celular (para
+una historia o un reel) y 16:9 a 2560×1440 en la compu. No es una captura: la escena se
+vuelve a pintar con `renderScene` en un lienzo aparte, sin controles, sin zoom y sin
+cartela, con el cuadro entero al medio. La luz sí es la de la pantalla (el paralaje del
+momento, que el lienzo publica en `SceneSnapshot.parallax`). El lienzo lógico tiene
+tamaño de pantalla y se agranda con la densidad, como con `devicePixelRatio`: lo que el
+render mide en píxeles —desenfoques, trazos— sale igual que en la app. En el celular el
+cuadro esquiva el botón (`FreeArea.avoid`): baja lo justo, y de a poco, solo si su
+esquina lo pisaría. Acostado y con un cajón abierto, el botón se va. Se entrega con
+`deliver` (`shared/deliver.ts`, el mismo de Referencia): en el celular, la hoja de
+compartir, que guarda directo en Fotos.
 
 **Sin dibujo, la pantalla de inicio** (`components/Welcome.tsx`), en el escritorio igual
 que en el celular. El lienzo y los controles recién existen con un dibujo propio, y se

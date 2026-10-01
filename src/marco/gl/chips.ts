@@ -2,7 +2,7 @@ import { DEFAULT_STATE } from '../state/defaults'
 import type { FrameFinish, FrameMaterial, FrameProfile } from '../types'
 import { REST_POSE } from '../render/pose'
 import type { ChipLook } from '../render/chip'
-import { createObjectRenderer, type ObjectRenderer } from './renderer'
+import { renderOffscreen } from './offscreen'
 
 /**
  * Las muestras de moldura pintadas por el mismo 3D que el cuadro: un listón de arriba
@@ -10,15 +10,11 @@ import { createObjectRenderer, type ObjectRenderer } from './renderer'
  * la muestra y el marco se pintaran por caminos distintos, lo que se elige no sería lo
  * que se ve enmarcado.
  *
- * Un solo contexto para todas las muestras, en un lienzo que no está en la página:
- * los navegadores limitan cuántos contextos WebGL puede haber a la vez.
+ * Se pintan con el renderer de afuera de la pantalla (`offscreen.ts`).
  */
 
 /** Cuánto mide de ancho el pedazo de moldura que muestra cada muestra, en cm. */
 const CHIP_CM = 2.5
-
-let renderer: ObjectRenderer | null | undefined
-let canvas: HTMLCanvasElement | null = null
 
 export function paintGlChip(
   target: HTMLCanvasElement,
@@ -33,12 +29,6 @@ export function paintGlChip(
    */
   look: ChipLook = 'top',
 ): boolean {
-  if (renderer === undefined) {
-    canvas = document.createElement('canvas')
-    renderer = createObjectRenderer(canvas)
-  }
-  if (!renderer || !canvas) return false
-
   const dpr = Math.min(2, window.devicePixelRatio || 1)
   const pxPerCm = size / CHIP_CM
   // Un cuadro enorme del que solo entra en la muestra un listón —el de arriba o el de
@@ -62,7 +52,7 @@ export function paintGlChip(
     frame: { ...DEFAULT_STATE.frame, color, material, finish, profile: shape, width: CHIP_CM },
     glass: 'none' as const,
   }
-  renderer.render({
+  const canvas = renderOffscreen({
     state,
     rects: { outer, glass, sight: glass, center: { x: outer.x + big / 2, y: outer.y + big / 2 } },
     pose: REST_POSE,
@@ -80,6 +70,7 @@ export function paintGlChip(
     standoffCm: 1,
     chip: true,
   })
+  if (!canvas) return false
 
   target.width = size * dpr
   target.height = size * dpr

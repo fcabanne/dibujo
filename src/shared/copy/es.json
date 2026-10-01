@@ -198,6 +198,9 @@
     "keepRatio": "Mantener proporción",
     "finished": "El cuadro terminado mide {width} × {height} cm",
     "noMatShort": "Sin passe",
-    "loadFailed": "No se pudo cargar la imagen"
+    "loadFailed": "No se pudo cargar la imagen",
+    "download": "Descargar",
+    "downloadFailed": "No se pudo descargar",
+    "fileName": "enmarcado"
   }
 }

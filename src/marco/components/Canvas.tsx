@@ -44,7 +44,7 @@ import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
 import { tickFor, tickRate, type SoundName } from '../sound/recipes'
 import { renderScene } from '../render/scene'
-import { setGlChips } from '../render/chip'
+import { setGlActive } from '../gl/offscreen'
 import { standoff } from '../render/shadow'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -78,6 +78,8 @@ export interface SceneSnapshot {
    * abajo a la izquierda, como en el escritorio.
    */
   label?: { x: number; y: number; side: boolean } | null
+  /** El paralaje con que se pintó: la luz que se ve, para que la descarga salga igual. */
+  parallax?: { x: number; y: number }
 }
 
 /** Qué parte del cuadro tocó el dedo, para abrir lo que la edita. */
@@ -93,6 +95,11 @@ export interface FreeArea {
   w: number
   h: number
   label: 'below' | 'side' | null
+  /**
+   * Lo que flota arriba del lugar libre sin sacarle lugar —el botón de descargar—.
+   * Si el cuadro encajado quedaría debajo, el cuadro baja lo justo para no tocarlo.
+   */
+  avoid?: { x: number; y: number; w: number; h: number } | null
 }
 
 interface Props {
@@ -141,6 +148,8 @@ const ZOOMED = 1.04
 /** Lo que se reserva para la cartela: abajo del cuadro, o al costado. */
 const LABEL_BELOW = 132
 const LABEL_SIDE = 250
+/** Lo que queda entre el cuadro y el botón que esquiva. */
+const AVOID_GAP = 8
 /** Un toque es poco movimiento en poco tiempo; dos seguidos en el mismo lugar, uno doble. */
 const TAP = { px: 8, ms: 350 }
 const DOUBLE_TAP = { px: 30, ms: 320 }
@@ -282,7 +291,7 @@ export function Canvas({
    */
   const camShownRef = useRef<{ zoom: number; x: number; y: number } | null>(null)
   /** Lo que la cartela le está sacando al lugar libre, abajo o al costado, que entra y sale de a poco. */
-  const labelSpaceRef = useRef({ below: 0, side: 0 })
+  const labelSpaceRef = useRef({ below: 0, side: 0, top: 0 })
   /** Dónde se ve el centro del cuadro ahora; persigue al pedido, como la escala. */
   const anchorRef = useRef<Point | null>(null)
   /** El centro del lugar libre, sin corrimiento. El pellizco se mide contra él. */
@@ -508,9 +517,31 @@ export function Canvas({
 
           const margin = clamp(Math.min(free.w, free.h) * 0.07, 16, 40)
           const usableW = Math.max(40, free.w - margin * 2 - space.side)
-          const usableH = Math.max(40, free.h - margin * 2 - space.below)
+
+          // El botón de arriba no le saca lugar al cuadro salvo que lo toque: se mira
+          // dónde caería el cuadro sin correrlo y, si su esquina pisa el botón, se baja
+          // lo justo. La pregunta se hace siempre contra el encaje sin correr, así la
+          // respuesta no cambia por haber corrido, y el corrimiento entra de a poco,
+          // como la cartela.
+          const avoid = free.avoid
+          let topTarget = 0
+          if (avoid) {
+            const plainH = Math.max(40, free.h - margin * 2 - space.below)
+            const plain = Math.min(usableW / layout.outer.w, plainH / layout.outer.h)
+            const right = free.x + margin + usableW / 2 + (layout.outer.w * plain) / 2
+            const top = free.y + margin + plainH / 2 - (layout.outer.h * plain) / 2
+            const clear = avoid.y + avoid.h + AVOID_GAP
+            if (right > avoid.x && top < clear) topTarget = clear - margin - free.y
+          }
+          space.top += (topTarget - space.top) * kl
+          if (Math.abs(topTarget - space.top) < 0.5) space.top = topTarget
+
+          const usableH = Math.max(40, free.h - margin * 2 - space.below - space.top)
           const fit = Math.min(usableW / layout.outer.w, usableH / layout.outer.h)
-          const base = { x: free.x + margin + usableW / 2, y: free.y + margin + usableH / 2 }
+          const base = {
+            x: free.x + margin + usableW / 2,
+            y: free.y + margin + space.top + usableH / 2,
+          }
           baseRef.current = base
 
           // Como en Referencia: la vista solo se corre hacia donde sobra cuadro.
@@ -643,7 +674,7 @@ export function Canvas({
         const glCanvas = glCanvasRef.current
         if (glCanvas) glCanvas.style.visibility = glMode === 'off' ? 'hidden' : 'visible'
         glVisibleRef.current = glMode !== 'off'
-        setGlChips(glMode === 'gl')
+        setGlActive(glMode === 'gl')
         if (gl && glMode !== 'off') {
           gl.render({
             state: current,
@@ -735,6 +766,7 @@ export function Canvas({
           awake: sceneRef.current.awake,
           tilted: Math.abs(body.pose.roll) > 0.3 * DEGREES || body.turning || body.hanging > 0,
           label,
+          parallax: { x: par.x, y: par.y },
         }
         // La cartela recibe las medidas de verdad, no las que van llegando.
         onLayoutRef.current(computeLayout(current))

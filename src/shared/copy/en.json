@@ -198,6 +198,9 @@
     "keepRatio": "Keep ratio",
     "finished": "The finished piece measures {width} × {height} cm",
     "noMatShort": "No mat",
-    "loadFailed": "Couldn't load the image"
+    "loadFailed": "Couldn't load the image",
+    "download": "Download",
+    "downloadFailed": "Couldn't download",
+    "fileName": "framed"
   }
 }
