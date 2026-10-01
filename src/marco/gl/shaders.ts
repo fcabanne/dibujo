@@ -101,6 +101,12 @@ uniform vec2 uOutline[4];
 uniform float uContact;
 uniform vec3 uTint;
 
+// Los clips del cuadro sin marco: lo que tapa cada lengüeta, en px del cuadro en
+// reposo, y cuánto la separa el vidrio de la obra.
+uniform vec4 uClips[8];
+uniform int uClipCount;
+uniform float uClipLift;
+
 out vec4 outColor;
 
 const float PI = 3.14159265;
@@ -251,6 +257,23 @@ vec4 wallShadow(vec2 p) {
   return vec4(max(C, 0.0) * a, a);
 }
 
+/** La sombra de las lengüetas de los clips sobre la obra, a través del vidrio. */
+float clipShadow(vec2 p, vec3 toLight) {
+  if (uClipCount == 0) return 1.0;
+  vec2 o = -toLight.xy / max(toLight.z, 0.25) * uClipLift;
+  float pen = 0.6 * uClipLift + 1.0;
+  float k = 1.0;
+  for (int i = 0; i < 8; i++) {
+    if (i >= uClipCount) break;
+    vec4 r = uClips[i];
+    vec2 c = r.xy + r.zw * 0.5 + o;
+    vec2 q = abs(p - c) - r.zw * 0.5;
+    float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+    k *= 1.0 - 0.38 / (1.0 + exp(sd * 2.2 / pen));
+  }
+  return k;
+}
+
 /** La normal movida por un relieve leído del grano: la piel del vidrio, el poro de la madera. */
 vec3 bumped(vec3 N, vec2 cm, float scale, float strength) {
   vec2 uv = cm * scale;
@@ -330,7 +353,7 @@ void main() {
     float g = texture(uGrain, vUV * 0.35).r;
     albedo *= 0.94 + 0.12 * g;
     wrap = 0.35;
-    occlusion = edgeShadow(vLocal.xy, uRebate, uRebateDepth, L);
+    occlusion = edgeShadow(vLocal.xy, uRebate, uRebateDepth, L) * clipShadow(vLocal.xy, L);
   } else if (uMode == 5) {
     // La obra, con el diente del papel apenas: no puede cambiar lo que se juzga.
     vec3 tex;
@@ -352,7 +375,7 @@ void main() {
     // Calibrada contra el 2D: el papel de la obra tiene que verse del mismo blanco.
     albedo = toLinear(tex) * 1.13 * (0.985 + 0.03 * g);
     wrap = 0.25;
-    occlusion = edgeShadow(vLocal.xy, uLip, uLipDepth, L) * edgeShadow(vLocal.xy, uRebate, uRebateDepth, L);
+    occlusion = edgeShadow(vLocal.xy, uLip, uLipDepth, L) * edgeShadow(vLocal.xy, uRebate, uRebateDepth, L) * clipShadow(vLocal.xy, L);
   } else if (uMode == 6) {
     // La piel del vidrio: el antirreflejo y el mate no son lisos, tienen una cáscara
     // de naranja finísima que rompe el reflejo en puntitos.
@@ -412,7 +435,9 @@ void main() {
 
   // Lo que refleja del cuarto: todo en el metal, de a poco en una superficie lustrada.
   vec3 Fv = F0 + (1.0 - F0) * pow(1.0 - nv, 5.0);
-  float gloss = 1.0 - smoothstep(0.2, 0.75, rough);
+  // Un metal satinado refleja igual, solo que borroso (eso lo hacen los mipmaps); lo
+  // que se apaga con la rugosidad es el reflejo de lo que no es metal.
+  float gloss = metal > 0.5 ? 1.0 : 1.0 - smoothstep(0.2, 0.75, rough);
   color += environment(R, rough) * Fv * gloss * (metal > 0.5 ? 1.0 : 0.5) * occlusion;
 
   // La laca: una capa transparente y lisa encima, con su propio brillo y su reflejo.

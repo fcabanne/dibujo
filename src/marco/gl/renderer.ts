@@ -4,7 +4,8 @@ import { nailOf, type Pose } from '../render/pose'
 import { grainTile } from '../render/noise'
 import { speciesOf, woodContrast, woodTile } from '../render/wood'
 import type { AppState, Rect } from '../types'
-import { artMesh, depthsFor, frameMesh, matMeshes, planeMesh, type Mesh } from './meshes'
+import { BEND, LIFT, TONGUE, clipPlacements } from '../render/clips'
+import { artMesh, depthsFor, frameMesh, matMeshes, planeMesh, sandwichMeshes, type Mesh } from './meshes'
 import { ENV_H, ENV_W, studioEnvironment } from './environment'
 import { FRAGMENT, VERTEX } from './shaders'
 
@@ -57,6 +58,7 @@ const UNIFORMS = [
   'uBlur', 'uF0', 'uHaze', 'uFalloff', 'uWall', 'uRebate', 'uRebateDepth', 'uLip', 'uLipDepth',
   'uEnv', 'uPxPerCm', 'uPeel', 'uCoat', 'uPores',
   'uHull', 'uSpan', 'uGap', 'uPen', 'uStrength', 'uOutline', 'uContact', 'uTint',
+  'uClips', 'uClipCount', 'uClipLift',
 ]
 
 /** El brillo del foco. Se calibra contra el 2D: un color plano tiene que verse igual en los dos. */
@@ -433,6 +435,17 @@ export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer 
       gl.uniform4f(u.uLip, lip.x, lip.y, lip.w, lip.h)
       gl.uniform1f(u.uLipDepth, f.hasMat ? 0.45 * pxPerCm : 0)
 
+      // Sin marco, el sándwich con sus clips. Aparecen recién cuando la moldura terminó
+      // de irse, como en el 2D.
+      const clipped = !f.hasFrame && state.frame.width === 0
+      const sandwich = clipped
+        ? sandwichMeshes(rects, pxPerCm, state.glass !== 'none', clipPlacements(rects.glass, pxPerCm), TONGUE, BEND)
+        : null
+      const prints = sandwich?.footprints.slice(0, 8) ?? []
+      gl.uniform1i(u.uClipCount, prints.length)
+      if (prints.length) gl.uniform4fv(u.uClips, prints.flatMap((r) => [r.x, r.y, r.w, r.h]))
+      gl.uniform1f(u.uClipLift, LIFT * pxPerCm)
+
       // La obra. El mate se ve borroso de verdad: se lee la imagen en una escala más baja.
       if (f.image && f.image.complete && f.image.naturalWidth > 0) {
         if (!art || art.image !== f.image) {
@@ -489,6 +502,17 @@ export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer 
           gl.uniform1f(u.uCoat, coatOf(frame.finish))
         }
         draw(frameMesh(rects, frame.profile, pxPerCm, d))
+      }
+
+      if (sandwich) {
+        // El canto del vidrio, verdoso como el vidrio común visto de canto; el del
+        // fondo, cartón; los clips, chapa de acero.
+        material(1, [0.42, 0.56, 0.5], 0.12)
+        draw(sandwich.glassEdge)
+        material(3, [0.5, 0.47, 0.43], 0.9)
+        draw(sandwich.backing)
+        material(2, [0.74, 0.76, 0.78], 0.52)
+        draw(sandwich.clips)
       }
 
       // El vidrio, encima de todo y transparente: lo que se ve es lo que refleja.

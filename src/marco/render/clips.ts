@@ -15,11 +15,11 @@ import { sideIntensity, type Light, type Side } from './light'
  */
 
 /** La lengüeta: ancho a lo largo del borde, y cuánto pisa el vidrio. */
-const TONGUE = { w: 1.1, reach: 0.85 }
+export const TONGUE = { w: 1.1, reach: 0.85 }
 /** Lo que el doblez sobresale del canto: el espesor de la chapa más su curva. */
-const BEND = 0.14
+export const BEND = 0.14
 /** Cuánto se separa la sombra de la lengüeta: el espesor del vidrio que la separa de la obra. */
-const LIFT = 0.25
+export const LIFT = 0.25
 
 /**
  * Cuántos clips lleva un lado y dónde. Los lados cortos llevan uno al medio hasta que
@@ -29,6 +29,27 @@ const LIFT = 0.25
 function stations(length: number, isLong: boolean): number[] {
   const two = isLong ? length >= 30 : length >= 45
   return two ? [0.2, 0.8] : [0.5]
+}
+
+/**
+ * Dónde va cada clip: el punto del borde donde abraza el cuadro y hacia dónde mira. En
+ * el marco de cada clip, x corre a lo largo del borde e y entra hacia el vidrio.
+ */
+export function clipPlacements(rect: Rect, pxPerCm: number): { side: Side; x: number; y: number; angle: number }[] {
+  const wCm = rect.w / pxPerCm
+  const hCm = rect.h / pxPerCm
+  const horizontalIsLong = wCm >= hCm
+
+  const clips: { side: Side; x: number; y: number; angle: number }[] = []
+  for (const t of stations(wCm, horizontalIsLong)) {
+    clips.push({ side: 'top', x: rect.x + rect.w * t, y: rect.y, angle: 0 })
+    clips.push({ side: 'bottom', x: rect.x + rect.w * t, y: rect.y + rect.h, angle: Math.PI })
+  }
+  for (const t of stations(hCm, !horizontalIsLong)) {
+    clips.push({ side: 'left', x: rect.x, y: rect.y + rect.h * t, angle: -Math.PI / 2 })
+    clips.push({ side: 'right', x: rect.x + rect.w, y: rect.y + rect.h * t, angle: Math.PI / 2 })
+  }
+  return clips
 }
 
 export function drawGlassClips(
@@ -43,19 +64,7 @@ export function drawGlassClips(
    */
   shadowLight: Light = light,
 ) {
-  const wCm = rect.w / pxPerCm
-  const hCm = rect.h / pxPerCm
-  const horizontalIsLong = wCm >= hCm
-
-  const clips: { side: Side; x: number; y: number; angle: number }[] = []
-  for (const t of stations(wCm, horizontalIsLong)) {
-    clips.push({ side: 'top', x: rect.x + rect.w * t, y: rect.y, angle: 0 })
-    clips.push({ side: 'bottom', x: rect.x + rect.w * t, y: rect.y + rect.h, angle: Math.PI })
-  }
-  for (const t of stations(hCm, !horizontalIsLong)) {
-    clips.push({ side: 'left', x: rect.x, y: rect.y + rect.h * t, angle: -Math.PI / 2 })
-    clips.push({ side: 'right', x: rect.x + rect.w, y: rect.y + rect.h * t, angle: Math.PI / 2 })
-  }
+  const clips = clipPlacements(rect, pxPerCm)
 
   // La sombra se corre en pantalla, no en el marco girado de cada clip: `shadowOffset`
   // y `shadowBlur` se miden en píxeles del dispositivo, por eso la escala de a mano.

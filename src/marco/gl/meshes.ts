@@ -232,3 +232,103 @@ export function planeMesh(r: Rect, z: number): Mesh {
   quad(m, p[0], p[1], p[2], p[3])
   return m
 }
+
+/** El espesor del vidrio y del sándwich entero sin marco, en cm: vidrio, obra y fondo. */
+const GLASS_CM = 0.2
+const SANDWICH_CM = 0.6
+/** Cuánto se separa la chapa del clip de la cara del vidrio, en cm: su propio espesor. */
+const SHEET_CM = 0.03
+const BEND_STEPS = 5
+
+/**
+ * Sin marco, el cuadro es un sándwich apretado por clips: el canto del vidrio, el
+ * canto del fondo debajo, y los clips de chapa que abrazan el borde —la lengüeta que
+ * pisa el vidrio y el doblez que agarra la luz—. `footprints` es lo que cada lengüeta
+ * tapa, en px del cuadro en reposo: tira su sombra sobre la obra a través del vidrio.
+ */
+export function sandwichMeshes(
+  rects: SceneRects,
+  pxPerCm: number,
+  hasGlass: boolean,
+  clips: { x: number; y: number; angle: number }[],
+  tongue: { w: number; reach: number },
+  bendCm: number,
+): { glassEdge: Mesh; backing: Mesh; clips: Mesh; footprints: Rect[] } {
+  const glassEdge = mesh()
+  const backing = mesh()
+  const metal = mesh()
+  const footprints: Rect[] = []
+  const cm = pxPerCm
+  const glassBack = -GLASS_CM * cm
+  const back = -SANDWICH_CM * cm
+
+  // Los cantos: el del vidrio arriba, el del fondo debajo.
+  for (const side of sidesOf(rects.glass)) {
+    const n: [number, number, number] = [-side.inward[0], -side.inward[1], 0]
+    const band = (m: Mesh, z0: number, z1: number) => {
+      const a = vertex(m, [side.p0[0], side.p0[1], z0], n, [0, 0])
+      const b = vertex(m, [side.p1[0], side.p1[1], z0], n, [1, 0])
+      const c = vertex(m, [side.p1[0], side.p1[1], z1], n, [1, 1])
+      const e = vertex(m, [side.p0[0], side.p0[1], z1], n, [0, 1])
+      quad(m, a, b, c, e)
+    }
+    if (hasGlass) band(glassEdge, 0, glassBack)
+    band(backing, hasGlass ? glassBack : 0, back)
+  }
+
+  const w = Math.max(7, tongue.w * cm)
+  const reach = Math.max(5, tongue.reach * cm)
+  const r = Math.max(1, bendCm * cm)
+  const tip = w * 0.42
+  const top = SHEET_CM * cm
+  for (const clip of clips) {
+    const c = Math.cos(clip.angle)
+    const s = Math.sin(clip.angle)
+    const at = (lx: number, ly: number, z: number): [number, number, number] => [
+      clip.x + lx * c - ly * s,
+      clip.y + lx * s + ly * c,
+      z,
+    ]
+    const dir = (nx: number, ny: number, nz: number): [number, number, number] => [nx * c - ny * s, nx * s + ny * c, nz]
+    const up = dir(0, 0, 1)
+
+    // La lengüeta, con las puntas redondeadas como la chapa de verdad.
+    const outline: [number, number][] = [[-w / 2, 0], [w / 2, 0]]
+    for (let i = 0; i <= 6; i++) {
+      const t = (i / 6) * (Math.PI / 2)
+      outline.push([w / 2 - tip + tip * Math.cos(t), reach - tip + tip * Math.sin(t)])
+    }
+    for (let i = 0; i <= 6; i++) {
+      const t = Math.PI / 2 + (i / 6) * (Math.PI / 2)
+      outline.push([-w / 2 + tip + tip * Math.cos(t), reach - tip + tip * Math.sin(t)])
+    }
+    const ids = outline.map(([lx, ly]) => vertex(metal, at(lx, ly, top), up, [lx / cm, ly / cm]))
+    for (let i = 1; i < ids.length - 1; i++) metal.indices.push(ids[0], ids[i], ids[i + 1])
+
+    // El doblez: un cuarto de vuelta sobre el canto, y la chapa que baja hasta el fondo.
+    let prev: [number, number] | null = null
+    const zc = top - r
+    for (let i = 0; i <= BEND_STEPS; i++) {
+      const th = (i / BEND_STEPS) * (Math.PI / 2)
+      const ly = -r * Math.sin(th)
+      const z = zc + r * Math.cos(th)
+      const n = dir(0, -Math.sin(th), Math.cos(th))
+      const a = vertex(metal, at(-w / 2, ly, z), n, [0, th])
+      const b = vertex(metal, at(w / 2, ly, z), n, [w / cm, th])
+      if (prev) quad(metal, prev[0], prev[1], b, a)
+      prev = [a, b]
+    }
+    const side = dir(0, -1, 0)
+    const d0 = vertex(metal, at(-w / 2, -r, zc), side, [0, 0])
+    const d1 = vertex(metal, at(w / 2, -r, zc), side, [w / cm, 0])
+    const d2 = vertex(metal, at(w / 2, -r, back), side, [w / cm, 1])
+    const d3 = vertex(metal, at(-w / 2, -r, back), side, [0, 1])
+    quad(metal, d0, d1, d2, d3)
+
+    const corners = [at(-w / 2, 0, 0), at(w / 2, 0, 0), at(w / 2, reach, 0), at(-w / 2, reach, 0)]
+    const xs = corners.map((p) => p[0])
+    const ys = corners.map((p) => p[1])
+    footprints.push({ x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) })
+  }
+  return { glassEdge, backing, clips: metal, footprints }
+}
