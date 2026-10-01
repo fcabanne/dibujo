@@ -2,6 +2,18 @@ import type { FrameFinish, FrameMaterial, FrameProfile } from '../types'
 import { REST_LIGHT, rgba, type Side } from './light'
 import { glossOf, shadeProfile } from './profile'
 import { drawMaterial } from './textures'
+import { paintGlChip } from '../gl/chips'
+
+/**
+ * Si el cuadro se está dibujando en 3D, las muestras de la sección también: lo prende
+ * el lienzo cuando el 3D anda. Las muestras que ya estaban pintadas no cambian; las
+ * del abanico se pintan al abrirlo.
+ */
+let glChips = false
+
+export function setGlChips(on: boolean) {
+  glChips = on
+}
 
 /**
  * Cómo se mira la muestra:
@@ -44,6 +56,8 @@ export function paintMoldingChip(
     ctx.fillRect(0, 0, size, size)
     return
   }
+
+  if (glChips && look === 'top' && paintGlChip(canvas, size, color, material, finish, profile)) return
 
   // Un pedazo de unos dos centímetros y medio: la veta a la escala en que se la ve.
   drawMaterial(ctx, { x: 0, y: 0, w: size, h: size }, false, color, material, finish, 11, size / 2.5)

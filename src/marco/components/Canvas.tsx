@@ -44,6 +44,7 @@ import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
 import { tickFor, tickRate, type SoundName } from '../sound/recipes'
 import { renderScene } from '../render/scene'
+import { setGlChips } from '../render/chip'
 import { standoff } from '../render/shadow'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -642,6 +643,7 @@ export function Canvas({
         const glCanvas = glCanvasRef.current
         if (glCanvas) glCanvas.style.visibility = glMode === 'off' ? 'hidden' : 'visible'
         glVisibleRef.current = glMode !== 'off'
+        setGlChips(glMode === 'gl')
         if (gl && glMode !== 'off') {
           gl.render({
             state: current,

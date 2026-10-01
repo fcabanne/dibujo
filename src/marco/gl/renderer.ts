@@ -39,6 +39,8 @@ export interface ObjectFrame {
   wallCm: number
   /** La cuña de arriba en reposo, en cm (`standoff`). */
   standoffCm: number
+  /** Una muestra del abanico: sin sombra en la pared ni caída del foco. */
+  chip?: boolean
   /** Si se dibuja solo una parte de la pantalla, en px: la mitad 3D de la comparación. */
   scissor?: Rect
 }
@@ -393,7 +395,7 @@ export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer 
         u.uFalloff,
         o.x + o.w / 2 + REST_LIGHT.x * o.w * 0.16,
         o.y + o.h * 0.42 + REST_LIGHT.y * o.h * 0.12,
-        Math.max(o.w, o.h) * 1.5,
+        f.chip ? 0 : Math.max(o.w, o.h) * 1.5,
       )
       gl.uniform1i(u.uTex, 0)
       gl.uniform1i(u.uGrain, 1)
@@ -405,7 +407,7 @@ export function createObjectRenderer(canvas: HTMLCanvasElement): ObjectRenderer 
 
       // La sombra sobre la pared, antes que nada y sin profundidad: es de la pared, y
       // el cuadro se dibuja encima. La pared no se mueve con el cuadro.
-      {
+      if (!f.chip) {
         const sh = shadowOf(f, model, lightPos)
         gl.uniformMatrix4fv(u.uModel, false, identity())
         gl.uniform1i(u.uMode, 7)
