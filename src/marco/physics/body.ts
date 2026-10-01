@@ -26,6 +26,13 @@ export interface Body {
   kg: number
   /** El balanceo sobre el clavo. */
   swing: Pendulum
+  /**
+   * Hacia dónde queda "abajo" en la pantalla, en radianes: si el teléfono se inclina,
+   * el cuadro sigue colgando a plomo y en la pantalla se ve girar al revés. Llega con
+   * un resorte, un pelo atrasado y pasándose apenas, como algo que cuelga.
+   */
+  plumb: Spring
+  plumbTarget: number
   /** Su frecuencia natural, rad/s: sale de la forma del cuadro. */
   omega: number
   /** Lo que le falta para terminar de girar, en radianes: llega a cero con peso. */
@@ -80,6 +87,8 @@ const TURN: SpringParams = { response: 0.55, damping: 0.82 }
 const HANG_DROP: SpringParams = { response: 0.32, damping: 0.55 }
 /** Colgarlo: lo apoya contra la pared, sin rebote. */
 const HANG_LIFT: SpringParams = { response: 0.38, damping: 0.75 }
+/** El cuadro buscando la plomada cuando el teléfono se inclina: con peso, y pasándose un poco. */
+const PLUMB: SpringParams = { response: 0.55, damping: 0.6 }
 
 function omegaOf(d: Dims): number {
   const { outer } = layoutFromDims(d)
@@ -115,6 +124,8 @@ export function createBody(state: AppState): Body {
     drop: spring(0),
     kg: 1.5,
     swing: { angle: 0, velocity: 0 },
+    plumb: spring(0),
+    plumbTarget: 0,
     omega: 5,
     turn: spring(0),
     turning: false,
@@ -200,7 +211,12 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
     body.lift.x = 0
     body.lift.v = 0
     body.hanging = 0
+    body.plumb.x = body.plumbTarget
+    body.plumb.v = 0
   } else {
+    stepSpring(body.plumb, body.plumbTarget, PLUMB, dt)
+    if (!atRest(body.plumb, body.plumbTarget, 0.0003)) moving = true
+
     stepSpring(body.lean, body.leanTarget, body.leanTarget < 1 ? PRESS : RELEASE, dt)
     if (!atRest(body.lean, body.leanTarget, 0.002)) moving = true
 
@@ -257,7 +273,7 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
   body.pose.lean = body.lean.x
   body.pose.lift = -(1 - body.lean.x) * standoffCm * 0.5 + body.lift.x + turnLift
   body.pose.drop = body.drop.x
-  body.pose.roll = body.swing.angle
+  body.pose.roll = body.swing.angle + body.plumb.x
   body.pose.turn = body.turn.x
 
   return moving

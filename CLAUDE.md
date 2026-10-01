@@ -341,10 +341,15 @@ de lo de alrededor, no de deformarlo.
   sombra de los ganchitos— queda en el espacio de la pantalla. El puntero se lleva al
   espacio del cuadro antes de preguntar qué hay debajo (`toObject`).
 - **En el celular, el mismo cuerpo**: se asienta, se balancea, gira con peso y se
-  cuelga, y suena igual que en la compu. Lo que no hay es empujarlo con el dedo —el
-  dedo sobre la obra abre la obra—; en cambio, **inclinar el teléfono lo balancea**
-  (`TILT_SWING` en `Canvas.tsx`): la pared se mueve con el teléfono y el cuadro se queda
-  atrás un instante sobre el clavo. Empuja el cambio de inclinación, no la postura. El
+  cuelga, y suena igual que en la compu: el dedo arrastrando una banda agarra, hace
+  clic en cada muesca y suelta como el mouse, y el deslizador del cajón suena a muesca,
+  con el tono del ancho (`width` en `Reaction`), no a moldura nueva. Lo que no hay es
+  empujarlo con el dedo —el dedo sobre la obra abre la obra—. En cambio, **cuelga a
+  plomo** (`plumb` en `body.ts`): si el teléfono gira en su plano, el cuadro sigue
+  derecho respecto del mundo y en la pantalla se lo ve girar al revés, con un resorte
+  que lo hace llegar con peso. Sale del acelerómetro (`roll` en `useTilt`), sin
+  recentrar —la plomada es absoluta—, hasta 12°, y se suelta con el teléfono acostado.
+  Antes cada movimiento del teléfono lo empujaba y se sacudía todo el tiempo. El
   lienzo sigue pintando mientras el cuerpo se mueve y se duerme cuando se queda quieto.
 - **Con `prefers-reduced-motion` todo llega en el acto**, en las dos capas. El sonido
   sí suena: no es movimiento.

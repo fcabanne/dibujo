@@ -14,7 +14,11 @@ import type { AppState } from '../types'
  */
 export type Part = 'frame' | 'mat' | 'glass' | 'wall' | 'art'
 
-export type Reaction = { kind: 'hover' } | { kind: 'commit'; part: Part }
+/**
+ * `width`: lo único que cambió de la banda es su ancho —un paso del deslizador del
+ * celular, una medida tipeada—. Suena como la muesca y no como elegir otra moldura.
+ */
+export type Reaction = { kind: 'hover' } | { kind: 'commit'; part: Part; width?: boolean }
 
 export interface Seen {
   shown: AppState
@@ -46,10 +50,11 @@ export function diffScenes(prev: Seen, next: Seen, dragging: boolean): Reaction[
 
   if (a !== b) {
     if (frameLooks(a) !== frameLooks(b) && !(dragging && sameButWidth(a, b, 'frame'))) {
-      out.push({ kind: 'commit', part: 'frame' })
+      out.push({ kind: 'commit', part: 'frame', width: sameButWidth(a, b, 'frame') && a.frame.width > 0 && b.frame.width > 0 })
     }
     if (matLooks(a) !== matLooks(b) && !(dragging && sameButWidth(a, b, 'mat'))) {
-      out.push({ kind: 'commit', part: 'mat' })
+      const on = (s: AppState) => Boolean(s.mats[0]?.enabled)
+      out.push({ kind: 'commit', part: 'mat', width: sameButWidth(a, b, 'mat') && on(a) && on(b) })
     }
     if (a.glass !== b.glass) out.push({ kind: 'commit', part: 'glass' })
     if (a.wall.color !== b.wall.color || a.wall.pattern !== b.wall.pattern) {

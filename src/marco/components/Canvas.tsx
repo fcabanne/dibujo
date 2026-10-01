@@ -36,7 +36,7 @@ import {
   sway,
   type BodyEvent,
 } from '../physics/body'
-import { DEGREES, nudge } from '../physics/pendulum'
+import { DEGREES } from '../physics/pendulum'
 import { eyeOf, nailOf, toObject } from '../render/pose'
 import { createObjectRenderer, type ObjectRenderer } from '../gl/renderer'
 import { massOf } from '../physics/mass'
@@ -162,13 +162,6 @@ const FADE_MS = 240
 const FADE_DESK_MS = 110
 
 /**
- * Cuánto balancea el cuadro inclinar el teléfono, en radianes por unidad de
- * inclinación (una unidad son 18°): un giro firme de la muñeca lo mueve uno o dos
- * grados, y el clavo y el alambre lo frenan y lo dejan derecho.
- */
-const TILT_SWING = 0.12
-
-/**
  * Sondas para mirar desde afuera, solo con `?debug` o `?perf` en la dirección. No
  * cambian nada de lo que se ve: exponen la escena y el cuerpo en `window.__marco`, y
  * con `?perf` además miden cuánto tarda cada cuadro.
@@ -220,6 +213,8 @@ interface TouchState {
   /** Dónde y cuándo apoyó el primer dedo, y sobre qué parte. */
   down: { x: number; y: number; time: number; zone: Zone } | null
   moved: boolean
+  /** Si el dedo ya agarró la banda: se movió estando sobre ella. */
+  grabbed: boolean
   /** El pellizco se mide contra el movimiento anterior, no contra el inicio. */
   spread: number
   mid: Point
@@ -310,6 +305,7 @@ export function Canvas({
     pointers: new Map(),
     down: null,
     moved: false,
+    grabbed: false,
     spread: 0,
     mid: { x: 0, y: 0 },
   })
@@ -321,8 +317,6 @@ export function Canvas({
   const looksRef = useRef('')
   /** Lo último que se pintó: si nada cambió desde entonces, no se vuelve a pintar. */
   const paintedRef = useRef<Painted | null>(null)
-  /** La inclinación del teléfono en el cuadro anterior: lo que empuja el balanceo es cuánto cambió. */
-  const tiltSeenRef = useRef<number | null>(null)
 
   const committedRef = useRef(committed)
   committedRef.current = committed
@@ -369,6 +363,15 @@ export function Canvas({
     }
     const pan = reaction.part === 'glass' || reaction.part === 'wall' ? 0.25 : reaction.part === 'art' ? 0 : -0.25
     const weight = Math.max(-3, Math.min(4, deltaKg * 6))
+    if (reaction.width) {
+      // Un paso de ancho —el deslizador del celular—: la muesca, con el tono del
+      // ancho nuevo, como cuando se arrastra la banda. Se asienta, sin vaivén: al
+      // deslizar llegan muchos pasos seguidos.
+      const part = reaction.part === 'mat' ? 'mat' : 'frame'
+      play(tickFor(part), { rate: part === 'frame' ? tickRate(after.frame.width) : 1, pan })
+      if (Math.abs(deltaKg) > 0.001) settle(bodyRef.current, deltaKg)
+      return
+    }
     switch (reaction.part) {
       case 'frame':
         play('commit-wood', { pan, gain: weight, rate: after.frame.width === 0 ? 1.2 : 1 })
@@ -404,7 +407,7 @@ export function Canvas({
     if (!drag) return
     const before = bodyRef.current.hand?.value ?? result.shown
     bodyRef.current.hand = { key: drag.target, value: result.shown, over: result.over }
-    if (result.changed && !compactRef.current) {
+    if (result.changed) {
       detentKick(bodyRef.current, drag.target, result.shown - before)
       play(tickFor(drag.target), {
         rate: drag.target === 'frame' ? tickRate(result.snapped) : 1,
@@ -491,18 +494,9 @@ export function Canvas({
           hungRef.current = arrivalRef.current
           if (!instant) hang(body, Math.random() < 0.5 ? -1 : 1)
         }
-        // El teléfono que se inclina mueve la pared donde cuelga: el cuadro se queda
-        // atrás un instante y se balancea sobre el clavo, como uno de verdad. Lo que
-        // empuja es el cambio de inclinación, no la postura.
-        const t0tilt = tilt.current
-        if (touch && t0tilt.active && !lookRef.current && !instant) {
-          const prev = tiltSeenRef.current
-          if (prev !== null) {
-            const kick = Math.max(-0.25, Math.min(0.25, t0tilt.x - prev))
-            if (kick !== 0) nudge(body.swing, body.omega, -kick * TILT_SWING)
-          }
-          tiltSeenRef.current = t0tilt.x
-        }
+        // El teléfono que gira en su plano gira la pared, pero el cuadro sigue colgando
+        // a plomo: en la pantalla se lo ve girar al revés, y llega con su peso.
+        body.plumbTarget = touch ? -tilt.current.roll : 0
         const moving = stepBody(body, current, dt, instant)
         for (const event of body.events) play(EVENT_SOUND[event], { pan: 0 })
         const dims = shownDims(body)
@@ -1008,7 +1002,7 @@ export function Canvas({
         const rects = sceneRef.current.rects
         const current = stateRef.current
         const hasMat = Boolean(current.mats[0]?.enabled)
-        const zone = rects ? touchZone(p, rects, current.frame.width > 0, hasMat) : 'wall'
+        const zone = rects ? touchZone(toObject(p, bodyRef.current.pose, rects, scaleRef.current ?? 1), rects, current.frame.width > 0, hasMat) : 'wall'
         g.down = { x: p.x, y: p.y, time: performance.now(), zone }
         g.moved = false
 
@@ -1050,7 +1044,16 @@ export function Canvas({
         const rects = sceneRef.current.rects
         if (drag && rects) {
           const box = wrapRef.current?.getBoundingClientRect()
-          handleDrag(dragWidth(drag, p, rects, stateRef.current, dispatchRef.current), p.x, box?.width ?? 1)
+          // Recién cuando el dedo se mueve es agarrar: un toque quieto sobre la banda
+          // abre su cajón, y no tiene por qué apretar el cuadro ni sonar.
+          if (g.moved && !g.grabbed) {
+            g.grabbed = true
+            press(bodyRef.current, (p.y - rects.outer.y) / Math.max(1, rects.outer.h))
+            dragKgRef.current = bodyRef.current.kg
+            dragSideRef.current = p.x < rects.center.x ? -1 : 1
+            play('grab', { pan: panOf(p.x, box?.width ?? 1) })
+          }
+          if (g.grabbed) handleDrag(dragWidth(drag, p, rects, stateRef.current, dispatchRef.current), p.x, box?.width ?? 1)
         }
       } else if (g.mode === 'look') {
         // Relativo a donde apoyó: la luz arranca quieta y se corre con el dedo, en
@@ -1096,7 +1099,18 @@ export function Canvas({
       if (!g.pointers.delete(e.pointerId)) return
 
       if (g.mode === 'band' && g.pointers.size === 0) {
-        bodyRef.current.hand = null
+        const body = bodyRef.current
+        if (g.grabbed) {
+          // Como con el mouse: pasada del máximo vuelve con un golpe sordo, y soltarla
+          // deja el cuadro asentándose con su peso nuevo.
+          if (body.hand && body.hand.over > 0) play('stretch', { pan: 0 })
+          release(body)
+          const delta = body.kg - dragKgRef.current
+          if (Math.abs(delta) > 0.001) settle(body, delta)
+          sway(body, delta, dragSideRef.current, 0.45)
+          g.grabbed = false
+        }
+        body.hand = null
         dragRef.current = null
         sceneRef.current.dragging = null
         sceneRef.current.dragCm = null
