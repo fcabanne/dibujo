@@ -1,5 +1,6 @@
 import { settleSpring as atRest, stepSpring, type Spring, type SpringParams } from '../../shared/motion'
-import { dimsOf, type Dims } from '../domain/geometry'
+import { dimsOf, layoutFromDims, type Dims } from '../domain/geometry'
+import { DEGREES, naturalFrequency, nudge, stepPendulum, type Pendulum } from './pendulum'
 import { REST_POSE, type Pose } from '../render/pose'
 import type { AppState } from '../types'
 
@@ -23,6 +24,20 @@ export interface Body {
   drop: Spring
   /** Cuánto pesa ahora, en kg: decide cómo llega todo. */
   kg: number
+  /** El balanceo sobre el clavo. */
+  swing: Pendulum
+  /** Su frecuencia natural, rad/s: sale de la forma del cuadro. */
+  omega: number
+  /** Lo que le falta para terminar de girar, en radianes: llega a cero con peso. */
+  turn: Spring
+  /** Si está a mitad de un giro: al terminar, apoya. */
+  turning: boolean
+  /** Despegado de la pared hacia el ojo, en cm: al colgarlo o al girarlo en el aire. */
+  lift: Spring
+  /** Colgándose: el asiento usa el resorte del colgado, no el del peso. */
+  hanging: number
+  /** Lo que pasó en el último paso y suena: apoyó, se enganchó en el clavo. */
+  events: BodyEvent[]
   /** La mano está arrastrando una banda: las medidas la siguen más rápido. */
   dragging: boolean
   /** El giro de la obra la última vez que se miró: si cambia, el ancho y el alto se cruzan. */
@@ -34,6 +49,9 @@ export interface Body {
    */
   hand: { key: 'frame' | 'mat'; value: number; over: number } | null
 }
+
+/** Lo que le pasa al cuadro como cosa, y suena. */
+export type BodyEvent = 'turn-start' | 'turn-land' | 'hang-wire' | 'hang-wall'
 
 const DIM_KEYS: (keyof Dims)[] = ['artW', 'artH', 'mat', 'frame']
 
@@ -53,6 +71,18 @@ const PRESS: SpringParams = { response: 0.14, damping: 0.75 }
 const RELEASE: SpringParams = { response: 0.42, damping: 0.45 }
 /** Cuánto aplasta la cuña la mano, apretando del canto de arriba. */
 const PRESS_DEPTH = 0.6
+
+/** El giro de 90°: con peso, y pasándose apenas un grado. */
+const TURN: SpringParams = { response: 0.55, damping: 0.82 }
+/** Colgarlo: el alambre lo recibe y rebota un poco. */
+const HANG_DROP: SpringParams = { response: 0.32, damping: 0.55 }
+/** Colgarlo: lo apoya contra la pared, sin rebote. */
+const HANG_LIFT: SpringParams = { response: 0.38, damping: 0.75 }
+
+function omegaOf(d: Dims): number {
+  const { outer } = layoutFromDims(d)
+  return naturalFrequency(outer.w, outer.h)
+}
 
 /** Un peso de referencia, en kg: el de un 30 × 40 con passe-partout, marco y vidrio. */
 const REFERENCE_KG = 1.5
@@ -79,6 +109,13 @@ export function createBody(state: AppState): Body {
     leanTarget: 1,
     drop: spring(0),
     kg: 1.5,
+    swing: { angle: 0, velocity: 0 },
+    omega: 5,
+    turn: spring(0),
+    turning: false,
+    lift: spring(0),
+    hanging: 0,
+    events: [],
     dragging: false,
     rotation: state.artwork.rotation,
     hand: null,
@@ -95,16 +132,28 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
   const target = dimsOf(state)
   const dt = dtMs / 1000
   let moving = false
+  body.events = []
+  body.omega = omegaOf(target)
 
   // Girar la obra cruza ancho y alto. No es que el cuadro se estire hasta la otra
   // forma: es el mismo cuadro, dado vuelta, así que las medidas se cruzan en el acto.
+  // Y para que se vea como lo que es —alguien lo descolgó, lo giró y lo volvió a
+  // colgar—, el cuadro arranca girado al revés de lo que se giró la obra, así que el
+  // primer cuadro es idéntico al anterior, y llega a derecho con su peso.
   if (state.artwork.rotation !== body.rotation) {
-    if ((state.artwork.rotation - body.rotation) % 180 !== 0) {
+    const delta = (state.artwork.rotation - body.rotation + 360) % 360
+    if (delta % 180 !== 0) {
       const { artW, artH } = body.dims
       body.dims.artW = artH
       body.dims.artH = artW
     }
     body.rotation = state.artwork.rotation
+    if (!instant) {
+      body.turn.x += delta === 270 ? Math.PI / 2 : -(delta * Math.PI) / 180
+      body.turn.v = 0
+      body.turning = true
+      body.events.push('turn-start')
+    }
   }
 
   for (const key of DIM_KEYS) {
@@ -137,19 +186,63 @@ export function stepBody(body: Body, state: AppState, dtMs: number, instant: boo
     body.lean.v = 0
     body.drop.x = 0
     body.drop.v = 0
+    body.swing.angle = 0
+    body.swing.velocity = 0
+    body.turn.x = 0
+    body.turn.v = 0
+    body.turning = false
+    body.lift.x = 0
+    body.lift.v = 0
+    body.hanging = 0
   } else {
     stepSpring(body.lean, body.leanTarget, body.leanTarget < 1 ? PRESS : RELEASE, dt)
     if (!atRest(body.lean, body.leanTarget, 0.002)) moving = true
-    stepSpring(body.drop, 0, settleSpring(body.kg), dt)
+
+    // Colgándose, el asiento es el del alambre que recibe el cuadro; después, el del peso.
+    const wasAbove = body.drop.x < 0
+    stepSpring(body.drop, 0, body.hanging > 0 ? HANG_DROP : settleSpring(body.kg), dt)
     if (!atRest(body.drop, 0, 0.0005)) moving = true
+    if (body.hanging > 0 && wasAbove && body.drop.x >= 0) body.events.push('hang-wire')
+
+    // El giro: llega a derecho con peso, y al apoyar le deja un vaivén al péndulo.
+    if (body.turning) {
+      stepSpring(body.turn, 0, TURN, dt)
+      if (Math.abs(body.turn.x) < 1.5 * DEGREES && Math.abs(body.turn.v) < 0.5) {
+        body.turning = false
+        body.events.push('turn-land')
+        nudge(body.swing, body.omega, 0.6 * DEGREES * Math.sign(body.turn.v || 1))
+      }
+      moving = true
+    } else {
+      stepSpring(body.turn, 0, TURN, dt)
+      if (!atRest(body.turn, 0, 0.0002)) moving = true
+    }
+
+    // Despegado de la pared: vuelve a apoyar. Colgándose, recién después de engancharse.
+    const liftWait = body.hanging > 0 && performance.now() - body.hanging < 120
+    if (!liftWait) {
+      const wasOff = body.lift.x > 0.15
+      stepSpring(body.lift, 0, HANG_LIFT, dt)
+      if (body.hanging > 0 && wasOff && body.lift.x <= 0.15) {
+        body.events.push('hang-wall')
+        body.hanging = 0
+      }
+    }
+    if (!atRest(body.lift, 0, 0.002)) moving = true
+
+    if (stepPendulum(body.swing, body.omega, dt)) moving = true
   }
 
   // Apretado contra la pared, el cuadro está un poco más lejos del ojo: se achica un
-  // pelo. Es la mitad de lo que bajó la cuña, que es lo que se movió su centro.
+  // pelo. Es la mitad de lo que bajó la cuña, que es lo que se movió su centro. En el
+  // aire —girándolo, colgándolo— está más cerca.
   const standoffCm = 1.2
+  const turnLift = 2.5 * Math.pow(Math.min(1, Math.abs(body.turn.x) / (Math.PI / 2)), 0.7)
   body.pose.lean = body.lean.x
-  body.pose.lift = -(1 - body.lean.x) * standoffCm * 0.5
+  body.pose.lift = -(1 - body.lean.x) * standoffCm * 0.5 + body.lift.x + turnLift
   body.pose.drop = body.drop.x
+  body.pose.roll = body.swing.angle
+  body.pose.turn = body.turn.x
 
   return moving
 }
@@ -205,4 +298,31 @@ export function shownDims(body: Body): Dims {
  */
 export function detentKick(body: Body, key: 'frame' | 'mat', direction: number) {
   body.dims[key].v += Math.sign(direction) * 8
+}
+
+/**
+ * Un dibujo nuevo se cuelga: aparece un poco más arriba y despegado de la pared, el
+ * alambre lo recibe con un tirón y un vaivén, y después se apoya contra la pared.
+ */
+export function hang(body: Body, side: number) {
+  body.drop.x = -2
+  body.drop.v = 0
+  body.lift.x = 3
+  body.lift.v = 0
+  body.hanging = performance.now()
+  body.swing.angle = 0
+  body.swing.velocity = 0
+  nudge(body.swing, body.omega, 2.2 * DEGREES * (side < 0 ? -1 : 1))
+}
+
+/**
+ * Elegir algo de un costado lo toca de ese costado: un vaivén leve, más grande cuanto
+ * más cambió el peso, que el clavo frena y el alambre endereza en un segundo.
+ * `side` es de dónde viene la mano: -1 izquierda, 1 derecha, 0 de abajo.
+ */
+export function sway(body: Body, deltaKg: number, side: number) {
+  if (side === 0) return
+  const kg = Math.max(0.2, body.kg)
+  const amplitude = Math.min(0.45, (0.25 * Math.abs(deltaKg)) / Math.sqrt(kg) + 0.15) * DEGREES
+  nudge(body.swing, body.omega, amplitude * side)
 }

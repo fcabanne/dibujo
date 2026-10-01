@@ -436,6 +436,12 @@ export function Overlay({
 
         if (lit) lit.classList.toggle('is-on', part !== null && !scene.dragging)
         if (leader) leader.classList.toggle('is-on', part !== null && !scene.dragging)
+        // Con el cuadro fuera de su reposo un aro derecho mentiría: se aparta hasta que
+        // vuelva. Va en una clase aparte para no repetir el destello de aparecer.
+        const tilted = Boolean(scene.tilted)
+        lit?.classList.toggle('is-tilted', tilted)
+        leader?.classList.toggle('is-tilted', tilted)
+        gizmoRef.current?.classList.toggle('is-tilted', tilted)
 
         if (part && current) {
           const { band, hole } = part

@@ -20,11 +20,13 @@ import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
-import { createBody, detentKick, press, release, settle, shownDims, stepBody } from '../physics/body'
+import { createBody, detentKick, hang, press, release, settle, shownDims, stepBody, sway, type BodyEvent } from '../physics/body'
+import { DEGREES } from '../physics/pendulum'
+import { toObject } from '../render/pose'
 import { massOf } from '../physics/mass'
 import { diffScenes, type Reaction, type Seen } from '../physics/reactions'
 import { logSounds, play, soundLog, unlockSound } from '../sound/engine'
-import { commitFor, tickFor, tickRate } from '../sound/recipes'
+import { commitFor, tickFor, tickRate, type SoundName } from '../sound/recipes'
 import { renderScene } from '../render/scene'
 import { wallLumaAt } from '../render/wall'
 import type { Action } from '../state/reducer'
@@ -47,6 +49,11 @@ export interface SceneSnapshot {
   wallLuma: number
   /** El puntero estuvo activo hace poco: gobierna si el HUD se muestra. */
   awake: boolean
+  /**
+   * El cuadro está fuera de su reposo —balanceándose, girando, colgándose—: lo que
+   * marca una parte con un aro derecho se aparta hasta que vuelva.
+   */
+  tilted?: boolean
   /**
    * Celular: dónde va la cartela, o `null` si no hay lugar para ella. Abajo del
    * cuadro el punto es el medio de su borde de arriba; al costado, su esquina de
@@ -75,6 +82,12 @@ interface Props {
   state: AppState
   /** Lo confirmado, sin vista previa. Con los dos se sabe si algo se eligió o se está mirando. */
   committed?: AppState
+  /**
+   * Cuántos dibujos llegaron desde que se abrió la herramienta. Cuando cambia, el
+   * dibujo nuevo se cuelga en la pared en vez de aparecer: al recargar no cambia, y lo
+   * que ya estaba colgado no se vuelve a colgar.
+   */
+  arrival?: number
   dispatch: (action: Action) => void
   sceneRef: React.MutableRefObject<SceneSnapshot>
   onLayout: (layout: Layout) => void
@@ -187,6 +200,7 @@ function partOf(zone: Zone): Part {
 export function Canvas({
   state,
   committed,
+  arrival = 0,
   dispatch,
   sceneRef,
   onLayout,
@@ -254,6 +268,10 @@ export function Canvas({
 
   const committedRef = useRef(committed)
   committedRef.current = committed
+  const arrivalRef = useRef(arrival)
+  arrivalRef.current = arrival
+  /** El último dibujo que se colgó: si `arrival` se adelanta, hay uno nuevo. */
+  const hungRef = useRef(0)
   /** Lo que se vio y se confirmó en el cuadro anterior, para saber qué cambió. */
   const seenRef = useRef<Seen | null>(null)
   /** El peso del cuadro al agarrar una banda: al soltar, se asienta con la diferencia. */
@@ -306,7 +324,12 @@ export function Canvas({
         // El tamaño se tipea: sonar en cada tecla sería un teclado. Solo se asienta.
         break
     }
-    if (before !== after) settle(bodyRef.current, deltaKg)
+    if (before !== after) {
+      settle(bodyRef.current, deltaKg)
+      // La mano tocó el cuadro del lado de la burbuja que se usó.
+      const side = reaction.part === 'frame' || reaction.part === 'mat' ? -1 : reaction.part === 'glass' ? 1 : 0
+      sway(bodyRef.current, deltaKg, side)
+    }
   }
 
   /**
@@ -380,7 +403,13 @@ export function Canvas({
         }
         seenRef.current = { shown: current, committed: confirmed }
         body.kg = kg
-        stepBody(body, current, dt, touch || reducedMotionNow())
+        const instant = touch || reducedMotionNow()
+        if (arrivalRef.current !== hungRef.current) {
+          hungRef.current = arrivalRef.current
+          if (!instant) hang(body, Math.random() < 0.5 ? -1 : 1)
+        }
+        stepBody(body, current, dt, instant)
+        for (const event of body.events) play(EVENT_SOUND[event], { pan: 0 })
         const dims = shownDims(body)
         const layout = layoutFromDims(dims)
 
@@ -448,7 +477,7 @@ export function Canvas({
           // Escala: persigue el encaje, salvo mientras arrastrás.
           const target = drag
             ? drag.frozenScale
-            : fitScale(layout.outer, box.width, box.height) * viewZoomRef.current
+            : fitScale(turnedBox(layout.outer, body.pose.turn), box.width, box.height) * viewZoomRef.current
 
           if (scaleRef.current === null) scaleRef.current = target
           else {
@@ -570,7 +599,10 @@ export function Canvas({
 
         const hasFrame = current.frame.width > 0
         const hasMat = Boolean(current.mats[0]?.enabled)
-        const zone = !touch && p.inside ? hitZone(p, rects, hasFrame, hasMat) : 'wall'
+        // El puntero se lleva al espacio del cuadro: a mitad de un balanceo, la banda
+        // que se agarra es la que está debajo, no la del cuadro quieto.
+        const zone =
+          !touch && p.inside ? hitZone(toObject(p, body.pose, rects, scaleRef.current), rects, hasFrame, hasMat) : 'wall'
 
         const label =
           labelMode === 'below'
@@ -603,6 +635,7 @@ export function Canvas({
           hasMat,
           wallLuma: wallLumaRef.current,
           awake: sceneRef.current.awake,
+          tilted: Math.abs(body.pose.roll) > 0.3 * DEGREES || body.turning || body.hanging > 0,
           label,
         }
         // La cartela recibe las medidas de verdad, no las que van llegando.
@@ -729,7 +762,12 @@ export function Canvas({
       // La zona se resuelve desde el evento, no desde la que calculó el último
       // frame: apretar sin haber movido antes dejaría una zona vieja.
       const target = draggableTarget(
-        hitZone(p, rects, current.frame.width > 0, Boolean(current.mats[0]?.enabled)),
+        hitZone(
+          toObject(p, bodyRef.current.pose, rects, scaleRef.current),
+          rects,
+          current.frame.width > 0,
+          Boolean(current.mats[0]?.enabled),
+        ),
       )
       if (!target) return
 
@@ -968,6 +1006,24 @@ export function Canvas({
       {error && <div className="canvas-error">{error}</div>}
     </div>
   )
+}
+
+/**
+ * La caja que ocupa el cuadro girado `angle`: lo que hay que hacer entrar en pantalla
+ * mientras gira. Si se encuadrara el cuadro derecho, a mitad del giro se saldría.
+ */
+function turnedBox(size: { w: number; h: number }, angle: number) {
+  const c = Math.abs(Math.cos(angle))
+  const s = Math.abs(Math.sin(angle))
+  return { w: size.w * c + size.h * s, h: size.w * s + size.h * c }
+}
+
+/** Lo que suena cuando le pasa algo al cuadro como cosa. */
+const EVENT_SOUND: Record<BodyEvent, SoundName> = {
+  'turn-start': 'turn-lift',
+  'turn-land': 'turn-land',
+  'hang-wire': 'wire',
+  'hang-wall': 'thud',
 }
 
 /** De dónde suena algo, según dónde está en pantalla: apenas corrido, nunca de un solo oído. */

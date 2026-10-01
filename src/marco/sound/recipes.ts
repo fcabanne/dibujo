@@ -214,6 +214,61 @@ export const RECIPES = {
     level: -40,
     gap: 45,
   },
+  /** Despegar el cuadro de la pared para girarlo: un roce del fondo contra la pared. */
+  'turn-lift': {
+    build: (sr) => noiseBurst(sr, { from: 900, to: 2200, q: 0.9, attack: 0.06, decay: 0.12, length: 0.32, seed: 67 }),
+    level: -34,
+    gap: 200,
+  },
+  /** Volver a apoyarlo derecho: el golpe sordo del canto de abajo contra la pared. */
+  'turn-land': {
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 210, q: 5, amp: 1 },
+          { f: 480, q: 7, amp: 0.5 },
+          { f: 1100, q: 9, amp: 0.2 },
+        ],
+        strike: 0.004,
+        thump: { f: 85, decay: 0.05, amp: 1 },
+        seed: 71 + v * 29,
+        detune: 0.05,
+      }),
+    variants: 2,
+    level: -24,
+    gap: 200,
+  },
+  /** El alambre que se engancha en el clavo: un tic metálico, chiquito. */
+  wire: {
+    build: (sr) =>
+      modal(sr, {
+        modes: [
+          { f: 3900, decay: 0.05, amp: 1 },
+          { f: 6700, decay: 0.03, amp: 0.5 },
+        ],
+        click: { amp: 0.6, decay: 0.001, freq: 5000 },
+        seed: 73,
+      }),
+    level: -34,
+    gap: 200,
+  },
+  /** El cuadro recién colgado que se apoya contra la pared. */
+  thud: {
+    build: (sr, v) =>
+      knock(sr, {
+        resonances: [
+          { f: 160, q: 4, amp: 1 },
+          { f: 420, q: 6, amp: 0.45 },
+        ],
+        strike: 0.005,
+        thump: { f: 70, decay: 0.06, amp: 1 },
+        seed: 79 + v * 31,
+        detune: 0.04,
+      }),
+    variants: 2,
+    level: -24,
+    gap: 200,
+  },
 } satisfies Record<string, Recipe>
 
 export type SoundName = keyof typeof RECIPES

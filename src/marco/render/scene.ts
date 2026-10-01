@@ -8,7 +8,7 @@ import { REST_LIGHT, type Light } from './light'
 import { drawMat } from './mat'
 import { drawCastShadow, standoff } from './shadow'
 import { GONE } from '../physics/body'
-import { applyObjectTransform, isRest, objectLight, REST_POSE, wallShift, type Pose } from './pose'
+import { applyObjectTransform, isRest, nailOf, objectLight, REST_POSE, wallShift, type Pose } from './pose'
 import { drawObjectFalloff, drawWall } from './wall'
 
 export interface SceneParams {
@@ -69,7 +69,21 @@ export function renderScene(
 
   // 2. Sombra proyectada. Está sobre la pared, así que se corre con ella: entre la
   //    sombra y el canto se abre la rendija que dice que el cuadro está colgado.
-  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color, pose.lean)
+  //    Si el cuadro gira o se despega, la sombra lo acompaña: gira sobre el mismo
+  //    clavo, y despegado de la pared se aleja del foco, crece y se apaga.
+  ctx.save()
+  if (!isRest(pose)) {
+    const lift = Math.max(0, pose.lift)
+    const nail = nailOf({ ...rects, outer: behind, center: { x: behind.x + behind.w / 2, y: behind.y + behind.h / 2 } })
+    const away = lift * pxPerCm * 0.6
+    ctx.translate(-light.x * away, -light.y * away + pose.drop * pxPerCm)
+    ctx.translate(nail.x, nail.y)
+    ctx.rotate(pose.roll + pose.turn)
+    ctx.scale(1 + 0.015 * lift, 1 + 0.015 * lift)
+    ctx.translate(-nail.x, -nail.y)
+  }
+  drawCastShadow(ctx, behind, layout.depth, pxPerCm, state.wall.color, pose.lean, 1 / (1 + 0.25 * Math.max(0, pose.lift)))
+  ctx.restore()
 
   // Lo que existe es lo que se ve: una moldura que se está yendo a cero se sigue
   // dibujando hasta que no queda nada de ella.

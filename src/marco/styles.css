@@ -692,6 +692,15 @@ body {
   pointer-events: auto;
 }
 
+/* Con el cuadro balanceándose, girando o colgándose, lo que lo marca derecho se
+   aparta un instante y vuelve cuando el cuadro se queda quieto. */
+.lit.is-tilted,
+.leader.is-tilted,
+.gizmo.is-tilted {
+  opacity: 0 !important;
+  transition: opacity var(--ds-dur-fast) var(--ease);
+}
+
 /* ---------------------------------- gizmo de ancho */
 
 .gizmo {

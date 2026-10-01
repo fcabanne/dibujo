@@ -99,9 +99,13 @@ export function App() {
 
   // Una obra nueva abre lo suyo: en escritorio la burbuja de la obra, en el celular
   // su pestaña, con el tamaño real arriba — es lo que sigue después de subirla.
+  /** Cuántos dibujos llegaron en esta visita: cada uno nuevo se cuelga en la pared. */
+  const [arrival, setArrival] = useState(0)
+
   const handleArtworkDropped = useCallback(
     (src: string, aspect: number) => {
       dispatch({ type: 'artwork/replace', src, aspect })
+      setArrival((n) => n + 1)
       if (compact) setTab('obra')
       else setOpen('artwork')
     },
@@ -144,6 +148,7 @@ export function App() {
         <Canvas
           state={shown}
           committed={state}
+          arrival={arrival}
           dispatch={dispatch}
           sceneRef={sceneRef}
           onLayout={handleLayout}

@@ -213,6 +213,8 @@ export function drawCastShadow(
   wallColor: string,
   /** La cuña, como fracción de la de reposo: menos de 1 apretado, más de 1 rebotando. */
   lean = 1,
+  /** Cuánto se apaga, 0..1: un cuadro despegado de la pared tira una sombra más pálida. */
+  fade = 1,
 ) {
   const d = Math.round((Math.max(0.2, depthCm) * pxPerCm) / 2) * 2
   const rest = standoff(rect.h / pxPerCm) * pxPerCm
@@ -230,7 +232,7 @@ export function drawCastShadow(
   const clamped = Math.min(LEANS[LEANS.length - 1], Math.max(LEANS[0], lean))
   if (Math.abs(clamped - 1) < 0.01) {
     const baked = bakedFor(w, h, d, tOf(1), k, frame) ?? nearest(w, h, d, k)
-    if (baked) paint(ctx, baked, tinted(baked, tint), cx, cy)
+    if (baked) paint(ctx, baked, tinted(baked, tint), cx, cy, fade)
     return
   }
 
@@ -242,7 +244,7 @@ export function drawCastShadow(
   const b = bakedFor(w, h, d, tOf(LEANS[i + 1]), k, frame)
   if (!a || !b) {
     const any = a ?? b ?? nearest(w, h, d, k)
-    if (any) paint(ctx, any, tinted(any, tint), cx, cy)
+    if (any) paint(ctx, any, tinted(any, tint), cx, cy, fade)
     return
   }
 
@@ -273,7 +275,7 @@ export function drawCastShadow(
   tc.fillRect(0, 0, mw, mh)
   tc.globalCompositeOperation = 'source-over'
 
-  paint(ctx, { mask: mixMask, ox, oy, tints: new Map() }, mixTint, cx, cy)
+  paint(ctx, { mask: mixMask, ox, oy, tints: new Map() }, mixTint, cx, cy, fade)
 }
 
 function sized(c: HTMLCanvasElement | null, w: number, h: number): HTMLCanvasElement {
@@ -305,13 +307,20 @@ function nearest(w: number, h: number, d: number, k: number): Baked | null {
  * Pega la sombra anclada al centro del cuadro. El sprite está horneado a la medida
  * redondeada, y esa diferencia de unos píxeles es invisible en una sombra desenfocada.
  */
-function paint(ctx: CanvasRenderingContext2D, baked: Baked, tint: HTMLCanvasElement, cx: number, cy: number) {
+function paint(
+  ctx: CanvasRenderingContext2D,
+  baked: Baked,
+  tint: HTMLCanvasElement,
+  cx: number,
+  cy: number,
+  fade: number,
+) {
   const x = cx + baked.ox
   const y = cy + baked.oy
   ctx.save()
-  ctx.globalAlpha = DARK
+  ctx.globalAlpha = DARK * fade
   ctx.drawImage(baked.mask, x, y)
-  ctx.globalAlpha = CHROMA
+  ctx.globalAlpha = CHROMA * fade
   ctx.globalCompositeOperation = 'multiply'
   ctx.drawImage(tint, x, y)
   ctx.restore()
