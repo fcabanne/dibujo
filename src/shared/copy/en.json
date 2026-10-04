@@ -10,9 +10,8 @@
 
   "welcome": {
     "greeting": "Hello artist!",
-    "intro": "I made this little tool so you can tweak your reference photo before you start drawing.",
-    "hint": "Start by uploading an image, add a grid and try different looks.",
-    "suggestions": "Send me ideas a",
+    "intro": "Here you can tweak your reference photo before you start drawing. Start by uploading an image, add a grid and try different looks.",
+    "suggestions": "Send me ideas →",
     "suggestionsUrl": "https://instagram.com/facucabanne",
     "upload": "Upload photo"
   },

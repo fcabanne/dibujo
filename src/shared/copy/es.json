@@ -10,9 +10,8 @@
 
   "welcome": {
     "greeting": "Hola artista!",
-    "intro": "Hice esta mini herramienta para que puedas hacerle algunos ajustes a tu foto de referencia antes de empezar a dibujar.",
-    "hint": "Empeza subiendo la imagen, agregale una grilla y dale estilos distintos.",
-    "suggestions": "Dejame sugerencias",
+    "intro": "Aca podes hacerle algunos ajustes a tu foto de referencia antes de empezar a dibujar. Empeza subiendo la imagen, agregale una grilla y dale estilos distintos.",
+    "suggestions": "Dejame sugerencias →",
     "suggestionsUrl": "https://instagram.com/facucabanne",
     "upload": "Subir foto"
   },

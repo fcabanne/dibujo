@@ -144,4 +144,4 @@ reproduce: toma la línea central de cada ícono, la muestrea y la corre de cost
 0,3 px con un ruido liso. `Drawn`, en `icons.tsx`, lo usa. En escritorio, con un puntero que
 pasa por encima, el ícono "hierve" mientras el mouse está sobre su control
 (`boilOnHover`): mismo dibujo, otra fase del ruido, nueve cuadros por segundo. Con
-`prefers-reduced-motion` o sin hover no pasa nada. Los íconos que no vienen de Figma van sin temblor.
+`prefers-reduced-motion` o sin hover no pasa nada. Los que no vienen de Figma (hoja, contraste, bordes, facetas, linterna, parlante) llevan el mismo temblor sobre una línea central dibujada a mano.

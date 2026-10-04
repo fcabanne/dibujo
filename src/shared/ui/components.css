@@ -275,9 +275,13 @@
   display: flex;
   flex: 1;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-width: 0;
   height: var(--ds-control-field);
+  /* 8 px a la izquierda, como el padding del componente: el valor va
+     pegado al borde y no centrado. El relleno sale de esa caja y llega al
+     borde, por eso es absoluto. */
+  padding: 0 var(--ds-space-2);
   background: var(--ds-accent-light);
 }
 
@@ -296,7 +300,7 @@
 .ds-slider-value {
   position: relative;
   font: var(--ds-text-value);
-  color: var(--ds-accent-dark);
+  color: var(--ds-black);
   /* Todos los dígitos del mismo ancho: si no, el número baila al arrastrar. */
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -333,6 +337,8 @@
   justify-content: center;
   min-width: 0;
   height: var(--ds-control-field);
+  /* 8 px a los costados (22:296): los botones ± no tocan el borde. */
+  padding: 0 var(--ds-space-2);
   background: var(--ds-accent-light);
 }
 
@@ -380,7 +386,7 @@
   min-width: 0;
   overflow: hidden;
   font: var(--ds-text-number);
-  color: var(--ds-accent-dark);
+  color: var(--ds-black);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }

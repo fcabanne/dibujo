@@ -25,7 +25,6 @@ export function Welcome({ onUpload }: Props) {
       <div className="welcome-text">
         <h2>{copy.welcome.greeting}</h2>
         <p>{copy.welcome.intro}</p>
-        <p>{copy.welcome.hint}</p>
       </div>
 
       <Button variant="loud" icon={<UploadIcon />} onClick={onUpload}>
