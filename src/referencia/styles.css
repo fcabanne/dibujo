@@ -153,30 +153,13 @@ body {
   right: 0;
   bottom: 0;
   left: 0;
-  /* Todo el alto: el volver va arriba a la izquierda y el link abajo al medio
-     (18:76), y los dos cuelgan de la misma capa. */
-  top: 0;
   z-index: 2;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
   padding: var(--ds-space-4);
   padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
-  pointer-events: none;
   animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease) 360ms backwards;
-}
-
-.welcome-bottombar > * {
-  pointer-events: auto;
-}
-
-/* Sin pastilla: el diseño lo dibuja suelto, arriba a la izquierda. */
-.welcome-bottombar .tabbar {
-  position: absolute;
-  top: calc(var(--ds-space-4) + env(safe-area-inset-top));
-  left: var(--ds-space-4);
-  padding: 0;
-  background: none;
 }
 
 /* --- la columna de escritorio ------------------------------------- */
@@ -503,9 +486,14 @@ body {
   min-height: var(--ds-control-field);
 }
 
-/* Basis 0 y crece: el control se lleva la mitad y el nombre la otra, como en
-   el diseño. `min-width: 0` para que un nombre largo se recorte en vez de
+/* Basis 0 y crece: el nombre se lleva un tercio y el control los otros dos
+   (111 y 223 en el diseño). `min-width: 0` para que un nombre largo se recorte en vez de
    empujar al control fuera de la fila. */
+.field-row > :not(.field-name) {
+  flex: 2 1 0;
+  min-width: 0;
+}
+
 .field-name {
   flex: 1 1 0;
   min-width: 0;

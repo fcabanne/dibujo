@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
-import { BackIcon, DownloadIcon, SpeakerIcon, SpeakerOffIcon } from '../../shared/ui'
+import { BackIcon, DownloadIcon, SpeakerIcon, SpeakerOffIcon, UploadIcon } from '../../shared/ui'
 import { setMuted, useMuted } from '../sound/engine'
 import { reducedMotionNow, settleSpring, stepSpring, type Spring, type SpringParams } from '../../shared/motion'
 import {
@@ -27,7 +27,7 @@ import {
   type FanLayout,
   type Point,
 } from './hud/fan'
-import { ArtIcon, FrameIcon, GlassIcon, MatIcon, UploadIcon, WallIcon } from './hud/icons'
+import { ArtIcon, FrameIcon, GlassIcon, MatIcon, WallIcon } from './hud/icons'
 import { RadialMenu, type FanItem } from './hud/RadialMenu'
 import { Swatch } from './hud/Swatch'
 

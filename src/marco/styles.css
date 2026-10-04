@@ -396,7 +396,7 @@ body {
   width: 46px;
   height: 46px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--ds-radius-small);
   border: 1px solid rgba(255, 255, 255, 0.24);
   overflow: hidden;
   cursor: pointer;
@@ -448,7 +448,7 @@ body {
   display: grid;
   place-items: center;
   color: rgba(0, 0, 0, 0.55);
-  font: 300 22px/1 var(--ds-font-display);
+  font: var(--ds-text-title);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
@@ -526,10 +526,10 @@ body {
   height: 46px;
   padding: 0 4px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ds-radius-small);
   background: var(--ds-background);
   color: var(--ds-accent-dark);
-  font: 700 10px/1.2 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   cursor: pointer;
   box-shadow: var(--shadow-hud);
   scale: 1;
@@ -561,7 +561,7 @@ body {
   background: var(--ds-accent-light);
   color: var(--ds-accent-dark);
   border-radius: var(--ds-radius-control);
-  font: 700 11px/1 var(--ds-font-mono);
+  font: var(--ds-text-control);
   cursor: pointer;
   white-space: nowrap;
   scale: 1;
@@ -919,7 +919,7 @@ body {
   border-radius: var(--ds-radius-control);
   background: var(--ds-accent-dark);
   color: var(--ds-white);
-  font: 700 12px/1.3 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   opacity: 0;
@@ -965,7 +965,7 @@ body {
 
 .wall-label h2 {
   margin: 0 0 12px;
-  font: 700 15px/1.2 var(--ds-font-display);
+  font: var(--ds-text-title);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -984,7 +984,7 @@ body {
 }
 
 .wall-label dt {
-  font: 700 10px/1.5 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.72;
@@ -992,7 +992,7 @@ body {
 
 .wall-label dd {
   margin: 0;
-  font: 400 11px/1.5 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1042,7 +1042,7 @@ body {
   border-radius: 0;
   background: none;
   color: inherit;
-  font: 700 15px/1.2 var(--ds-font-display);
+  font: var(--ds-text-title);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-overflow: ellipsis;

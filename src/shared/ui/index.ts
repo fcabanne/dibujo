@@ -25,6 +25,8 @@ export { Dropdown, type DropdownProps } from './Dropdown'
 export { OptionPicker, type OptionPickerProps, type PickerOption } from './OptionPicker'
 
 export {
+  Drawn,
+  type IconSpec,
   UploadIcon,
   FileIcon,
   PhotoIcon,

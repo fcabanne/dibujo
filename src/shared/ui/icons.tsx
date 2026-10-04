@@ -19,6 +19,7 @@
 
 import { useEffect, useMemo, useRef, type SVGProps } from 'react'
 import { boilOnHover, prepare, type IconSpec } from './wobble'
+export type { IconSpec }
 
 const base = {
   viewBox: '0 0 24 24',
@@ -55,7 +56,7 @@ const SPEAKEROFF: IconSpec = [0, 0, 'M 11 5 L 6 9 L 3 9 L 3 15 L 6 15 L 11 19 L 
 export type IconProps = { className?: string }
 
 /** Un ícono de Figma: la línea central, con el trazo temblado y el hover que lo hace hervir. */
-function Drawn({ spec, seed, className }: { spec: IconSpec; seed: number; className?: string }) {
+export function Drawn({ spec, seed, className }: { spec: IconSpec; seed: number; className?: string }) {
   const draw = useMemo(() => prepare(spec, seed), [spec, seed])
   const ref = useRef<SVGSVGElement>(null)
   useEffect(() => (ref.current ? boilOnHover(ref.current, draw) : undefined), [draw])

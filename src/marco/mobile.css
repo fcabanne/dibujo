@@ -90,7 +90,7 @@
 
 .is-compact .wall-label h2 {
   margin: 0 0 var(--ds-space-2);
-  font: 700 14px/1.2 var(--ds-font-display);
+  font: var(--ds-text-title);
   letter-spacing: 0.08em;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .is-compact .wall-label dt {
-  font: 700 10px/1.5 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   letter-spacing: 0.04em;
 }
 
@@ -349,10 +349,17 @@
   min-width: 0;
   overflow: hidden;
   font: var(--ds-text-field);
-  color: var(--ds-black);
+  color: var(--ds-accent-dark);
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* El control mide el doble que el nombre (111 y 223 en el diseño): el nombre se
+   lleva un tercio de la fila y el control los otros dos. */
+.m-row > :not(.m-row-name) {
+  flex: 2 1 0;
+  min-width: 0;
 }
 
 /* Sin marco, el acabado y el perfil no tienen a qué aplicarse. */
@@ -405,7 +412,7 @@
 
 .m-chip {
   display: block;
-  border-radius: var(--ds-radius-pill);
+  border-radius: 8px;
 }
 
 /* "Sin": el círculo vacío, cruzado. */
@@ -501,9 +508,6 @@
   opacity: 0.55;
 }
 
-.m-row > .m-unit {
-  flex: 1 1 0;
-}
 
 .m-row .m-field-button {
   height: 40px;
@@ -533,7 +537,7 @@
   display: block;
   width: 32px;
   height: 32px;
-  border-radius: var(--ds-radius-pill);
+  border-radius: 8px;
 }
 
 .m-glass[data-glass='none'] {
