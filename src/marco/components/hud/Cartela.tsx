@@ -123,7 +123,7 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
                   onChange={(e) => typeSize('w', e.target.value)}
                   onBlur={(e) => commitSize('w', e.target.value)}
                 />
-                <span>×</span>
+                <span>x</span>
                 <input
                   className="cartela-field"
                   type="text"

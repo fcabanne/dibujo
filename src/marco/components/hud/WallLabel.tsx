@@ -21,7 +21,7 @@ export function WallLabel({ state, layout, wallLuma }: Props) {
 
   return (
     <div className={'wall-label' + (wallLuma < 0.45 ? ' on-dark' : '')}>
-      <h2>{state.artwork.title || 'Sin título'}</h2>
+      <h2>{state.artwork.title || 'Sin titulo'}</h2>
       <dl>
         {rows.map((row) => (
           <div key={row.label}>

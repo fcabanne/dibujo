@@ -6,7 +6,7 @@ export interface Measurement {
 }
 
 const cm = (n: number) => `${n.toFixed(1).replace('.', ',')} cm`
-const pair = (w: number, h: number) => `${cm(w)} × ${cm(h)}`
+const pair = (w: number, h: number) => `${cm(w)} x ${cm(h)}`
 
 /**
  * Las medidas que se le dictan al enmarcador, en el orden en que se arma el cuadro:
@@ -26,7 +26,7 @@ export function buildMeasurements(state: AppState, layout: Layout): Measurement[
 
   if (state.frame.width > 0) {
     rows.push({ label: 'Marco', value: pair(layout.outer.w, layout.outer.h) })
-    rows.push({ label: 'Moldura', value: `${cm(state.frame.width)} × ${cm(layout.depth)}` })
+    rows.push({ label: 'Moldura', value: `${cm(state.frame.width)} x ${cm(layout.depth)}` })
   }
 
   return rows

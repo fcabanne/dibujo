@@ -49,7 +49,7 @@ está la app; de eso se encarga `shared/copy`.
 | `Dropdown.tsx` | la fila cerrada de un campo que se elige en otra pantalla |
 | `OptionPicker.tsx` | esa otra pantalla: la grilla de tarjetas grandes a la que lleva un Dropdown |
 | `icons.tsx` | los íconos del archivo, más los que no vinieron |
-| `fonts/` | Space Grotesk y las dos pesadas de Space Mono |
+| `fonts/` | Gaegu, regular y negrita (OFL) |
 
 ## Cómo cambiar algo
 
@@ -127,3 +127,21 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    interruptor de etiquetas del diálogo de descarga— resuelto con tokens que ya
    existen (`--ds-accent-light/secondary/dark`), sin inventar un color nuevo.
    Cuando el archivo lo dibuje, se ajusta a eso.
+
+
+## Gaegu, y lo que no tiene
+
+Todo el sistema usa **Gaegu**. No trae tildes, ni la eñe, ni `¿` `¡`, ni `×` `·` `—` `…`
+`→`. Por eso **los textos de pantalla se escriben sin tildes**, sin eñe y con `?` `!`
+solo al final; el por qué está en `copy/LEEME.md`. En medidas va `x` ("30 x 40 cm") y
+para separar, un guion. Si se agrega un texto o un símbolo, se mira primero que Gaegu lo
+tenga: si no, el navegador lo dibuja con otra fuente y desentona.
+
+## Íconos y wobble
+
+Los íconos de Figma llevan Dynamic Stroke (el temblor del trazo). `wobble.ts` lo
+reproduce: toma la línea central de cada ícono, la muestrea y la corre de costado unos
+0,3 px con un ruido liso. `Drawn`, en `icons.tsx`, lo usa. En escritorio, con un puntero que
+pasa por encima, el ícono "hierve" mientras el mouse está sobre su control
+(`boilOnHover`): mismo dibujo, otra fase del ruido, nueve cuadros por segundo. Con
+`prefers-reduced-motion` o sin hover no pasa nada. Los íconos que no vienen de Figma van sin temblor.

@@ -1215,7 +1215,7 @@ export function Canvas({
       <canvas ref={fadeLayerRef} className="fade-layer" aria-hidden />
       {dragOver && (
         <div className="drop-hint">
-          <span>Soltá tu dibujo acá</span>
+          <span>Solta tu dibujo aca</span>
         </div>
       )}
       {error && <div className="canvas-error">{error}</div>}

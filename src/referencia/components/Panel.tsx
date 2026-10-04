@@ -297,7 +297,7 @@ export function Panel({
                 }
               />
             </span>
-            <span>×</span>
+            <span>x</span>
             <span className="unit">
               <input
                 type="number"

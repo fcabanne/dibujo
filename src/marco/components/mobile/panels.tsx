@@ -105,7 +105,7 @@ export function ArtworkPanel({
           onEdit={() => onEdit('w')}
         />
         <span className="m-times" aria-hidden>
-          ×
+          x
         </span>
         <FieldButton
           value={formatDecimal(shown.h)}

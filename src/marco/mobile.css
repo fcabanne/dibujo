@@ -333,7 +333,7 @@
 }
 
 .m-heading em::before {
-  content: '· ';
+  content: '- ';
 }
 
 .m-row {

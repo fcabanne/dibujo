@@ -25,7 +25,7 @@ export const FRAME_PRESETS: FramePreset[] = [
   { id: 'plata', label: 'Plata', color: '#b9bcc0' },
   { id: 'caoba', label: 'Caoba', color: '#7a3320' },
   { id: 'nogal', label: 'Nogal', color: '#6b4326' },
-  { id: 'verde', label: 'Verde inglés', color: '#2f4438' },
+  { id: 'verde', label: 'Verde ingles', color: '#2f4438' },
   { id: 'negro', label: 'Negro', color: '#191919' },
 ]
 
@@ -82,8 +82,8 @@ export const MAT_PRESETS: MatPreset[] = [
   { id: 'arena', label: 'Arena', color: '#cbbb9c' },
   { id: 'topo', label: 'Topo', color: '#9c948a' },
   { id: 'oliva', label: 'Oliva', color: '#7b7d5f' },
-  { id: 'borgona', label: 'Borgoña', color: '#6d3a3f' },
-  { id: 'carbon', label: 'Carbón', color: '#3a3a3c' },
+  { id: 'borgona', label: 'Bordo', color: '#6d3a3f' },
+  { id: 'carbon', label: 'Carbon', color: '#3a3a3c' },
   { id: 'negro', label: 'Negro', color: '#1c1c1e' },
 ]
 
@@ -103,13 +103,13 @@ export const WALL_PRESETS: WallPreset[] = [
   { id: 'terracota', label: 'Terracota', color: '#b4735a' },
   { id: 'topo', label: 'Topo', color: '#8d8377' },
   { id: 'tinta', label: 'Azul tinta', color: '#2f3a4a' },
-  { id: 'carbon', label: 'Carbón', color: '#3d3f42' },
+  { id: 'carbon', label: 'Carbon', color: '#3d3f42' },
 ]
 
 export const WALL_PATTERNS: { id: WallPattern; label: string }[] = [
   { id: 'plain', label: 'Liso' },
   { id: 'plaster', label: 'Yeso' },
-  { id: 'stucco', label: 'Gotelé' },
+  { id: 'stucco', label: 'Gotele' },
   { id: 'linen', label: 'Lino' },
 ]
 
@@ -130,6 +130,6 @@ export const FRAME_PROFILES: ProfilePreset[] = [
   { id: 'flat', label: 'Plana' },
   { id: 'bevel', label: 'Biselada' },
   { id: 'scoop', label: 'Caveta' },
-  { id: 'round', label: 'Bombé' },
+  { id: 'round', label: 'Bombe' },
   { id: 'step', label: 'Escalonada' },
 ]

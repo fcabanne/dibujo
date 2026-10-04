@@ -22,6 +22,7 @@
   border-radius: var(--ds-radius-control);
   background: none;
   font: var(--ds-text-label);
+  text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
   cursor: pointer;
@@ -491,7 +492,7 @@
 .ds-option-header {
   margin: 0;
   font: var(--ds-text-field);
-  color: var(--ds-black);
+  color: var(--ds-accent-dark);
   text-align: center;
   text-transform: uppercase;
   animation: ds-fade-in var(--ds-dur) var(--ds-ease) backwards;
@@ -518,9 +519,10 @@
   gap: var(--ds-space-2);
   padding: 18px 11px;
   border: 0;
+  border-radius: var(--ds-radius-control);
   background: var(--ds-accent-light);
   color: var(--ds-black);
-  font: var(--ds-text-field);
+  font: var(--ds-text-control);
   text-align: center;
   text-transform: uppercase;
   cursor: pointer;
@@ -586,7 +588,7 @@
   flex: none;
   width: var(--ds-icon);
   height: var(--ds-icon);
-  border-radius: var(--ds-radius-pill);
+  border-radius: var(--ds-radius-check);
 }
 
 /* La tarjeta "Otro": un `<label>` en vez de un `<button>`, para poder tapar
@@ -664,7 +666,7 @@
   height: var(--ds-control-row);
   padding: 0;
   border: 0;
-  border-radius: var(--ds-radius-pill);
+  border-radius: var(--ds-radius-small);
   background: var(--ds-accent-light);
   cursor: pointer;
   transition: transform var(--ds-dur-slow) var(--ds-spring);
@@ -680,7 +682,7 @@
 .ds-swatch > span {
   position: absolute;
   inset: 4px;
-  border-radius: var(--ds-radius-pill);
+  border-radius: 8px;
 }
 
 /* El único color crudo del sistema, y a propósito: esto es un espectro. No se

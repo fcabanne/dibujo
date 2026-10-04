@@ -723,7 +723,7 @@ export function Overlay({
       case 'glass':
         return [
           GLASS_TYPES.map((g) => ({
-            label: g.label + ' · ' + g.hint,
+            label: g.label + ' - ' + g.hint,
             node: (
               <GlassOption
                 id={g.id}
