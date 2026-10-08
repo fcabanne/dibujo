@@ -72,6 +72,11 @@ vacía y la cachea. El navegador tira `does not provide an export named 'X'` con
 archivo perfecto en disco, y no se arregla recargando: hay que reiniciar el server.
 Para sobrescribir: escribir a `.tmp` y `mv` encima, o usar la herramienta Edit.
 
+**`npm run deploy` publica la rama en la que estás, entera.** El sitio es uno solo:
+publicar desde una rama atrasada vuelve atrás las herramientas que no tocaste. Por eso
+`deploy.mjs` trae `main` y se niega a publicar si la rama no lo contiene. Lo terminado
+se lleva a `main` (con un PR), y `main` es siempre la versión completa.
+
 **Cada página se compila por separado** (`scripts/build.mjs`). No es capricho: el
 plugin que incrusta todo en un solo `.html` activa `inlineDynamicImports`, y rollup
 rechaza esa opción cuando hay más de una entrada. De a una, cada página conserva la

@@ -47,6 +47,26 @@ function listFiles(dir, prefix = '') {
   )
 }
 
+/**
+ * Lo que se publica tiene que incluir todo lo de `main`.
+ *
+ * El sitio es uno solo y se publica entero desde la rama en la que se esté. Si esa
+ * rama quedó atrás de `main`, publicarla vuelve a poner versiones viejas de las
+ * otras herramientas, sin aviso: pasó una vez, y Enmarcado y Referencia estuvieron
+ * un rato publicados sin el diseño nuevo. Antes de publicar se trae `main` y se
+ * mira que esté adentro; si no, hay que traerlo a la rama primero.
+ */
+git(['fetch', '--quiet', 'origin', 'main'])
+try {
+  git(['merge-base', '--is-ancestor', 'origin/main', 'HEAD'])
+} catch {
+  console.error(
+    'Esta rama no tiene todo lo de main: publicarla volvería atrás otras herramientas.\n' +
+      'Traé main primero (git merge origin/main) y volvé a publicar.',
+  )
+  process.exit(1)
+}
+
 const files = listFiles(DIST)
 if (files.length === 0) {
   console.error(`No hay nada en ${DIST}/. ¿Corriste el build?`)
