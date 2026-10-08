@@ -90,6 +90,16 @@ suspende, así que las posiciones y opacidades que se midan pueden ser de una
 animación a medio correr. Para medir estado final: desactivar transiciones, o forzar
 cuadros con capturas de pantalla.
 
+**El audio nace con un gesto.** Un `AudioContext` creado antes de que la persona toque
+algo nace suspendido y no suena. Enmarcado lo crea recién en el primer gesto
+(`unlockSound` en `sound/engine.ts`), y hasta entonces `play` no hace nada. El que lo
+escucha es un efecto propio del lienzo, para las dos capas: cuando vivía con los
+manejadores del mouse, el celular no lo despertaba nunca y no sonaba nada. Safari de
+iPhone cuenta como gesto el final del toque, así que se escucha también `touchend`.
+En un iPhone con la llave de silencio puesta, el audio de una página no suena.
+En pruebas automáticas, cargar el dibujo con `setInputFiles` no cuenta como gesto:
+sin un clic del mouse no hay sonidos que contar.
+
 ## Cómo está armada la portada
 
 HTML y CSS sueltos, y un solo script: el que abre Instagram en la app (`main.ts`). Habla como la pantalla de inicio de Referencia
@@ -116,6 +126,8 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/shared/referenceImage.ts` — la foto en dos versiones a la vez: el Blob
   original intacto (lo que se exporta) y una copia liviana rasterizada (lo que se ve).
   Lo usa Referencia, que promete devolver la foto en su tamaño.
+- `src/shared/deliver.ts` — entrega un archivo hecho en el navegador: la hoja de
+  compartir donde existe (en un celular guarda en Fotos), si no la descarga común.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio. Guarda data
@@ -145,11 +157,16 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
+- `src/marco/gl/` — el cuadro en 3D, con WebGL2: lo que se ve. Ver "El
+  cuadro en 3D".
 - `src/marco/interaction/` — qué parte del cuadro está bajo el puntero, o bajo el dedo.
 - `src/marco/components/` — el lienzo y las dos capas de controles que se apoyan
   encima: la de escritorio (`Overlay` y `hud/`) y la del celular (`mobile/`).
 - `src/marco/hooks/` — `useCompact` decide qué capa va; `useTilt` lee la inclinación
   del teléfono.
+- `src/marco/physics/` — el cuadro como cosa: cuánto pesa, cómo cuelga del clavo y
+  qué hace cuando se lo cambia. Ver "El cuadro tiene cuerpo".
+- `src/marco/sound/` — los sonidos, fabricados en el navegador. Ver "Sonidos".
 
 **En escritorio la UI no tiene barra ni paneles.** Los controles se apoyan sobre la
 parte que editan (en el celular sí hay barra: ver más abajo). Los anchos se arrastran directamente sobre el cuadro.
@@ -159,8 +176,8 @@ Las referencias visuales son Tiny Glade y Outside the Blocks.
 fijos en píxeles: con un margen constante los controles se despegan de su esquina
 apenas se hace zoom.
 
-**Lo que se sumó al render para que se vea más real**, y que ve también el escritorio
-porque es el mismo render:
+**Lo que se sumó al render 2D para que se vea más real.** Es el render de la pared, y
+el del cuadro entero donde no hay WebGL2 (o con `?2d`):
 
 - **El foco cae también sobre el cuadro** (`drawObjectFalloff` en `wall.ts`), no solo
   sobre la pared: unos pocos puntos de caída hacia los bordes lejanos del pozo de luz.
@@ -220,6 +237,148 @@ porque es el mismo render:
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
   para el mate. Chrome sigue por el camino de siempre y da lo mismo que antes.
+
+### El cuadro en 3D
+
+En escritorio y en el celular el cuadro —moldura, passe-partout, obra, vidrio, clips— lo dibuja WebGL2
+(`gl/`) en un lienzo encima del de la pared, que sigue siendo 2D. Lo mueve el mismo
+cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto no.
+
+- **Proyección de ventana** (`VERTEX` en `gl/shaders.ts`): el plano del frente del
+  cuadro cae exactamente sobre los rectángulos del 2D (`composeRects`), y lo que sale
+  hacia el ojo se agranda y se corre como se vería desde ahí. Por eso las burbujas, la
+  cartela, las cotas y lo que se agarra con el mouse no se enteran de cuál de los dos
+  dibuja.
+- **Las mallas se rearman en cada cuadro** (`gl/meshes.ts`): son unos pocos cientos de
+  vértices, y así las medidas que llegan con resorte no piden nada. La moldura es el
+  perfil de `profile.ts` levantado a lo ancho y cortado a 45°; la normal sale de su
+  pendiente, así que la luz cae sobre la forma y no sobre un degradé pintado.
+- **Un solo programa para todo**, y el material por uniforms (`uMode`). Luz física
+  (GGX), el papel y el cartón dejan pasar un poco de luz (`wrap`), y el foco cae hacia
+  los bordes como en el 2D.
+- **Un estudio que se refleja** (`gl/environment.ts`), horneado una vez: la silueta del
+  que mira, una ventana con parantes, una caja de luz y un riel de focos, en un pedazo
+  chico del cuarto, porque un vidrio a metro y medio refleja solo lo que está detrás de
+  quien mira. La pared del cuarto se pinta en el shader con el color elegido. Lo leen
+  el vidrio, el metal y las lacas, más borroso cuanto más rugosos.
+- **Los vidrios** (`GLASS` en `gl/renderer.ts`): el común refleja claro; el antirreflejo
+  refleja poco y borroso y tiene una piel de puntitos —la cáscara de naranja del
+  acrílico—, que se ve donde le pega el reflejo; el mate, la misma piel más marcada y
+  una bruma, y desenfoca la obra poco, que está a milímetros del vidrio.
+- **La madera tiene dos tonos**: la baldosa de `wood.ts` dice dónde cae el anillo y el
+  shader pone la madera temprana más clara y amarilla y la tardía más oscura y roja, con
+  el promedio en el color de la muestra. Cada listón tiene su tono, el tono va y viene a
+  lo largo, la fibra brilla a lo largo de la veta y se mueve con el ojo, el roble tiene
+  poro y "brillante" y "satinado" llevan una laca encima.
+- **La sombra en la pared también es del 3D** (`shadowOf` y `wallShadow`): el cuadro
+  —ya con su pose— proyectado desde el foco sobre el plano de la pared, lo que barre
+  entre su cara de atrás y la de adelante. Del lado del foco no hay nada, la penumbra
+  se abre con la separación de la pared y es más densa pegada al canto. El ángulo se
+  aplana (`SHADOW_RAKE`): proyectada tal cual desde un foco tan alto caía lejos y se
+  leía despegada.
+- **Las muestras de moldura del abanico las pinta el mismo 3D** (`gl/chips.ts`): un
+  listón de arriba en un contexto aparte, compartido por todas. Lo que se elige es lo
+  que se ve enmarcado.
+- **El fundido de materiales tiene su capa** (`.fade-layer`), encima de los dos
+  lienzos: pintado en el de la pared, el 3D lo tapaba. Por eso el contexto WebGL
+  conserva su imagen (`preserveDrawingBuffer`), para poder copiarla.
+- **Si no hay 3D, hay 2D**: sin WebGL2, si no compila, o si el navegador pierde el
+  contexto, el lienzo de siempre dibuja el cuadro entero. Para comparar: `?2d` fuerza
+  el plano, `?gl=split` muestra mitad y mitad, y con `?debug` la tecla G pasa de uno a
+  otro.
+- **En el celular también**, con tres diferencias:
+  - El lienzo GL va a densidad 1,5: casi no se distingue de 2 y es la mitad de píxeles que sombrear.
+  - Se pinta solo cuando el 2D se pinta (`paintedRef`), así que quieto no gasta nada.
+  - La inclinación del teléfono y el dedo sobre la pared mueven el ojo, como el mouse.
+- **Las muestras del celular salen del mismo 3D:** la tira de colores mira el material de frente, con un listón plano y la muestra en el medio de la banda. Las tarjetas de perfil miran el listón de abajo (`look` en `paintGlChip`).
+
+### El cuadro tiene cuerpo
+
+El estado guarda la verdad —las medidas redondeadas que se encargan—, y el lienzo
+dibuja un **cuerpo** (`physics/body.ts`) que la persigue con resortes
+(`stepSpring` en `shared/motion.ts`). Nada del cuadro cambia de golpe: crece hasta su
+medida, se asienta, se balancea y se queda. Lo que se ve y lo que se encarga no se
+desencuentran porque pasan por la misma cuenta (`Dims` y `layoutFromDims` en
+`geometry.ts`), y la cartela recibe siempre las medidas de verdad. Es rígido: madera,
+vidrio y cartón no se estiran ni se aplastan. El encanto sale del peso, del sonido y
+de lo de alrededor, no de deformarlo.
+
+- **Pesa lo que pesaría** (`mass.ts`): densidades reales, la madera según el color como
+  la veta, el metal como perfil hueco, y el vidrio, que es lo que más pesa. El peso no
+  decide cuánto tarda en balancearse —eso es la forma, como en todo péndulo— sino
+  cuánto cuesta moverlo y con cuánta calma llega.
+- **Cuelga de un clavo** (`pendulum.ts`), un poco por encima del centro. Lo frenan el
+  aire y, sobre todo, el roce del alambre en el clavo: por eso se detiene en seco en
+  vez de temblar para siempre. Ya casi quieto, el alambre lo deja exactamente
+  nivelado: un cuadro torcido no sirve para juzgar nada.
+- **Las bandas tienen muescas** (`interaction/drag.ts`). Cerca de cada medio centímetro
+  la banda se queda pegada; después se estira hacia el siguiente y al cruzar la mitad
+  salta, se pasa un pelo y vuelve, con un clic. Pasado el máximo resiste como un
+  elástico. La cota late con cada muesca, que es lo que se ve aunque a escala normal
+  la banda se mueva pocos píxeles. El arrastre despacha solo cuando la medida
+  redondeada cambia.
+- **Agarrar una banda lo aprieta contra la pared**: la cuña de la sombra se cierra —del
+  todo arriba, casi nada abajo, donde ya apoya—. Al soltarlo, el alambre lo devuelve
+  con un rebote y un vaivén chico del lado de donde se tiraba.
+- **Elegir algo lo asienta** (`settle` y `sway`): baja si ganó peso, sube si perdió, y
+  vuelve a su lugar; y un vaivén leve del lado de la burbuja que se usó. Sacar el
+  vidrio se nota; un color nuevo, apenas. La pared no es del cuadro: no lo mueve.
+  Qué cambió se deduce comparando lo que se ve con lo confirmado
+  (`physics/reactions.ts`): las muestras no saben nada de pesos ni de sonidos.
+- **Girar la obra es descolgarla, girarla y volver a colgarla**: el cuadro se despega
+  de la pared, gira con peso —el primer cuadro es idéntico al anterior— y vuelve a
+  apoyar. El encuadre sigue a la caja del cuadro girado (`turnedBox`).
+- **Un dibujo nuevo se cuelga** (`hang`): aparece más arriba y despegado, el alambre se
+  engancha en el clavo y el cuadro se apoya contra la pared. Recargar no lo vuelve a
+  colgar: lo cuenta `arrival`, en `App`.
+- **Se puede empujar**, agarrándolo por la obra: se inclina sobre el clavo hacia la
+  mano y al soltarlo se balancea. Es un juguete, no una función.
+- **Mientras no está derecho**, el aro, el hilo y las cotas se apartan (`tilted`): un
+  aro derecho sobre un cuadro torcido mentiría. La cartela y las burbujas lo siguen con
+  su propio resorte, un pelo atrasadas, como cosas aparte.
+- **El render se banca la pose** (`render/pose.ts`): las capas del objeto se dibujan
+  transformadas, y lo que es del cuarto —el reflejo del vidrio, la caída del foco, la
+  sombra de los ganchitos— queda en el espacio de la pantalla. El puntero se lleva al
+  espacio del cuadro antes de preguntar qué hay debajo (`toObject`).
+- **En el celular, el mismo cuerpo**: se asienta, se balancea, gira con peso y se
+  cuelga, y suena igual que en la compu: el dedo arrastrando una banda agarra, hace
+  clic en cada muesca y suelta como el mouse, y el deslizador del cajón suena a muesca,
+  con el tono del ancho (`width` en `Reaction`), no a moldura nueva. Lo que no hay es
+  empujarlo con el dedo —el dedo sobre la obra abre la obra—. En cambio, **cuelga a
+  plomo** (`plumb` en `body.ts`): si el teléfono gira en su plano, el cuadro sigue
+  derecho respecto del mundo y en la pantalla se lo ve girar al revés, con un resorte
+  que lo hace llegar con peso. Sigue un décimo del giro (`ROLL_FOLLOW`), hasta 2°:
+  entero, y aun un cuarto, era demasiado. Sale del acelerómetro (`roll` en `useTilt`), sin recentrar
+  —la plomada es absoluta—, y se suelta con el teléfono acostado.
+  Antes cada movimiento del teléfono lo empujaba y se sacudía todo el tiempo. El
+  lienzo sigue pintando mientras el cuerpo se mueve y se duerme cuando se queda quieto.
+- **Con `prefers-reduced-motion` todo llega en el acto**, en las dos capas. El sonido
+  sí suena: no es movimiento.
+
+**La luz está quieta; lo que se mueve es el ojo.** El foco está atornillado al cuarto
+(`REST_LIGHT`): el puntero —o la inclinación del teléfono— corre el ojo (`eyeOf`), y
+con él los brillos de la moldura, el canto, el reflejo del vidrio y la pared de atrás.
+El cuadro queda quieto en pantalla y la pared y la sombra se corren unos píxeles
+detrás de él (`wallShift`): entre el canto y la sombra se abre o se cierra una
+rendija, que es lo que dice que el cuadro cuelga y no está pegado.
+
+### Sonidos
+
+Se fabrican en el navegador, sin archivos (`sound/synth.ts`): cada uno es una receta
+(`sound/recipes.ts`). Todo suena a madera —la muesca, agarrar, elegir una moldura—,
+sea del material que sea: que el metal sonara a metal se probó y distraía; el sonido
+acompaña el gesto, no describe el material. La madera no son tonos puros, que suenan a
+xilofón de juguete: es un golpe de ruido que hace resonar unas pocas frecuencias del
+cuerpo (`knock`), con varias versiones que se turnan para que dos clics nunca sean el
+mismo. El vidrio es un golpecito bajo de la misma familia: como campanita se oía como
+una notificación. Todo muy bajo, con un pelo de sala, y el motor (`sound/engine.ts`)
+cuida que una ráfaga no lastime. Se calla con el parlante al lado de "Dejame
+sugerencias" —en el celular, en la pastilla de arriba, al lado de descargar—, y la
+elección se recuerda (`cuadros:sonido`).
+
+Para afinar de oído: `MASTER` en `engine.ts` sube o baja todo junto, y cada receta
+tiene su nivel. Con `?debug` en la dirección, `window.__marco` expone la escena, el
+cuerpo y cada sonido que se pidió; con `?perf`, además, los tiempos de cuadro.
 
 ### En escritorio
 
@@ -298,6 +457,21 @@ aplica al salir del campo y no en cada tecla (acotar en cada tecla hace imposibl
 **Volver abajo a la izquierda y "Dejame sugerencias" abajo a la derecha** (`.hud-back`,
 `.hud-link`), como en la mesa de luz y en Referencia, cada uno en su pastilla. Aparecen
 con los controles y se van con ellos. Los abanicos las esquivan.
+
+**Descargar va arriba a la derecha, solo, en su pastilla** (`.hud-save` en escritorio,
+`.m-save` en el celular). Abajo no entra: en el celular, al lado de volver y las cinco
+pestañas, se sale de un teléfono de 390 px. Baja la foto del cuadro colgado
+(`src/marco/export.ts`) sin preguntar nada: JPG, 9:16 a 1440×2560 en el celular (para
+una historia o un reel) y 16:9 a 2560×1440 en la compu. No es una captura: la escena se
+vuelve a pintar con `renderScene` en un lienzo aparte, sin controles, sin zoom y sin
+cartela, con el cuadro entero al medio. La luz sí es la de la pantalla (el paralaje del
+momento, que el lienzo publica en `SceneSnapshot.parallax`). El lienzo lógico tiene
+tamaño de pantalla y se agranda con la densidad, como con `devicePixelRatio`: lo que el
+render mide en píxeles —desenfoques, trazos— sale igual que en la app. En el celular el
+cuadro esquiva el botón (`FreeArea.avoid`): baja lo justo, y de a poco, solo si su
+esquina lo pisaría. Acostado y con un cajón abierto, el botón se va. Se entrega con
+`deliver` (`shared/deliver.ts`, el mismo de Referencia): en el celular, la hoja de
+compartir, que guarda directo en Fotos.
 
 **Sin dibujo, la pantalla de inicio** (`components/Welcome.tsx`), en el escritorio igual
 que en el celular. El lienzo y los controles recién existen con un dibujo propio, y se
@@ -444,7 +618,8 @@ nada; el dedo sobre la pared sigue corriendo la luz.
 
 **Un material nuevo se funde sobre el anterior** en vez de saltar (`looksKey` y
 `snapshot` en `Canvas.tsx`). Solo lo que cambia sin mover nada de lugar —color,
-acabado, perfil, vidrio, pared—: un cambio de medida con fundido se vería doble.
+acabado, perfil, vidrio, pared—: un cambio de medida con fundido se vería doble. En
+escritorio también, más corto: acompaña al puntero que pasa por las muestras.
 
 **El lienzo no pinta si nada cambió** (`paintedRef`). En escritorio el loop pinta
 siempre; en un teléfono eso es batería gastada en una imagen quieta. Compara contra

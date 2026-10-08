@@ -90,7 +90,7 @@
 
 .is-compact .wall-label h2 {
   margin: 0 0 var(--ds-space-2);
-  font: 700 14px/1.2 var(--ds-font-display);
+  font: var(--ds-text-title);
   letter-spacing: 0.08em;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .is-compact .wall-label dt {
-  font: 700 10px/1.5 var(--ds-font-mono);
+  font: var(--ds-text-meta);
   letter-spacing: 0.04em;
 }
 
@@ -248,6 +248,29 @@
   box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
 }
 
+/* Descargar, arriba a la derecha y en su pastilla: abajo, al lado de volver y
+   de las cinco pestañas, no entra en un teléfono común. */
+.m-save {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + var(--ds-space-4));
+  right: calc(env(safe-area-inset-right, 0px) + var(--ds-space-4));
+  z-index: 3;
+  pointer-events: auto;
+  transition:
+    opacity var(--ds-dur) var(--ds-ease),
+    translate var(--ds-dur) var(--ds-ease);
+}
+
+.m-save .ds-icon-button svg {
+  stroke-width: 2;
+  transition: opacity var(--ds-dur-fast) var(--ds-ease);
+}
+
+/* Mientras se arma la imagen, el ícono se apaga: el toque llegó. */
+.m-save [aria-busy] svg {
+  opacity: 0.4;
+}
+
 /* Los íconos propios de Enmarcado se dibujaron con un trazo de 1,7. En la barra
    van con el del sistema, para que se lean de la misma familia que volver. */
 .m-bar .ds-icon-button svg {
@@ -310,7 +333,7 @@
 }
 
 .m-heading em::before {
-  content: '· ';
+  content: '- ';
 }
 
 .m-row {
@@ -326,10 +349,17 @@
   min-width: 0;
   overflow: hidden;
   font: var(--ds-text-field);
-  color: var(--ds-black);
+  color: var(--ds-accent-dark);
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* El control mide el doble que el nombre (111 y 223 en el diseño): el nombre se
+   lleva un tercio de la fila y el control los otros dos. */
+.m-row > :not(.m-row-name) {
+  flex: 2 1 0;
+  min-width: 0;
 }
 
 /* Sin marco, el acabado y el perfil no tienen a qué aplicarse. */
@@ -382,7 +412,7 @@
 
 .m-chip {
   display: block;
-  border-radius: var(--ds-radius-pill);
+  border-radius: 8px;
 }
 
 /* "Sin": el círculo vacío, cruzado. */
@@ -478,9 +508,6 @@
   opacity: 0.55;
 }
 
-.m-row > .m-unit {
-  flex: 1 1 0;
-}
 
 .m-row .m-field-button {
   height: 40px;
@@ -510,7 +537,7 @@
   display: block;
   width: 32px;
   height: 32px;
-  border-radius: var(--ds-radius-pill);
+  border-radius: 8px;
 }
 
 .m-glass[data-glass='none'] {
@@ -756,6 +783,14 @@
 
   .m-drawer.is-open {
     max-height: calc(100dvh - 96px - env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Acostado, el cajón sube por la derecha hasta arriba y descargar quedaría
+     encima: se va mientras hay un cajón abierto, y vuelve al cerrarlo. */
+  .m-ui.has-tab .m-save {
+    opacity: 0;
+    translate: 0 -8px;
+    pointer-events: none;
   }
 }
 

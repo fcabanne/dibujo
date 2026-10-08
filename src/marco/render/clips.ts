@@ -15,11 +15,11 @@ import { sideIntensity, type Light, type Side } from './light'
  */
 
 /** La lengüeta: ancho a lo largo del borde, y cuánto pisa el vidrio. */
-const TONGUE = { w: 1.1, reach: 0.85 }
+export const TONGUE = { w: 1.1, reach: 0.85 }
 /** Lo que el doblez sobresale del canto: el espesor de la chapa más su curva. */
-const BEND = 0.14
+export const BEND = 0.14
 /** Cuánto se separa la sombra de la lengüeta: el espesor del vidrio que la separa de la obra. */
-const LIFT = 0.25
+export const LIFT = 0.25
 
 /**
  * Cuántos clips lleva un lado y dónde. Los lados cortos llevan uno al medio hasta que
@@ -31,12 +31,11 @@ function stations(length: number, isLong: boolean): number[] {
   return two ? [0.2, 0.8] : [0.5]
 }
 
-export function drawGlassClips(
-  ctx: CanvasRenderingContext2D,
-  rect: Rect,
-  pxPerCm: number,
-  light: Light,
-) {
+/**
+ * Dónde va cada clip: el punto del borde donde abraza el cuadro y hacia dónde mira. En
+ * el marco de cada clip, x corre a lo largo del borde e y entra hacia el vidrio.
+ */
+export function clipPlacements(rect: Rect, pxPerCm: number): { side: Side; x: number; y: number; angle: number }[] {
   const wCm = rect.w / pxPerCm
   const hCm = rect.h / pxPerCm
   const horizontalIsLong = wCm >= hCm
@@ -50,6 +49,22 @@ export function drawGlassClips(
     clips.push({ side: 'left', x: rect.x, y: rect.y + rect.h * t, angle: -Math.PI / 2 })
     clips.push({ side: 'right', x: rect.x + rect.w, y: rect.y + rect.h * t, angle: Math.PI / 2 })
   }
+  return clips
+}
+
+export function drawGlassClips(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  pxPerCm: number,
+  light: Light,
+  /**
+   * La luz en el espacio de la pantalla. La sombra de cada clip se corre en píxeles
+   * del dispositivo, que no giran con el cuadro: si el cuadro se balancea, la sombra
+   * sigue cayendo lejos del foco del cuarto.
+   */
+  shadowLight: Light = light,
+) {
+  const clips = clipPlacements(rect, pxPerCm)
 
   // La sombra se corre en pantalla, no en el marco girado de cada clip: `shadowOffset`
   // y `shadowBlur` se miden en píxeles del dispositivo, por eso la escala de a mano.
@@ -93,8 +108,8 @@ export function drawGlassClips(
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0.34)'
     ctx.shadowBlur = Math.max(1.5, pxPerCm * 0.14) * scale
-    ctx.shadowOffsetX = -light.x * LIFT * pxPerCm * scale
-    ctx.shadowOffsetY = -light.y * LIFT * pxPerCm * scale
+    ctx.shadowOffsetX = -shadowLight.x * LIFT * pxPerCm * scale
+    ctx.shadowOffsetY = -shadowLight.y * LIFT * pxPerCm * scale
     ctx.fillStyle = g
     ctx.fill()
 

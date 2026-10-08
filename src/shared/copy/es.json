@@ -3,22 +3,21 @@
   "language": "Castellano",
 
   "app": {
-    "title": "Referencia — preparar la foto antes de dibujarla",
+    "title": "Referencia - preparar la foto antes de dibujarla",
     "name": "Referencia",
     "back": "Volver a las herramientas"
   },
 
   "welcome": {
     "greeting": "Hola artista!",
-    "intro": "Hice esta mini herramienta para que puedas hacerle algunos ajustes a tu foto de referencia antes de empezar a dibujar.",
-    "hint": "Empezá subiendo la imagen, agregale una grilla y dale estilos distintos.",
+    "intro": "Aca podes hacerle algunos ajustes a tu foto de referencia antes de empezar a dibujar. Empeza subiendo la imagen, agregale una grilla y dale estilos distintos.",
     "suggestions": "Dejame sugerencias →",
     "suggestionsUrl": "https://instagram.com/facucabanne",
     "upload": "Subir foto"
   },
 
   "canvas": {
-    "drop": "Soltá tu foto de referencia acá",
+    "drop": "Solta tu foto de referencia aca",
     "alt": "Foto de referencia"
   },
 
@@ -27,12 +26,12 @@
     "title": "Foto",
     "change": "Cambiar foto",
     "remove": "Quitar la foto",
-    "size": "{width} × {height} px"
+    "size": "{width} x {height} px"
   },
 
   "paper": {
-    "tab": "Tamaño",
-    "title": "Tamaño del dibujo",
+    "tab": "Medida",
+    "title": "Medida del dibujo",
     "none": "Sin definir",
     "custom": "A medida",
     "width": "Ancho en cm",
@@ -57,9 +56,9 @@
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
     "none": "Ninguna",
     "noneHint": "Sin grilla",
-    "divisions": "Cantidad",
+    "divisions": "Divisiones",
     "fewer": "Menos",
-    "more": "Más",
+    "more": "Mas",
     "color": "Color",
     "customColor": "Otro",
     "colors": {
@@ -81,7 +80,7 @@
     "original": "Original",
     "originalHint": "La foto tal cual",
     "edges": "Bordes",
-    "edgesHint": "Deja los contornos, como un dibujo de línea",
+    "edgesHint": "Deja los contornos, como un dibujo de linea",
     "facets": "Facetado",
     "facetsHint": "Aplasta la foto a unas pocas manchas de valor",
     "contrast": "Contraste",
@@ -94,26 +93,26 @@
   "download": {
     "action": "Descargar",
     "title": "Descargar",
-    "size": "Tamaño",
+    "size": "Medida",
     "format": "Formato",
     "original": "Original",
-    "originalHint": "La foto con sus propios píxeles",
-    "sheetHint": "{width} × {height} cm",
+    "originalHint": "La foto con sus propios pixeles",
+    "sheetHint": "{width} x {height} cm",
     "pdf": "PDF",
     "pdfHint": "Se imprime sin reescalar",
     "jpg": "JPG",
-    "jpgHint": "Una imagen común",
+    "jpgHint": "Una imagen comun",
     "labels": "Etiquetas",
     "close": "Cerrar",
     "lightTable": "Llevar a la mesa de luz",
-    "working": "Preparando…",
+    "working": "Preparando...",
     "fileSuffix": "referencia"
   },
 
   "caption": {
-    "drawing": "Dibujo: {width} × {height} cm",
-    "grid": "Grilla: {cols} × {rows} · {total} casillas",
-    "cell": "Casilla: {width} × {height} cm"
+    "drawing": "Dibujo: {width} x {height} cm",
+    "grid": "Grilla: {cols} x {rows} - {total} casillas",
+    "cell": "Casilla: {width} x {height} cm"
   },
 
   "notices": {
@@ -127,32 +126,32 @@
     "unprocessable": "No se pudo procesar la imagen",
     "unopenable": "No se pudo abrir la imagen",
     "canvasFailed": "No se pudo preparar el lienzo del export",
-    "outOfMemory": "Este dispositivo se quedó sin memoria para un archivo de ese tamaño. Probá con una hoja más chica."
+    "outOfMemory": "Este dispositivo se quedo sin memoria para un archivo tan grande. Proba con una hoja mas chica."
   },
 
   "mesa": {
     "name": "Mesa de luz",
-    "intro": "Con esta herramienta podés superponer tu imagen de referencia sobre el papel para copiarla o ver las diferencias.",
-    "hint": "Empezá poniendo el celu en un trípode o algo fijo y subí tu referencia.",
+    "intro": "Con esta herramienta podes superponer tu imagen de referencia sobre el papel para copiarla o ver las diferencias.",
+    "hint": "Empeza poniendo el celu en un tripode o algo fijo y subi tu referencia.",
     "change": "Cambiar foto",
-    "opacity": "Cuánto se ve la foto",
+    "opacity": "Cuanto se ve la foto",
     "opacityValue": "{n}%",
     "corner": "Esquina {n}",
     "reset": "Restablecer",
     "torchOn": "Prender la linterna",
     "torchOff": "Apagar la linterna",
-    "insecure": "La cámara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
+    "insecure": "La camara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
     "openSite": "Abrir la mesa de luz",
     "siteUrl": "https://fcabanne.github.io/dibujo/mesa/",
-    "denied": "La cámara está bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
-    "noCamera": "No se encontró ninguna cámara.",
+    "denied": "La camara esta bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
+    "noCamera": "No se encontro ninguna camara.",
     "retry": "Reintentar",
     "desktop": {
       "title": "Esta va en el celu",
-      "intro": "La mesa de luz es un celular en un trípode mirando tu papel, con la foto encima de lo que ve la cámara. En la compu no tiene con qué funcionar.",
-      "scan": "Escaneá este código con el celu para abrirla ahí.",
-      "qr": "Código QR que abre la mesa de luz",
-      "link": "O escribí esta dirección:"
+      "intro": "La mesa de luz es un celular en un tripode mirando tu papel, con la foto encima de lo que ve la camara. En la compu no tiene con que funcionar.",
+      "scan": "Escanea este codigo con el celu para abrirla ahi.",
+      "qr": "Codigo QR que abre la mesa de luz",
+      "link": "O escribi esta direccion:"
     }
   },
 
@@ -176,6 +175,7 @@
 
   "marco": {
     "name": "Enmarcado",
+    "sound": "Sonido",
     "tabs": {
       "artwork": "Obra",
       "frame": "Marco",
@@ -186,13 +186,13 @@
     "upload": "Subir dibujo",
     "change": "Cambiar dibujo",
     "rotate": "Girar el cuadro",
-    "size": "Tamaño real",
+    "size": "Medida real",
     "width": "Ancho de la obra",
     "height": "Alto de la obra",
-    "lockOn": "Proporción trabada: el otro lado acompaña",
-    "lockOff": "Proporción libre: cada lado va por su cuenta",
-    "title": "Título",
-    "titlePlaceholder": "Sin título",
+    "lockOn": "Proporcion trabada: el otro lado lo sigue",
+    "lockOff": "Proporcion libre: cada lado va por su cuenta",
+    "title": "Titulo",
+    "titlePlaceholder": "Sin titulo",
     "color": "Color",
     "customColor": "Otro color",
     "custom": "A medida",
@@ -207,14 +207,17 @@
     "cm": "{n} cm",
     "unit": "cm",
     "intro": "Hice esta mini herramienta para que pruebes marcos, passe-partout y vidrios sobre tu dibujo antes de llevarlo a enmarcar.",
-    "hint": "Subí una foto del dibujo, jugá con el enmarcado y llevate las medidas para la casa de cuadros.",
+    "hint": "Subi una foto del dibujo, juga con el enmarcado y llevate las medidas para la casa de cuadros.",
     "remove": "Quitar el dibujo",
     "done": "Listo",
     "widthShort": "Ancho",
     "heightShort": "Alto",
-    "keepRatio": "Mantener proporción",
-    "finished": "El cuadro terminado mide {width} × {height} cm",
+    "keepRatio": "Mantener proporcion",
+    "finished": "El cuadro terminado mide {width} x {height} cm",
     "noMatShort": "Sin passe",
-    "loadFailed": "No se pudo cargar la imagen"
+    "loadFailed": "No se pudo cargar la imagen",
+    "download": "Descargar",
+    "downloadFailed": "No se pudo descargar",
+    "fileName": "enmarcado"
   }
 }

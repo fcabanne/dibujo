@@ -17,27 +17,18 @@ export interface Light {
 /** Foco de galería: alto, a la izquierda y bastante frontal. */
 const BASE: Light = { x: -0.46, y: -0.82, z: 0.34 }
 
-/** Cuánto llega a desviar el puntero la dirección de la luz. */
-const SWAY = 0.044
-
 function normalize(l: Light): Light {
   const len = Math.hypot(l.x, l.y, l.z) || 1
   return { x: l.x / len, y: l.y / len, z: l.z / len }
 }
 
 /**
- * La luz según dónde está el puntero, en -1..1 sobre el lienzo. Mover el mouse a la
- * derecha corre la fuente hacia la derecha: los brillos barren el marco y el reflejo
- * del vidrio se desliza, que es lo que da la sensación volumétrica.
+ * La luz de la escena, quieta. El foco está atornillado al techo del cuarto: lo que
+ * se mueve cuando uno se corre frente al cuadro es el ojo, no la fuente. Por eso el
+ * puntero no la toca —antes la corría apenas, y lo difuso respiraba con el mouse—;
+ * mueve el ojo (`eyeOf` en `pose.ts`), y con él los brillos, el reflejo del vidrio y
+ * cuánto se ve de la pared detrás del cuadro.
  */
-export function lightFor(parallaxX: number, parallaxY: number): Light {
-  return normalize({
-    x: BASE.x + parallaxX * SWAY,
-    y: BASE.y + parallaxY * SWAY * 0.5,
-    z: BASE.z,
-  })
-}
-
 export const REST_LIGHT = normalize(BASE)
 
 /**

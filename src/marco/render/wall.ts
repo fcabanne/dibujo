@@ -123,7 +123,13 @@ function spotOf(focus: Rect, light: Light) {
  * que es lo que muestra una foto de un cuadro colgado y no alcanza para cambiar
  * cómo se ven los colores de la obra.
  */
-export function drawObjectFalloff(ctx: CanvasRenderingContext2D, outer: Rect, light: Light) {
+export function drawObjectFalloff(
+  ctx: CanvasRenderingContext2D,
+  outer: Rect,
+  light: Light,
+  /** Qué pintar: el cuadro, o más si quien llama ya recortó al cuadro girado. */
+  fill: Rect = outer,
+) {
   const { cx, cy, reach } = spotOf(outer, light)
   const g = ctx.createRadialGradient(cx, cy, reach * 0.1, cx, cy, reach * 0.62)
   g.addColorStop(0, 'rgba(10, 8, 6, 0)')
@@ -131,7 +137,7 @@ export function drawObjectFalloff(ctx: CanvasRenderingContext2D, outer: Rect, li
   g.addColorStop(1, 'rgba(10, 8, 6, 0.12)')
   ctx.save()
   ctx.fillStyle = g
-  ctx.fillRect(outer.x, outer.y, outer.w, outer.h)
+  ctx.fillRect(fill.x, fill.y, fill.w, fill.h)
   ctx.restore()
 }
 

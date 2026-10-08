@@ -5,8 +5,8 @@ import { clamp, LIMITS } from '../../domain/geometry'
 import { buildMeasurements } from '../../domain/measurements'
 import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
-import { CloseIcon } from '../../../shared/ui'
-import { LinkIcon, RotateIcon, UnlinkIcon, UploadIcon } from './icons'
+import { CloseIcon, UploadIcon } from '../../../shared/ui'
+import { LinkIcon, RotateIcon, UnlinkIcon } from './icons'
 
 interface Props {
   state: AppState
@@ -123,7 +123,7 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
                   onChange={(e) => typeSize('w', e.target.value)}
                   onBlur={(e) => commitSize('w', e.target.value)}
                 />
-                <span>×</span>
+                <span>x</span>
                 <input
                   className="cartela-field"
                   type="text"

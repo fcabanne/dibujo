@@ -82,3 +82,10 @@ tiene sus textos adentro de los componentes. Los nombres de los colores, acabado
 perfiles ("Nogal", "Caveta") tampoco pasan por acá: son vocabulario de taller, viven en
 `src/marco/domain/palettes.ts` y los usan las dos capas. **La portada todavía no.**
 Cuando les toque, se suman con sus propias secciones a estos mismos archivos.
+
+## Sin tildes, sin eñe
+
+La tipografía (Gaegu) no tiene tildes, eñe, `¿` ni `¡`, así que los textos van sin ellos:
+"Solta tu foto aca", "Sin titulo". Los signos de pregunta y de exclamación van solo al
+final. Tampoco tiene `×`, `·`, `—`, `…` ni `→`: se usa `x`, `-` y `...`. Las palabras con
+eñe se evitan buscando otra ("medida" en vez de "tamaño").

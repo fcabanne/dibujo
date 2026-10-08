@@ -18,8 +18,9 @@ import { REST_LIGHT, shadowTint, spotPosition } from './light'
  * nítida —la penumbra se abre con la distancia a la pared—. Y la luz es un foco, no
  * el sol: cada esquina tira su sombra alejándose de él, así que la sombra sale un
  * poco más grande que el cuadro y más larga del lado que queda más lejos del foco.
- * Se hornea con la luz quieta (`REST_LIGHT`): lo que el puntero la corre no alcanza
- * para mover una sombra desenfocada, y hornear en cada cuadro sí se notaría.
+ * Se hornea con la luz de la escena (`REST_LIGHT`), que está quieta: el puntero mueve
+ * el ojo y no el foco, así que la forma de la sombra no cambia; lo que cambia es
+ * dónde se la ve, porque está sobre la pared (ver `wallShift`).
  */
 
 type Pt = { x: number; y: number }
@@ -49,7 +50,7 @@ const cache = new Map<string, Baked>()
  * Cuánto se despega de la pared el canto de arriba, en cm. Un cuadro chico cuelga
  * casi derecho; uno grande, con el alambre más largo, se inclina más.
  */
-function standoff(heightCm: number): number {
+export function standoff(heightCm: number): number {
   return Math.min(2, Math.max(0.6, heightCm * 0.03))
 }
 
@@ -60,9 +61,13 @@ interface Layer {
   alpha: number
 }
 
-/** De la más larga a la más corta. Los números son los de siempre: la forma es lo nuevo. */
+/**
+ * De la más larga a la más corta. La larga se desenfocaba tanto que se derramaba
+ * también hacia el foco, arriba y a la izquierda, y rodeaba el cuadro como un halo:
+ * se leía pegada, no proyectada. Ahora se abre lo que se corre, no más.
+ */
 const LAYERS: Layer[] = [
-  { spread: 1.7, blur: (z) => Math.min(MAX_BLUR, 9 + z * 2.1), alpha: 0.36 },
+  { spread: 1.7, blur: (z) => Math.min(MAX_BLUR, 4 + z * 1.1), alpha: 0.32 },
   { spread: 0.5, blur: (z) => Math.min(MAX_BLUR, 2.4 + z * 0.5), alpha: 0.48 },
   // Oclusión: la línea oscura donde el marco toca la pared.
   { spread: 0.04, blur: (z) => Math.max(1, z * 0.16), alpha: 0.43 },
@@ -179,37 +184,148 @@ function tinted(baked: Baked, color: string): HTMLCanvasElement {
   return tint
 }
 
+/** Hornear es caro: como mucho uno por cuadro. Mientras tanto se usa el más cercano. */
+let bakedThisFrame = -1
+
+function bakedFor(w: number, h: number, d: number, t: number, k: number, frame: number): Baked | null {
+  const key = `${w}x${h}|${d}|${t}|${k}`
+  let baked = cache.get(key)
+  if (!baked) {
+    if (bakedThisFrame === frame) return null
+    bakedThisFrame = frame
+    baked = bake(w, h, d, t, k)
+    if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string)
+    cache.set(key, baked)
+  }
+  return baked
+}
+
+/**
+ * Las cuñas horneadas entre las que se mezcla cuando el cuadro se aprieta contra la
+ * pared o rebota al soltarlo: aplastada, colgada y un poco más abierta que colgada.
+ */
+const LEANS = [0.4, 1, 1.25]
+
+let mixMask: HTMLCanvasElement | null = null
+let mixTint: HTMLCanvasElement | null = null
+
 export function drawCastShadow(
   ctx: CanvasRenderingContext2D,
   rect: Rect,
   depthCm: number,
   pxPerCm: number,
   wallColor: string,
+  /** La cuña, como fracción de la de reposo: menos de 1 apretado, más de 1 rebotando. */
+  lean = 1,
+  /** Cuánto se apaga, 0..1: un cuadro despegado de la pared tira una sombra más pálida. */
+  fade = 1,
 ) {
   const d = Math.round((Math.max(0.2, depthCm) * pxPerCm) / 2) * 2
-  const t = Math.round((standoff(rect.h / pxPerCm) * pxPerCm) / 2) * 2
+  const rest = standoff(rect.h / pxPerCm) * pxPerCm
   const w = Math.round(rect.w / BUCKET) * BUCKET
   const h = Math.round(rect.h / BUCKET) * BUCKET
   const k = Math.round(pxPerCm * 4) / 4
-  const key = `${w}x${h}|${d}|${t}|${k}`
+  const frame = Math.round(performance.now())
+  const tOf = (l: number) => Math.round((rest * l) / 2) * 2
 
-  let baked = cache.get(key)
-  if (!baked) {
-    baked = bake(w, h, d, t, k)
-    if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string)
-    cache.set(key, baked)
+  const cx = rect.x + rect.w / 2
+  const cy = rect.y + rect.h / 2
+  const tint = shadowTint(wallColor)
+
+  // Colgado y quieto, como siempre: un solo sprite.
+  const clamped = Math.min(LEANS[LEANS.length - 1], Math.max(LEANS[0], lean))
+  if (Math.abs(clamped - 1) < 0.01) {
+    const baked = bakedFor(w, h, d, tOf(1), k, frame) ?? nearest(w, h, d, k)
+    if (baked) paint(ctx, baked, tinted(baked, tint), cx, cy, fade)
+    return
   }
 
-  // Anclado al centro del cuadro: el sprite está horneado a la medida redondeada, y
-  // esa diferencia de unos píxeles es invisible en una sombra desenfocada.
-  const x = rect.x + rect.w / 2 + baked.ox
-  const y = rect.y + rect.h / 2 + baked.oy
+  // Entre dos cuñas horneadas. Se suman con 'lighter' en un lienzo aparte: mezcladas
+  // con source-over la sombra se aclaraba a mitad de camino.
+  const i = clamped < 1 ? 0 : 1
+  const m = (clamped - LEANS[i]) / (LEANS[i + 1] - LEANS[i])
+  const a = bakedFor(w, h, d, tOf(LEANS[i]), k, frame)
+  const b = bakedFor(w, h, d, tOf(LEANS[i + 1]), k, frame)
+  if (!a || !b) {
+    const any = a ?? b ?? nearest(w, h, d, k)
+    if (any) paint(ctx, any, tinted(any, tint), cx, cy, fade)
+    return
+  }
 
+  const ox = Math.min(a.ox, b.ox)
+  const oy = Math.min(a.oy, b.oy)
+  const mw = Math.max(a.ox + a.mask.width, b.ox + b.mask.width) - ox
+  const mh = Math.max(a.oy + a.mask.height, b.oy + b.mask.height) - oy
+  mixMask = sized(mixMask, mw, mh)
+  mixTint = sized(mixTint, mw, mh)
+  const mc = mixMask.getContext('2d')
+  const tc = mixTint.getContext('2d')
+  if (!mc || !tc) return
+  mc.globalCompositeOperation = 'source-over'
+  mc.clearRect(0, 0, mw, mh)
+  mc.globalCompositeOperation = 'lighter'
+  mc.globalAlpha = 1 - m
+  mc.drawImage(a.mask, a.ox - ox, a.oy - oy)
+  mc.globalAlpha = m
+  mc.drawImage(b.mask, b.ox - ox, b.oy - oy)
+  mc.globalAlpha = 1
+  mc.globalCompositeOperation = 'source-over'
+
+  tc.globalCompositeOperation = 'source-over'
+  tc.clearRect(0, 0, mw, mh)
+  tc.drawImage(mixMask, 0, 0)
+  tc.globalCompositeOperation = 'source-in'
+  tc.fillStyle = tint
+  tc.fillRect(0, 0, mw, mh)
+  tc.globalCompositeOperation = 'source-over'
+
+  paint(ctx, { mask: mixMask, ox, oy, tints: new Map() }, mixTint, cx, cy, fade)
+}
+
+function sized(c: HTMLCanvasElement | null, w: number, h: number): HTMLCanvasElement {
+  const out = c ?? document.createElement('canvas')
+  if (out.width !== Math.ceil(w) || out.height !== Math.ceil(h)) {
+    out.width = Math.max(1, Math.ceil(w))
+    out.height = Math.max(1, Math.ceil(h))
+  }
+  return out
+}
+
+/** Si no se pudo hornear este cuadro: la sombra horneada más parecida, que algo hay que pintar. */
+function nearest(w: number, h: number, d: number, k: number): Baked | null {
+  let best: Baked | null = null
+  let score = Infinity
+  for (const [key, baked] of cache) {
+    const [size, bd, , bk] = key.split('|')
+    const [bw, bh] = size.split('x').map(Number)
+    const s = Math.abs(bw - w) + Math.abs(bh - h) + Math.abs(Number(bd) - d) * 4 + Math.abs(Number(bk) - k) * 40
+    if (s < score) {
+      score = s
+      best = baked
+    }
+  }
+  return best
+}
+
+/**
+ * Pega la sombra anclada al centro del cuadro. El sprite está horneado a la medida
+ * redondeada, y esa diferencia de unos píxeles es invisible en una sombra desenfocada.
+ */
+function paint(
+  ctx: CanvasRenderingContext2D,
+  baked: Baked,
+  tint: HTMLCanvasElement,
+  cx: number,
+  cy: number,
+  fade: number,
+) {
+  const x = cx + baked.ox
+  const y = cy + baked.oy
   ctx.save()
-  ctx.globalAlpha = DARK
+  ctx.globalAlpha = DARK * fade
   ctx.drawImage(baked.mask, x, y)
-  ctx.globalAlpha = CHROMA
+  ctx.globalAlpha = CHROMA * fade
   ctx.globalCompositeOperation = 'multiply'
-  ctx.drawImage(tinted(baked, shadowTint(wallColor)), x, y)
+  ctx.drawImage(tint, x, y)
   ctx.restore()
 }
