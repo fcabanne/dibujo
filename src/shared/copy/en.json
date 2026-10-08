@@ -73,6 +73,25 @@
     "opacityValue": "{n}%"
   },
 
+  "head": {
+    "tab": "Head",
+    "title": "Head",
+    "type": "Head",
+    "none": "None",
+    "loomis": "Loomis",
+    "lens": "Lens",
+    "lensValue": "{n} mm",
+    "lensCamera": "The lens was noted by the camera.",
+    "lensGuess": "The lens is estimated from the face.",
+    "lensManual": "The lens is picked by hand.",
+    "resetLens": "Back to the {source} lens",
+    "fromCamera": "camera's",
+    "estimated": "estimated",
+    "looking": "Looking for the face...",
+    "noFace": "I couldn't find a face in this photo.",
+    "failed": "The face detector couldn't load."
+  },
+
   "adjust": {
     "tab": "Looks",
     "title": "Looks",

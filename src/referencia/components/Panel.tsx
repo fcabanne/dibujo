@@ -14,6 +14,7 @@ import {
   FacetsIcon,
   FileIcon,
   GridIcon,
+  HeadIcon,
   IconButton,
   OptionPicker,
   PaintIcon,
@@ -29,7 +30,9 @@ import { GRID_LIMITS } from '../domain/grid'
 import { PAPER_PRESETS, sheetName } from '../domain/paper'
 import { CustomColorOption, Hint, NAMED_COLORS, Row, Section } from './controls'
 import type { Action } from '../state/reducer'
-import type { AppState, EffectsMode, GridMode, PaperId } from '../types'
+import type { AppState, EffectsMode, GridMode, HeadMode, PaperId } from '../types'
+import type { HeadStatus } from '../hooks/useHeads'
+import { LENS_MAX, LENS_MIN } from '../../shared/loomis/pose'
 
 interface Props {
   state: AppState
@@ -43,6 +46,19 @@ interface Props {
   compact: boolean
   /** Le pasa al lienzo el cajón, para que acomode la foto arriba de él. */
   onDrawer?: (node: HTMLElement | null) => void
+  /**
+   * Lo que se sabe de las cabezas de la foto. `available` en falso —un archivo
+   * abierto con doble clic, sin de dónde bajar el detector— saca la pestaña.
+   */
+  heads: {
+    available: boolean
+    status: HeadStatus
+    /** La lente con la que se está dibujando, manual o no. */
+    lens: number
+    /** La que manda si no se toca: la de la cámara o la estimada. */
+    autoLens: number | null
+    fromCamera: boolean
+  }
 }
 
 /**
@@ -98,6 +114,23 @@ const ADJUST_OPTIONS: PickerOption<EffectsMode>[] = [
   { value: 'facets', label: copy.adjust.facets, icon: <FacetsIcon /> },
 ]
 
+/** Cómo se llama la cabeza elegida, para la fila cerrada del Dropdown. */
+const HEAD_NAMES: Record<HeadMode, string> = {
+  loomis: copy.head.loomis,
+  none: copy.head.none,
+}
+
+/** Las tarjetas del picker de la cabeza. Como en la grilla, "Ninguna" ocupa la fila entera. */
+const HEAD_OPTIONS: PickerOption<HeadMode>[] = [
+  { value: 'loomis', label: copy.head.loomis, icon: <HeadIcon />, wide: true },
+  { value: 'none', label: copy.head.none, icon: <CloseIcon />, wide: true },
+]
+
+/** La lente va en escala logarítmica: de 14 a 200 mm, un paso es siempre "un poco más". */
+const lensToSlider = (mm: number) =>
+  Math.round((100 * Math.log(mm / LENS_MIN)) / Math.log(LENS_MAX / LENS_MIN))
+const sliderToLens = (v: number) => LENS_MIN * Math.pow(LENS_MAX / LENS_MIN, v / 100)
+
 /** Cómo se llama el modo elegido, para la fila cerrada del Dropdown. */
 const TYPE_NAMES: Record<GridMode, string> = {
   proportional: copy.grid.proportional,
@@ -147,6 +180,7 @@ export function Panel({
   effectsSupported,
   compact,
   onDrawer,
+  heads,
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
@@ -158,8 +192,10 @@ export function Panel({
    * pestaña lo encuentra como se dejó, no reiniciado. Lo único que lo cierra
    * es una foto nueva (ver el `useEffect` de abajo).
    */
-  const [picker, setPicker] = useState<'tipo' | 'color' | 'ajustes' | null>(null)
-  const { grid, paper, effects } = state
+  const [picker, setPicker] = useState<
+    'tipo' | 'color' | 'ajustes' | 'cabeza' | 'cabezaColor' | null
+  >(null)
+  const { grid, paper, effects, head } = state
 
   /**
    * Cerrar un picker después de elegir, pero no en el acto: se deja un
@@ -332,6 +368,12 @@ export function Panel({
   const gridPicker =
     picker === 'color' ? 'color' : picker === 'tipo' || grid.mode === 'none' ? 'tipo' : null
   const adjustPicker = picker === 'ajustes' || effects.mode === 'original'
+  const headPicker =
+    picker === 'cabezaColor'
+      ? 'color'
+      : picker === 'cabeza' || head.mode === 'none'
+        ? 'tipo'
+        : null
 
   const isCustomColor = !NAMED_COLORS.some(
     (color) => color.value === grid.style.color.toLowerCase(),
@@ -438,6 +480,151 @@ export function Panel({
               max={100}
               step={5}
               onChange={(v) => dispatch({ type: 'grid/style', patch: { opacity: v / 100 } })}
+              format={(v) => fill(copy.grid.opacityValue, { n: v })}
+            />
+          </Row>
+        </>
+      ),
+  }
+
+  const isCustomHeadColor = !NAMED_COLORS.some(
+    (color) => color.value === head.style.color.toLowerCase(),
+  )
+  const headMessage =
+    heads.status === 'looking'
+      ? copy.head.looking
+      : heads.status === 'none'
+        ? copy.head.noFace
+        : heads.status === 'failed'
+          ? copy.head.failed
+          : null
+
+  const headSection: PanelSection = {
+    id: 'cabeza',
+    title: copy.head.title,
+    label: copy.head.tab,
+    icon: <HeadIcon />,
+    content:
+      headPicker === 'tipo' ? (
+        <OptionPicker
+          label={copy.head.type}
+          value={head.mode}
+          columns={2}
+          options={HEAD_OPTIONS}
+          onChange={(mode) => {
+            dispatch({ type: 'head/patch', patch: { mode } })
+            if (mode !== 'none') {
+              setPicker('cabeza')
+              closePickerSoon()
+            }
+          }}
+        />
+      ) : headPicker === 'color' ? (
+        <OptionPicker
+          label={copy.grid.color}
+          value={isCustomHeadColor ? '' : head.style.color.toLowerCase()}
+          columns={3}
+          options={COLOR_OPTIONS}
+          onChange={(color) => {
+            dispatch({ type: 'head/style', patch: { color } })
+            closePickerSoon()
+          }}
+          trailing={
+            <CustomColorOption
+              value={head.style.color}
+              selected={isCustomHeadColor}
+              onChange={(color) => dispatch({ type: 'head/style', patch: { color } })}
+              onClose={() => setPicker(null)}
+            />
+          }
+        />
+      ) : (
+        <>
+          <Row label={copy.head.type}>
+            <Dropdown
+              label={copy.head.type}
+              value={HEAD_NAMES[head.mode]}
+              onClick={() => setPicker('cabeza')}
+            />
+          </Row>
+
+          {/* Mientras busca, o si no encontró nada, se dice: sin esto la pestaña
+              parece no hacer nada. */}
+          {headMessage && <Hint>{headMessage}</Hint>}
+
+          <Row label={copy.grid.color}>
+            <Dropdown
+              label={copy.grid.color}
+              value={
+                isCustomHeadColor
+                  ? copy.grid.customColor
+                  : NAMED_COLORS.find((color) => color.value === head.style.color.toLowerCase())!
+                      .name
+              }
+              swatch={head.style.color}
+              onClick={() => setPicker('cabezaColor')}
+            />
+          </Row>
+
+          {/* La lente cambia la perspectiva de la cabeza: gran angular de cerca, tele
+              de lejos. Sale sola de la foto, y se corrige a mano. */}
+          <Row label={copy.head.lens}>
+            <Slider
+              label={copy.head.lens}
+              value={lensToSlider(heads.lens)}
+              min={0}
+              max={100}
+              step={1}
+              disabled={heads.status !== 'ready'}
+              onChange={(v) => dispatch({ type: 'head/patch', patch: { lens: sliderToLens(v) } })}
+              // En la posición de la lente actual, su número exacto: el slider
+              // tiene cien pasos y redondeado diría otro.
+              format={(v) =>
+                fill(copy.head.lensValue, {
+                  n: Math.round(v === lensToSlider(heads.lens) ? heads.lens : sliderToLens(v)),
+                })
+              }
+            />
+          </Row>
+          {heads.status === 'ready' && (
+            <Hint>
+              {head.lens !== null
+                ? copy.head.lensManual
+                : heads.fromCamera
+                  ? copy.head.lensCamera
+                  : copy.head.lensGuess}
+            </Hint>
+          )}
+          {head.lens !== null && heads.autoLens !== null && (
+            <Button
+              variant="quiet"
+              onClick={() => dispatch({ type: 'head/patch', patch: { lens: null } })}
+            >
+              {fill(copy.head.resetLens, {
+                source: heads.fromCamera ? copy.head.fromCamera : copy.head.estimated,
+              })}
+            </Button>
+          )}
+
+          <Row label={copy.grid.weight}>
+            <Slider
+              label={copy.grid.weight}
+              value={head.style.weight}
+              min={1}
+              max={6}
+              step={1}
+              onChange={(weight) => dispatch({ type: 'head/style', patch: { weight } })}
+            />
+          </Row>
+
+          <Row label={copy.grid.opacity}>
+            <Slider
+              label={copy.grid.opacity}
+              value={Math.round(head.style.opacity * 100)}
+              min={0}
+              max={100}
+              step={5}
+              onChange={(v) => dispatch({ type: 'head/style', patch: { opacity: v / 100 } })}
               format={(v) => fill(copy.grid.opacityValue, { n: v })}
             />
           </Row>
@@ -556,6 +743,7 @@ export function Panel({
     photoSection,
     ...(SHOW_PAPER ? [paperSection] : []),
     gridSection,
+    ...(heads.available ? [headSection] : []),
     adjustSection,
   ]
 
@@ -597,7 +785,13 @@ export function Panel({
    */
   const shown = sections.find((section) => section.id === (openTab ?? lastTab.current)) ?? null
   const pickerPart = (id: string) =>
-    id === 'grilla' && gridPicker ? gridPicker : id === 'ajustes' && adjustPicker ? 'picker' : 'filas'
+    id === 'grilla' && gridPicker
+      ? gridPicker
+      : id === 'cabeza' && headPicker
+        ? headPicker
+        : id === 'ajustes' && adjustPicker
+          ? 'picker'
+          : 'filas'
   const viewKey = shown ? `${shown.id}:${pickerPart(shown.id)}` : ''
   const previousView = useRef({ key: viewKey, open: openTab !== null })
   const viewMotion = useRef('is-rise')

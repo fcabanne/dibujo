@@ -3,7 +3,8 @@ import { copy } from '../../shared/copy'
 import { easeOut, prefersReducedMotion, tween } from '../../shared/motion'
 import { aspectOf, type Reference } from '../../shared/referenceImage'
 import { createEffects, type EffectsRenderer } from '../render/effects'
-import { fitRect, paintGrid } from '../render/scene'
+import type { HeadScene } from '../../shared/loomis/head'
+import { fitRect, paintGrid, paintHead } from '../render/scene'
 import type { AppState, GridState } from '../types'
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
    * despliega, en vez de quedar tapada.
    */
   drawer?: HTMLElement | null
+  /** Las cabezas de la foto, ya resueltas con su lente; null si no hay. */
+  head?: HeadScene | null
 }
 
 const ZOOM = { min: 0.4, max: 8 }
@@ -76,7 +79,14 @@ function withGrid(state: AppState, grid: GridState, alpha: number): AppState {
   return { ...state, grid: { ...grid, style: { ...grid.style, opacity: grid.style.opacity * alpha } } }
 }
 
-export function Canvas({ reference, state, onFile, onEffectsSupport, drawer = null }: Props) {
+export function Canvas({
+  reference,
+  state,
+  onFile,
+  onEffectsSupport,
+  drawer = null,
+  head = null,
+}: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const effectsRef = useRef<EffectsRenderer | null>(null)
@@ -110,8 +120,10 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, drawer = nu
 
   const stateRef = useRef(state)
   const refRef = useRef(reference)
+  const headRef = useRef(head)
   stateRef.current = state
   refRef.current = reference
+  headRef.current = head
 
   const [dragOver, setDragOver] = useState(false)
 
@@ -233,6 +245,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, drawer = nu
     } else {
       paintGrid(ctx, rect, scene, aspect)
     }
+    paintHead(ctx, rect, scene, headRef.current)
 
     if (fading) schedule()
   }, [schedule])
@@ -290,7 +303,7 @@ export function Canvas({ reference, state, onFile, onEffectsSupport, drawer = nu
   }, [state.grid])
 
   // Cualquier otro cambio —grilla, color, medidas— solo repinta.
-  useEffect(schedule, [state, schedule])
+  useEffect(schedule, [state, head, schedule])
 
   useEffect(() => {
     const wrap = wrapRef.current

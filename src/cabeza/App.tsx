@@ -24,22 +24,18 @@ import {
   Slider,
   UploadIcon,
 } from '../shared/ui'
-import { CANONICAL } from './canonical'
-import { detectFaces, detectFrame, prepareVideo, preload, type DetectedFace } from './detect'
-import { focal35 } from './exif'
-import { drawLoomis } from './loomis'
+import { CANONICAL } from '../shared/loomis/canonical'
+import { detectFaces, detectFrame, prepareVideo, preload, type DetectedFace } from '../shared/loomis/detect'
+import { focal35 } from '../shared/loomis/exif'
+import { estimateLens, solveHeads } from '../shared/loomis/head'
+import { drawLoomis } from '../shared/loomis/loomis'
 import {
   LENS_MAX,
   LENS_MIN,
-  MEDIAPIPE_VFOV,
-  fitLens,
-  focalPx,
   project,
-  rescale,
-  solvePose,
   type Camera,
   type Pose,
-} from './pose'
+} from '../shared/loomis/pose'
 
 const goBack = () => (window.location.href = '../')
 
@@ -415,7 +411,7 @@ function usePhotoFaces(photo: string | null) {
         if (found.length) {
           const w = img.naturalWidth
           const h = img.naturalHeight
-          setGuessedLens(fitLens(found, { f: 1, cx: w / 2, cy: h / 2 }, w, h))
+          setGuessedLens(estimateLens(found, w, h))
         }
       } catch {
         if (!cancelled) setStatus('failed')
@@ -428,20 +424,6 @@ function usePhotoFaces(photo: string | null) {
   }, [photo])
 
   return { image, faces, status, guessedLens }
-}
-
-/** Las poses de cada cara con una lente: la de MediaPipe como punto de partida, ajustada. */
-function posesFor(
-  faces: DetectedFace[],
-  mm: number,
-  width: number,
-  height: number,
-): Camera & { poses: Pose[] } {
-  const f = focalPx(mm, width, height)
-  const startF = height / 2 / Math.tan(MEDIAPIPE_VFOV / 2)
-  const cam = { f, cx: width / 2, cy: height / 2 }
-  const poses = faces.map((face) => solvePose(face.points, cam, rescale(face.start, startF, f)).pose)
-  return { ...cam, poses }
 }
 
 interface PaintInput {
@@ -556,7 +538,7 @@ function PhotoStage({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const iw = image.naturalWidth
   const ih = image.naturalHeight
-  const solved = useMemo(() => posesFor(faces, lens, iw, ih), [faces, lens, iw, ih])
+  const solved = useMemo(() => solveHeads(faces, lens, iw, ih), [faces, lens, iw, ih])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -571,7 +553,7 @@ function PhotoStage({
         bottom: bar?.getBoundingClientRect().top ?? window.innerHeight,
         opacity,
         mirror: false,
-        cam: solved,
+        cam: solved.cam,
         poses: solved.poses,
         faces,
       })
@@ -629,10 +611,10 @@ function CameraStage({
         last = v.currentTime
         faces = detectFrame(v, performance.now()) ?? faces
         if (lens === null && faces.length) {
-          lens = fitLens(faces, { f: 1, cx: w / 2, cy: h / 2 }, w, h)
+          lens = estimateLens(faces, w, h)
         }
       }
-      const solved = posesFor(faces, lens ?? DEFAULT_CAMERA_LENS, w, h)
+      const solved = solveHeads(faces, lens ?? DEFAULT_CAMERA_LENS, w, h)
       paint(canvas, {
         source: v,
         width: w,
@@ -641,7 +623,7 @@ function CameraStage({
         bottom: window.innerHeight,
         opacity,
         mirror,
-        cam: solved,
+        cam: solved.cam,
         poses: solved.poses,
         faces,
       })

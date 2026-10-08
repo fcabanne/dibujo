@@ -5,6 +5,7 @@ import { captionLines } from '../domain/measurements'
 import { cmToPoints, printSheet, SAFE_MARGIN } from '../domain/paper'
 import { createEffects, isNeutral } from '../render/effects'
 import { drawCaptionOnSheet } from '../render/grid'
+import type { HeadScene } from '../../shared/loomis/head'
 import { paintScene } from '../render/scene'
 import { jpegToPdf } from './pdf'
 import type { AppState, SheetId } from '../types'
@@ -32,10 +33,14 @@ interface Page {
 }
 
 /**
- * El único camino de salida: la foto con los ajustes y la grilla encima, al tamaño y
- * en el formato que se hayan elegido.
+ * El único camino de salida: la foto con los ajustes, la grilla y la cabeza encima,
+ * al tamaño y en el formato que se hayan elegido.
  */
-export async function exportFile(ref: Reference, state: AppState): Promise<Output> {
+export async function exportFile(
+  ref: Reference,
+  state: AppState,
+  head: HeadScene | null = null,
+): Promise<Output> {
   const aspect = aspectOf(ref)
   const image = await decodeFull(ref)
   const effects = isNeutral(state.effects) ? null : createEffects()
@@ -44,8 +49,8 @@ export async function exportFile(ref: Reference, state: AppState): Promise<Outpu
     const photo = effects ? effects.apply(image, ref.width, ref.height, state.effects) : image
     const page =
       state.export.size === 'original'
-        ? renderOriginal(ref, state, aspect, photo)
-        : renderSheet(ref, state, aspect, photo)
+        ? renderOriginal(ref, state, aspect, photo, head)
+        : renderSheet(ref, state, aspect, photo, head)
 
     return await write(page, baseName(ref.name), state.export.format)
   } finally {
@@ -67,7 +72,11 @@ const LIGHT_TABLE_SIDE = 2000
  *
  * Tamaño y formato del diálogo no cuentan acá: la mesa no imprime, solo muestra.
  */
-export async function exportForLightTable(ref: Reference, state: AppState): Promise<string> {
+export async function exportForLightTable(
+  ref: Reference,
+  state: AppState,
+  head: HeadScene | null = null,
+): Promise<string> {
   const aspect = aspectOf(ref)
   const image = await decodeFull(ref)
   const effects = isNeutral(state.effects) ? null : createEffects()
@@ -85,6 +94,7 @@ export async function exportForLightTable(ref: Reference, state: AppState): Prom
       state,
       aspect,
       state.export.labels,
+      head,
     )
     return canvas.toDataURL('image/jpeg', 0.9)
   } finally {
@@ -98,6 +108,7 @@ function renderOriginal(
   state: AppState,
   aspect: number,
   photo: CanvasImageSource,
+  head: HeadScene | null,
 ): Page {
   const canvas = document.createElement('canvas')
   canvas.width = ref.width
@@ -109,6 +120,7 @@ function renderOriginal(
     state,
     aspect,
     state.export.labels,
+    head,
   )
 
   return {
@@ -133,6 +145,7 @@ function renderSheet(
   state: AppState,
   aspect: number,
   photo: CanvasImageSource,
+  head: HeadScene | null,
 ): Page {
   const sheet = printSheet(state.export.size as SheetId, aspect)
   const fit = Math.min(1, Math.sqrt(MAX_SHEET_PIXELS / sheetPixels(sheet)))
@@ -164,6 +177,7 @@ function renderSheet(
     state,
     aspect,
     state.export.labels,
+    head,
   )
 
   // En el margen de abajo, que es papel vacío: acá hay dónde ponerlas sin taparle

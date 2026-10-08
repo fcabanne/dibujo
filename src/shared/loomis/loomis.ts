@@ -222,6 +222,8 @@ export function drawLoomis(
   style: LoomisStyle,
 ) {
   const eye = cameraInHead(pose)
+  // Todo lo de adentro se multiplica por la opacidad con la que llega el contexto.
+  const base = ctx.globalAlpha
   const facing = (m: Mark) => {
     if (!m.n) return true
     const toEye: Vec3 = [eye[0] - m.p[0], eye[1] - m.p[1], eye[2] - m.p[2]]
@@ -239,7 +241,7 @@ export function drawLoomis(
   // Los costados, apenas velados cuando se ven: es lo que hace leer el corte como un plano.
   ctx.save()
   ctx.fillStyle = style.color
-  ctx.globalAlpha = 0.14
+  ctx.globalAlpha = base * 0.14
   for (const plane of HEAD.planes) {
     if (!facing(plane[0]) || !plane.every((m) => inFront(m.p))) continue
     ctx.beginPath()
@@ -264,7 +266,7 @@ export function drawLoomis(
       ctx.strokeStyle = pass === 'halo' ? style.halo : style.color
       const w = visible ? style.width : style.width * 0.7
       ctx.lineWidth = pass === 'halo' ? w + 2 : w
-      ctx.globalAlpha = visible ? (pass === 'halo' ? 0.5 : 1) : pass === 'halo' ? 0.2 : 0.45
+      ctx.globalAlpha = base * (visible ? (pass === 'halo' ? 0.5 : 1) : pass === 'halo' ? 0.2 : 0.45)
       if (!visible) ctx.setLineDash([style.width * 2.5, style.width * 3])
       ctx.beginPath()
       for (const line of lines) {

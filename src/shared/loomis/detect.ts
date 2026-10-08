@@ -4,10 +4,23 @@ import { fromMediaPipe, type Landmarks, type Pose } from './pose'
 /**
  * Encontrar las caras: MediaPipe Face Landmarker, corriendo en el navegador.
  *
- * El modelo y el WebAssembly se sirven desde el mismo sitio (`public/cabeza/`), no
+ * El modelo y el WebAssembly se sirven desde el mismo sitio (`public/caras/`), no
  * desde un CDN de terceros: la foto no sale de la máquina y la herramienta no
- * depende de que otro siga publicando sus archivos.
+ * depende de que otro siga publicando sus archivos. Pesan unos quince megas, así
+ * que se bajan recién la primera vez que se busca una cara.
+ *
+ * Abierta como archivo suelto (`file://`) no hay de dónde bajarlos: `canDetect`
+ * lo dice antes de ofrecer nada.
  */
+
+/** Si hay de dónde bajar el detector: en un archivo abierto con doble clic, no. */
+export const canDetect = window.location.protocol !== 'file:'
+
+/**
+ * Dónde están el modelo y el WebAssembly. Relativo a la página y un nivel arriba,
+ * porque todas las herramientas viven en una carpeta propia al lado de `caras/`.
+ */
+const ASSETS = () => new URL('../caras/', window.location.href)
 
 export interface DetectedFace {
   /** Los 468 puntos de la malla, en píxeles de la imagen. */
@@ -29,7 +42,7 @@ function load(mode: Mode): Promise<FaceLandmarker> {
   const cached = landmarkers[mode]
   if (cached) return cached
   const created = (async () => {
-    const base = new URL('./', window.location.href)
+    const base = ASSETS()
     const fileset = await FilesetResolver.forVisionTasks(new URL('wasm', base).href)
     // En el procesador y no en la placa: en celulares Android el camino de la GPU
     // devolvía caras corridas o ninguna, sin dar error. Para una foto el procesador
@@ -60,9 +73,12 @@ export function prepareVideo(): Promise<unknown> {
   return load('VIDEO')
 }
 
-export async function detectFaces(image: HTMLImageElement): Promise<DetectedFace[]> {
+/** Las caras de una imagen quieta: una foto, o la copia liviana de una referencia. */
+export async function detectFaces(image: HTMLImageElement | HTMLCanvasElement): Promise<DetectedFace[]> {
   const detector = await load('IMAGE')
-  return toFaces(detector.detect(image), image.naturalWidth, image.naturalHeight)
+  const w = image instanceof HTMLImageElement ? image.naturalWidth : image.width
+  const h = image instanceof HTMLImageElement ? image.naturalHeight : image.height
+  return toFaces(detector.detect(image), w, h)
 }
 
 let videoDetector: FaceLandmarker | null = null

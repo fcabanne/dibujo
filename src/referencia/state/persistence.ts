@@ -36,6 +36,11 @@ export function loadSession(): AppState {
           weight: Math.min(6, Math.max(1, Math.round(parsed.grid?.style?.weight ?? DEFAULT_STATE.grid.style.weight))),
         },
       },
+      head: {
+        ...DEFAULT_STATE.head,
+        ...parsed.head,
+        style: { ...DEFAULT_STATE.head.style, ...parsed.head?.style },
+      },
       effects: {
         ...DEFAULT_STATE.effects,
         ...parsed.effects,

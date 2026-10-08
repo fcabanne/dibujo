@@ -5,7 +5,7 @@ enmarcado.html
 referencia.html
 tsconfig.tsbuildinfo
 # El WebAssembly de MediaPipe: lo copia scripts/mediapipe.mjs desde node_modules.
-public/cabeza/wasm
+public/caras/wasm
 
 # --------------------------------------------------------------------------
 # Obra propia. El repo es público: cualquier imagen que se comitee acá queda a

@@ -4,6 +4,8 @@ import { openReferenceFile, type Reference } from '../shared/referenceImage'
 import { deleteOriginal, loadOriginal, saveArtwork, saveOriginal } from '../shared/imageStore'
 import { Canvas } from './components/Canvas'
 import { useCompact } from './hooks/useCompact'
+import { useHeads } from './hooks/useHeads'
+import { canDetect } from '../shared/loomis/detect'
 import { DownloadDialog } from './components/DownloadDialog'
 import { Panel } from './components/Panel'
 import { Welcome } from './components/Welcome'
@@ -30,6 +32,7 @@ export function App() {
   const compact = useCompact()
   const noteTimer = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const heads = useHeads(reference, state.head.mode !== 'none', state.head.lens)
 
   // Estable: el diálogo se suscribe a `close` con ella, y una función nueva por
   // render lo haría re-suscribirse en cada cambio de estado.
@@ -76,6 +79,8 @@ export function App() {
       try {
         const next = await openReferenceFile(file)
         setReference(next)
+        // La lente elegida a mano era de la otra foto.
+        dispatch({ type: 'head/patch', patch: { lens: null } })
         void saveOriginal('referencia', next.blob, next.name)
       } catch (error) {
         notify(error instanceof Error ? error.message : copy.notices.loadFailed)
@@ -101,7 +106,7 @@ export function App() {
     if (!reference || busy) return
     setBusy(true)
     try {
-      const output = await exportFile(reference, state)
+      const output = await exportFile(reference, state, heads.scene)
       const how = await deliver(output)
       setDialog(false)
       if (how !== 'cancelado') {
@@ -116,7 +121,7 @@ export function App() {
     } finally {
       setBusy(false)
     }
-  }, [busy, notify, reference, state])
+  }, [busy, notify, reference, state, heads.scene])
 
   /**
    * Manda la foto tal como se ve —con la grilla y los ajustes— a la mesa de luz y
@@ -128,13 +133,13 @@ export function App() {
     if (!reference || busy) return
     setBusy(true)
     try {
-      await saveArtwork('mesa', await exportForLightTable(reference, state))
+      await saveArtwork('mesa', await exportForLightTable(reference, state, heads.scene))
       window.location.href = '../mesa/'
     } catch (error) {
       setBusy(false)
       notify(error instanceof Error ? error.message : copy.notices.lightTableFailed)
     }
-  }, [busy, notify, reference, state])
+  }, [busy, notify, reference, state, heads.scene])
 
   // Sin foto no hay columna que mostrar al costado, así que el escritorio usa el
   // mismo acomodo apilado que el celular.
@@ -149,6 +154,7 @@ export function App() {
           onFile={(file) => void handleFile(file)}
           onEffectsSupport={setEffectsSupported}
           drawer={drawer}
+          head={heads.scene}
         />
       ) : (
         <div
@@ -174,6 +180,13 @@ export function App() {
         effectsSupported={effectsSupported}
         compact={compact}
         onDrawer={setDrawer}
+        heads={{
+          available: canDetect,
+          status: heads.status,
+          lens: heads.lens,
+          autoLens: heads.autoLens,
+          fromCamera: heads.fromCamera,
+        }}
       />
 
       {/* Uno solo para toda la app: lo usan la pantalla de inicio y el botón de

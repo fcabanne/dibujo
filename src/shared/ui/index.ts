@@ -41,6 +41,7 @@ export {
   SpeakerIcon,
   SpeakerOffIcon,
   CameraIcon,
+  HeadIcon,
   FlipCameraIcon,
   ChevronDownIcon,
   ProportionalIcon,

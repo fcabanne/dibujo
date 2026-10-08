@@ -1,10 +1,11 @@
+import { paintHeads, type HeadScene } from '../../shared/loomis/head'
 import { computeGrid } from '../domain/grid'
 import { drawingArea } from '../domain/paper'
-import { drawGrid, type Rect } from './grid'
+import { drawGrid, lineWidthFor, type Rect } from './grid'
 import type { AppState } from '../types'
 
 /**
- * Foto y grilla dentro de un rectángulo, sea el de la pantalla o el de un export de
+ * Foto, grilla y cabeza dentro de un rectángulo, sea el de la pantalla o el de un export de
  * seis mil píxeles.
  *
  * Es una sola función para los tres destinos a propósito: en cuanto la vista previa
@@ -19,9 +20,35 @@ export function paintScene(
   aspect: number,
   /** Ver `paintGrid`: acá sí puede venir en `true`, es lo único que la distingue. */
   labels = false,
+  /** Las cabezas ya resueltas para la foto, o null si no hay (ver `paintHead`). */
+  head: HeadScene | null = null,
 ): void {
   ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
   paintGrid(ctx, rect, state, aspect, labels)
+  paintHead(ctx, rect, state, head)
+}
+
+/**
+ * La cabeza de construcción, encima de la grilla. Como la grilla, su grosor es
+ * relativo al ancho de la foto: la línea que se ve en pantalla es la que sale en
+ * el export.
+ *
+ * Las cabezas llegan resueltas de afuera porque encontrarlas es asincrónico —hay un
+ * detector que se baja la primera vez—; lo que decide si se ven es el estado.
+ */
+export function paintHead(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  state: AppState,
+  head: HeadScene | null,
+): void {
+  if (!head || state.head.mode === 'none') return
+  const { style } = state.head
+  paintHeads(ctx, rect, head, {
+    color: style.color,
+    opacity: style.opacity,
+    lineWidth: lineWidthFor(rect, style),
+  })
 }
 
 /**

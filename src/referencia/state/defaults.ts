@@ -35,6 +35,11 @@ export const DEFAULT_STATE: AppState = {
       weight: 4,
     },
   },
+  head: {
+    mode: 'none',
+    lens: null,
+    style: { color: '#ffffff', opacity: 0.9, weight: 3 },
+  },
   effects: NEUTRAL_EFFECTS,
   paper: { id: 'none', w: 21, h: 29.7 },
   export: { size: 'original', format: 'jpg', labels: false },

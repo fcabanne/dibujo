@@ -96,11 +96,12 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    norma pide 3 para un elemento de interfaz. Por eso solo se usa para el relleno
    del slider y para el ± apagado del stepper, nunca para texto — el borde de la
    casilla sin marcar usa `--ds-muted`, que sí llega (3,05).
-3. **Los íconos X, Linterna, Parlante, Cámara y Dar vuelta no existen.** Están dibujados con la métrica
+3. **Los íconos X, Linterna, Parlante, Cámara, Dar vuelta y Cabeza no existen.** Están dibujados con la métrica
    del set (24×24, trazo 2, puntas redondas) y marcados en `icons.tsx` como los que no
    vienen del archivo. Linterna lo usa la mesa de luz para prender la luz de la
    cámara; Parlante (y su versión tachada), Enmarcado para callar el sonido;
-   Cámara y Dar vuelta, Cabeza para la cámara en vivo.
+   Cámara y Dar vuelta, Cabeza para la cámara en vivo; Cabeza, la pestaña de
+   Referencia con la cabeza de Loomis.
 4. **No hay estados dibujados** — ni hover, ni foco, ni deshabilitado. Los que hay
    están resueltos con opacidad y con tokens que ya existen, sin colores nuevos, y
    están marcados como derivados en `components.css`. La excepción es el ± apagado
@@ -145,4 +146,4 @@ reproduce: toma la línea central de cada ícono, la muestrea y la corre de cost
 0,3 px con un ruido liso. `Drawn`, en `icons.tsx`, lo usa. En escritorio, con un puntero que
 pasa por encima, el ícono "hierve" mientras el mouse está sobre su control
 (`boilOnHover`): mismo dibujo, otra fase del ruido, nueve cuadros por segundo. Con
-`prefers-reduced-motion` o sin hover no pasa nada. Los que no vienen de Figma (hoja, contraste, bordes, facetas, linterna, parlante, cámara, dar vuelta) llevan el mismo temblor sobre una línea central dibujada a mano.
+`prefers-reduced-motion` o sin hover no pasa nada. Los que no vienen de Figma (hoja, contraste, bordes, facetas, linterna, parlante, cámara, dar vuelta, cabeza) llevan el mismo temblor sobre una línea central dibujada a mano.

@@ -5,6 +5,7 @@ import type {
   ExportState,
   GridState,
   GridStyle,
+  HeadState,
   Paper,
 } from '../types'
 import { EFFECT_MODES } from './defaults'
@@ -12,6 +13,8 @@ import { EFFECT_MODES } from './defaults'
 export type Action =
   | { type: 'grid/patch'; patch: Partial<GridState> }
   | { type: 'grid/style'; patch: Partial<GridStyle> }
+  | { type: 'head/patch'; patch: Partial<HeadState> }
+  | { type: 'head/style'; patch: Partial<GridStyle> }
   | { type: 'effects/patch'; patch: Partial<Effects> }
   | { type: 'effects/mode'; mode: EffectsMode }
   | { type: 'paper/patch'; patch: Partial<Paper> }
@@ -23,6 +26,10 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, grid: { ...state.grid, ...action.patch } }
     case 'grid/style':
       return { ...state, grid: { ...state.grid, style: { ...state.grid.style, ...action.patch } } }
+    case 'head/patch':
+      return { ...state, head: { ...state.head, ...action.patch } }
+    case 'head/style':
+      return { ...state, head: { ...state.head, style: { ...state.head.style, ...action.patch } } }
     case 'effects/patch':
       return { ...state, effects: { ...state.effects, ...action.patch } }
     // Cambiar de modo reescribe todo, `bw` incluido.

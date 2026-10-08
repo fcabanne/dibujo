@@ -130,6 +130,11 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   Lo usa Referencia, que promete devolver la foto en su tamaño.
 - `src/shared/deliver.ts` — entrega un archivo hecho en el navegador: la hoja de
   compartir donde existe (en un celular guarda en Fotos), si no la descarga común.
+- `src/shared/loomis/` — la cabeza de Loomis: el detector de caras (`detect.ts`), la
+  pose y la lente (`pose.ts`), el armado de la cabeza (`loomis.ts`) y, encima de todo,
+  `head.ts`: resolver las cabezas de una foto una vez y pintarlas en cualquier
+  rectángulo. Lo usan Referencia (la pestaña Cabeza) y Cabeza. Ver "Cómo está armada
+  Cabeza".
 - `src/shared/useCamera.ts` — prende una cámara (la de atrás o la de adelante) en un
   `<video>`, con la linterna donde el teléfono la presta. Lo usan la mesa y Cabeza.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
@@ -739,6 +744,23 @@ cierra. `DownloadDialog` lo maneja a mano, y escucha `close` con
 React lo entrega de forma despareja. Quedarse encerrado en un modal es de las peores
 cosas que puede hacer una interfaz: no confiar en el comportamiento nativo acá.
 
+**La pestaña Cabeza dibuja la cabeza de Loomis encima de la cara**, con el giro y la
+perspectiva de la foto. Es la misma idea que la grilla —líneas de construcción sobre la
+referencia— y se porta igual: arranca en "Ninguna" (`state.head.mode`), tiene color,
+espesor y opacidad con la misma escala relativa (`state.head.style`, un `GridStyle`), y
+pasa por `paintScene`, así que sale en la pantalla, en el export y en la mesa de luz.
+Va encima de la grilla.
+
+- **El detector se baja recién al elegir Loomis** (`useHeads`): unos quince megas que
+  quien solo quiere la grilla no paga. Corre una vez por foto sobre la copia liviana, y
+  lo encontrado se queda. En la versión suelta (`file://`) no hay de dónde bajarlo y la
+  pestaña no aparece (`canDetect`).
+- **Las cabezas se resuelven en los píxeles de la copia liviana** (`HeadScene`) y se
+  pintan en cualquier rectángulo con una escala uniforme: como la grilla en fracciones,
+  una sola cuenta para todos los destinos.
+- **La lente**: la elegida a mano (`state.head.lens`), o la que anotó la cámara en el
+  EXIF del original, o la estimada mirando las caras. Una foto nueva la vuelve a `null`.
+
 **El margen de seguridad es una constante** (`SAFE_MARGIN`), no un control: toda
 impresora se come unos milímetros del borde. Por la misma razón la hoja se orienta
 sola según la foto — una foto apaisada sobre un A4 parado desperdicia media hoja y
@@ -1010,14 +1032,17 @@ opacidad y las esquinas en localStorage.
 ## Cómo está armada Cabeza
 
 **Prueba de concepto**: publicada en `cabeza/` pero todavía **no está en la portada**, y
-lleva `noindex`. Se llega con el link.
+lleva `noindex`. Se llega con el link. **Se está fusionando con Referencia**: la cabeza
+sobre una foto ya es la pestaña Cabeza de allá; falta llevar la cámara como otra forma
+de cargar la foto, y entonces `cabeza/` se va. El código de la cabeza vive en
+`src/shared/loomis/`.
 
 Dibuja la cabeza de Loomis encima de una foto o de la cámara en vivo, girada como la
 cabeza y en la perspectiva de la lente.
 
 - `detect.ts` — MediaPipe Face Landmarker, **en el procesador**: en Android el camino
   de la GPU devolvía caras corridas o ninguna, sin dar error. El modelo
-  (`public/cabeza/face_landmarker.task`) y el WebAssembly se sirven desde el mismo
+  (`public/caras/face_landmarker.task`) y el WebAssembly se sirven desde el mismo
   sitio; el WebAssembly lo copia `scripts/mediapipe.mjs` desde node_modules antes de
   `dev` y de cada build, y no se commitea. Un detector por modo (foto y video).
 - `pose.ts` — la pose sale de calzar la cara canónica (`canonical.ts`, los 468 puntos
