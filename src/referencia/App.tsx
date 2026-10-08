@@ -4,10 +4,15 @@ import { openReferenceFile, type Reference } from '../shared/referenceImage'
 import { deleteOriginal, loadOriginal, saveArtwork, saveOriginal } from '../shared/imageStore'
 import { Canvas } from './components/Canvas'
 import { useCompact } from './hooks/useCompact'
+import { useHeads } from './hooks/useHeads'
+import { canDetect } from '../shared/loomis/detect'
 import { DownloadDialog } from './components/DownloadDialog'
+import { CameraCapture, canUseCamera } from './components/CameraCapture'
+import { LinesHint } from './components/LinesHint'
 import { Panel } from './components/Panel'
 import { Welcome } from './components/Welcome'
-import { deliver, exportFile, exportForLightTable } from './export/exporters'
+import { deliver } from '../shared/deliver'
+import { exportFile, exportForLightTable } from './export/exporters'
 import { loadSession, saveSession } from './state/persistence'
 import { reducer } from './state/reducer'
 
@@ -22,6 +27,8 @@ export function App() {
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState(false)
+  /** El visor de la cámara, abierto encima de todo. */
+  const [camera, setCamera] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [effectsSupported, setEffectsSupported] = useState(true)
   /** El cajón de controles del celular: la foto se acomoda arriba de él. */
@@ -29,6 +36,7 @@ export function App() {
   const compact = useCompact()
   const noteTimer = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const heads = useHeads(reference, state.head.mode !== 'none')
 
   // Estable: el diálogo se suscribe a `close` con ella, y una función nueva por
   // render lo haría re-suscribirse en cada cambio de estado.
@@ -100,7 +108,7 @@ export function App() {
     if (!reference || busy) return
     setBusy(true)
     try {
-      const output = await exportFile(reference, state)
+      const output = await exportFile(reference, state, heads.scene)
       const how = await deliver(output)
       setDialog(false)
       if (how !== 'cancelado') {
@@ -115,7 +123,7 @@ export function App() {
     } finally {
       setBusy(false)
     }
-  }, [busy, notify, reference, state])
+  }, [busy, notify, reference, state, heads.scene])
 
   /**
    * Manda la foto tal como se ve —con la grilla y los ajustes— a la mesa de luz y
@@ -127,13 +135,13 @@ export function App() {
     if (!reference || busy) return
     setBusy(true)
     try {
-      await saveArtwork('mesa', await exportForLightTable(reference, state))
+      await saveArtwork('mesa', await exportForLightTable(reference, state, heads.scene))
       window.location.href = '../mesa/'
     } catch (error) {
       setBusy(false)
       notify(error instanceof Error ? error.message : copy.notices.lightTableFailed)
     }
-  }, [busy, notify, reference, state])
+  }, [busy, notify, reference, state, heads.scene])
 
   // Sin foto no hay columna que mostrar al costado, así que el escritorio usa el
   // mismo acomodo apilado que el celular.
@@ -148,6 +156,7 @@ export function App() {
           onFile={(file) => void handleFile(file)}
           onEffectsSupport={setEffectsSupported}
           drawer={drawer}
+          head={heads.scene}
         />
       ) : (
         <div
@@ -159,7 +168,9 @@ export function App() {
             if (file) void handleFile(file)
           }}
         >
-          {ready && <Welcome onUpload={pickFile} />}
+          {ready && (
+            <Welcome onUpload={pickFile} onCamera={canUseCamera ? () => setCamera(true) : undefined} />
+          )}
         </div>
       )}
 
@@ -168,11 +179,13 @@ export function App() {
         dispatch={dispatch}
         reference={reference}
         onPickFile={pickFile}
+        onCamera={canUseCamera ? () => setCamera(true) : undefined}
         onRemove={removePhoto}
         onDownload={() => setDialog(true)}
         effectsSupported={effectsSupported}
         compact={compact}
         onDrawer={setDrawer}
+        heads={{ available: canDetect, status: heads.status }}
       />
 
       {/* Uno solo para toda la app: lo usan la pantalla de inicio y el botón de
@@ -188,6 +201,19 @@ export function App() {
           e.target.value = ''
         }}
       />
+
+      {reference && <LinesHint state={state} dispatch={dispatch} />}
+
+      {camera && (
+        <CameraCapture
+          head={state.head}
+          onCapture={(file) => {
+            setCamera(false)
+            void handleFile(file)
+          }}
+          onClose={() => setCamera(false)}
+        />
+      )}
 
       <DownloadDialog
         open={dialog}

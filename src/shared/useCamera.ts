@@ -6,8 +6,12 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
  */
 export type CameraStatus = 'pidiendo' | 'lista' | 'denegada' | 'sin-camara' | 'insegura'
 
+/** Qué cámara: la de atrás (`environment`) o la de adelante (`user`). */
+export type Facing = 'environment' | 'user'
+
 /**
- * Prende la cámara trasera y la deja corriendo en el `<video>`.
+ * Prende la cámara y la deja corriendo en el `<video>`. Por defecto la de atrás, la
+ * que usa la mesa de luz; la cámara de Referencia deja elegir.
  *
  * El permiso no se pregunta dos veces ni se explica: se llama a `getUserMedia`
  * recién cuando hay una foto (`enabled`) y el que pregunta es el navegador, con su
@@ -18,7 +22,11 @@ export type CameraStatus = 'pidiendo' | 'lista' | 'denegada' | 'sin-camara' | 'i
  * archivo suelto, `file://`, no hay cámara y no es algo que se arregle desde acá:
  * por eso `insegura` es un estado con su propio mensaje.
  */
-export function useCamera(video: RefObject<HTMLVideoElement>, enabled: boolean) {
+export function useCamera(
+  video: RefObject<HTMLVideoElement>,
+  enabled: boolean,
+  facing: Facing = 'environment',
+) {
   const [status, setStatus] = useState<CameraStatus>('pidiendo')
   const [attempt, setAttempt] = useState(0)
   const track = useRef<MediaStreamTrack | null>(null)
@@ -45,7 +53,7 @@ export function useCamera(video: RefObject<HTMLVideoElement>, enabled: boolean) 
     // `ideal` y no `exact`: en una notebook hay una sola cámara y pedirle la trasera
     // con exact falla en vez de dar la que hay.
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      .getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false })
       .then((granted) => {
         if (cancelled) {
           granted.getTracks().forEach((track) => track.stop())
@@ -83,7 +91,7 @@ export function useCamera(video: RefObject<HTMLVideoElement>, enabled: boolean) 
       setTorchSupported(false)
       setTorch(false)
     }
-  }, [attempt, video, enabled])
+  }, [attempt, video, enabled, facing])
 
   const toggleTorch = useCallback(() => {
     const current = track.current

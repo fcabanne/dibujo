@@ -38,7 +38,7 @@ interface Figure {
   seed: number
 }
 
-type Species = 'pine' | 'oak' | 'walnut'
+export type Species = 'pine' | 'oak' | 'walnut'
 
 const FIGURES: Record<Species, Figure> = {
   pine: { spacing: 0.42, rings: 0.4, pores: 0, streaks: 0.05, depth: 2.4, seed: 3 },
@@ -52,7 +52,7 @@ const FIGURES: Record<Species, Figure> = {
  * medios los poros del roble, y en los oscuros —nogal, caoba— los anillos casi no se
  * ven y manda la raya fina.
  */
-function speciesOf(color: string): Species {
+export function speciesOf(color: string): Species {
   const l = luminance(color)
   if (l > 0.55) return 'pine'
   if (l > 0.33) return 'oak'
@@ -221,4 +221,18 @@ export function drawWood(
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h)
   ctx.restore()
   return true
+}
+
+/**
+ * La tabla horneada de la madera que sugiere el color, para el render 3D: la baldosa,
+ * cuánto oscurece en promedio, y cuántos centímetros de tabla tiene.
+ */
+export function woodTile(color: string) {
+  const tile = tileFor(speciesOf(color))
+  return { canvas: tile.canvas, mean: tile.mean, lengthCm: LENGTH_CM, widthCm: WIDTH_CM }
+}
+
+/** Cuánto se ve la veta: todo en "veteado", menos en "lisa", y poco en las maderas muy claras. */
+export function woodContrast(color: string, grained: boolean): number {
+  return (grained ? 1 : 0.45) * (1 - 0.5 * smoothstep(0.6, 0.9, luminance(color)))
 }

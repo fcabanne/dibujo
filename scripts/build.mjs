@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { build } from 'vite'
+import './mediapipe.mjs'
 
 /**
  * Compila cada página por separado.

@@ -5,6 +5,7 @@ import { openInstagram } from '../../shared/suggestions'
 import {
   BackIcon,
   Button,
+  CameraIcon,
   ChoiceGroup,
   CloseIcon,
   ContrastIcon,
@@ -14,6 +15,7 @@ import {
   FacetsIcon,
   FileIcon,
   GridIcon,
+  HeadIcon,
   IconButton,
   OptionPicker,
   PaintIcon,
@@ -29,13 +31,16 @@ import { GRID_LIMITS } from '../domain/grid'
 import { PAPER_PRESETS, sheetName } from '../domain/paper'
 import { CustomColorOption, Hint, NAMED_COLORS, Row, Section } from './controls'
 import type { Action } from '../state/reducer'
-import type { AppState, EffectsMode, GridMode, PaperId } from '../types'
+import type { AppState, EffectsMode, GridMode, HeadMode, PaperId } from '../types'
+import type { HeadStatus } from '../hooks/useHeads'
 
 interface Props {
   state: AppState
   dispatch: (action: Action) => void
   reference: Reference | null
   onPickFile: () => void
+  /** Sacar la foto con la cámara. Sin él no se ofrece: no hay cámara que prestar. */
+  onCamera?: () => void
   onRemove: () => void
   onDownload: () => void
   effectsSupported: boolean
@@ -43,6 +48,11 @@ interface Props {
   compact: boolean
   /** Le pasa al lienzo el cajón, para que acomode la foto arriba de él. */
   onDrawer?: (node: HTMLElement | null) => void
+  /**
+   * Lo que se sabe de las cabezas de la foto. `available` en falso —un archivo
+   * abierto con doble clic, sin de dónde bajar el detector— saca la pestaña.
+   */
+  heads: { available: boolean; status: HeadStatus }
 }
 
 /**
@@ -98,6 +108,18 @@ const ADJUST_OPTIONS: PickerOption<EffectsMode>[] = [
   { value: 'facets', label: copy.adjust.facets, icon: <FacetsIcon /> },
 ]
 
+/** Cómo se llama la cabeza elegida, para la fila cerrada del Dropdown. */
+const HEAD_NAMES: Record<HeadMode, string> = {
+  loomis: copy.head.loomis,
+  none: copy.head.none,
+}
+
+/** Las tarjetas del picker de la cabeza. Como en la grilla, "Ninguna" ocupa la fila entera. */
+const HEAD_OPTIONS: PickerOption<HeadMode>[] = [
+  { value: 'loomis', label: copy.head.loomis, icon: <HeadIcon />, wide: true },
+  { value: 'none', label: copy.head.none, icon: <CloseIcon />, wide: true },
+]
+
 /** Cómo se llama el modo elegido, para la fila cerrada del Dropdown. */
 const TYPE_NAMES: Record<GridMode, string> = {
   proportional: copy.grid.proportional,
@@ -142,11 +164,13 @@ export function Panel({
   dispatch,
   reference,
   onPickFile,
+  onCamera,
   onRemove,
   onDownload,
   effectsSupported,
   compact,
   onDrawer,
+  heads,
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
@@ -158,8 +182,10 @@ export function Panel({
    * pestaña lo encuentra como se dejó, no reiniciado. Lo único que lo cierra
    * es una foto nueva (ver el `useEffect` de abajo).
    */
-  const [picker, setPicker] = useState<'tipo' | 'color' | 'ajustes' | null>(null)
-  const { grid, paper, effects } = state
+  const [picker, setPicker] = useState<
+    'tipo' | 'color' | 'ajustes' | 'cabeza' | 'cabezaColor' | null
+  >(null)
+  const { grid, paper, effects, head } = state
 
   /**
    * Cerrar un picker después de elegir, pero no en el acto: se deja un
@@ -242,6 +268,11 @@ export function Panel({
           <Button variant="quiet" icon={<UploadIcon />} onClick={onPickFile}>
             {copy.photo.change}
           </Button>
+          {onCamera && (
+            <IconButton label={copy.camera.use} onClick={onCamera}>
+              <CameraIcon />
+            </IconButton>
+          )}
           <IconButton label={copy.photo.remove} onClick={onRemove}>
             <CloseIcon />
           </IconButton>
@@ -297,7 +328,7 @@ export function Panel({
                 }
               />
             </span>
-            <span>×</span>
+            <span>x</span>
             <span className="unit">
               <input
                 type="number"
@@ -323,15 +354,22 @@ export function Panel({
 
   /**
    * Qué picker se ve en cada pestaña. No sale solo del estado `picker`: un
-   * modo que no tiene nada que configurar —"Ninguna" en la grilla,
-   * "Original" en Ajustes— deja su picker abierto siempre, porque la vista
-   * cerrada sería una fila sola con un vacío abajo. Así es como la pestaña de
-   * Ajustes abre directo en sus cuatro tarjetas, y como "Ninguna" sigue en
-   * su picker aunque se haya cargado otra foto.
+   * modo que no tiene nada que configurar —"Ninguna" en la grilla o en la
+   * cabeza— deja su picker abierto siempre, porque la vista cerrada sería una
+   * fila sola con un vacío abajo. Así es como "Ninguna" sigue en su picker
+   * aunque se haya cargado otra foto. "Original" en Ajustes era uno de estos
+   * hasta que tuvo su perilla: cuánto se ve la foto.
    */
   const gridPicker =
     picker === 'color' ? 'color' : picker === 'tipo' || grid.mode === 'none' ? 'tipo' : null
-  const adjustPicker = picker === 'ajustes' || effects.mode === 'original'
+  // Original ya no se queda en las tarjetas: ahora tiene su perilla, cuánto se ve la foto.
+  const adjustPicker = picker === 'ajustes'
+  const headPicker =
+    picker === 'cabezaColor'
+      ? 'color'
+      : picker === 'cabeza' || head.mode === 'none'
+        ? 'tipo'
+        : null
 
   const isCustomColor = !NAMED_COLORS.some(
     (color) => color.value === grid.style.color.toLowerCase(),
@@ -445,6 +483,111 @@ export function Panel({
       ),
   }
 
+  const isCustomHeadColor = !NAMED_COLORS.some(
+    (color) => color.value === head.style.color.toLowerCase(),
+  )
+  const headMessage =
+    heads.status === 'looking'
+      ? copy.head.looking
+      : heads.status === 'none'
+        ? copy.head.noFace
+        : heads.status === 'failed'
+          ? copy.head.failed
+          : null
+
+  const headSection: PanelSection = {
+    id: 'cabeza',
+    title: copy.head.title,
+    label: copy.head.tab,
+    icon: <HeadIcon />,
+    content:
+      headPicker === 'tipo' ? (
+        <OptionPicker
+          label={copy.head.type}
+          value={head.mode}
+          columns={2}
+          options={HEAD_OPTIONS}
+          onChange={(mode) => {
+            dispatch({ type: 'head/patch', patch: { mode } })
+            if (mode !== 'none') {
+              setPicker('cabeza')
+              closePickerSoon()
+            }
+          }}
+        />
+      ) : headPicker === 'color' ? (
+        <OptionPicker
+          label={copy.grid.color}
+          value={isCustomHeadColor ? '' : head.style.color.toLowerCase()}
+          columns={3}
+          options={COLOR_OPTIONS}
+          onChange={(color) => {
+            dispatch({ type: 'head/style', patch: { color } })
+            closePickerSoon()
+          }}
+          trailing={
+            <CustomColorOption
+              value={head.style.color}
+              selected={isCustomHeadColor}
+              onChange={(color) => dispatch({ type: 'head/style', patch: { color } })}
+              onClose={() => setPicker(null)}
+            />
+          }
+        />
+      ) : (
+        <>
+          <Row label={copy.head.type}>
+            <Dropdown
+              label={copy.head.type}
+              value={HEAD_NAMES[head.mode]}
+              onClick={() => setPicker('cabeza')}
+            />
+          </Row>
+
+          {/* Mientras busca, o si no encontró nada, se dice: sin esto la pestaña
+              parece no hacer nada. */}
+          {headMessage && <Hint>{headMessage}</Hint>}
+
+          <Row label={copy.grid.color}>
+            <Dropdown
+              label={copy.grid.color}
+              value={
+                isCustomHeadColor
+                  ? copy.grid.customColor
+                  : NAMED_COLORS.find((color) => color.value === head.style.color.toLowerCase())!
+                      .name
+              }
+              swatch={head.style.color}
+              onClick={() => setPicker('cabezaColor')}
+            />
+          </Row>
+
+          <Row label={copy.grid.weight}>
+            <Slider
+              label={copy.grid.weight}
+              value={head.style.weight}
+              min={1}
+              max={6}
+              step={1}
+              onChange={(weight) => dispatch({ type: 'head/style', patch: { weight } })}
+            />
+          </Row>
+
+          <Row label={copy.grid.opacity}>
+            <Slider
+              label={copy.grid.opacity}
+              value={Math.round(head.style.opacity * 100)}
+              min={0}
+              max={100}
+              step={5}
+              onChange={(v) => dispatch({ type: 'head/style', patch: { opacity: v / 100 } })}
+              format={(v) => fill(copy.grid.opacityValue, { n: v })}
+            />
+          </Row>
+        </>
+      ),
+  }
+
   const adjustSection: PanelSection = {
     id: 'ajustes',
     title: copy.adjust.title,
@@ -460,12 +603,7 @@ export function Panel({
         options={ADJUST_OPTIONS}
         onChange={(mode) => {
           dispatch({ type: 'effects/mode', mode })
-          // "Original" se queda en las tarjetas, igual que "Ninguna": no hay
-          // nada que ajustar abajo.
-          if (mode !== 'original') {
-            setPicker('ajustes')
-            closePickerSoon()
-          }
+          closePickerSoon()
         }}
       />
     ) : (
@@ -483,7 +621,8 @@ export function Panel({
         {/* Cada modo muestra solo la perilla que le importa. El resto de los
             valores los fija él, y esconderlos es el punto: son los que hay que
             entender para usar esto, y no hay por qué entenderlos. Original no
-            muestra ninguna. */}
+            muestra ninguna propia: solo la de cuánto se ve la foto, que va en
+            todos. */}
         {effects.mode === 'bw' && (
           <Row label={copy.adjust.contrast}>
             <Slider
@@ -548,6 +687,20 @@ export function Panel({
             </Row>
           </>
         )}
+
+        {/* Cuánto se ve la foto, en todos los modos: con la foto apagada, la
+            grilla y la cabeza se leen solas, como sobre una hoja de calco. */}
+        <Row label={copy.adjust.opacity}>
+          <Slider
+            label={copy.adjust.opacity}
+            value={Math.round(effects.opacity * 100)}
+            min={0}
+            max={100}
+            step={5}
+            onChange={(v) => dispatch({ type: 'effects/patch', patch: { opacity: v / 100 } })}
+            format={(v) => fill(copy.grid.opacityValue, { n: v })}
+          />
+        </Row>
       </>
     ),
   }
@@ -556,6 +709,7 @@ export function Panel({
     photoSection,
     ...(SHOW_PAPER ? [paperSection] : []),
     gridSection,
+    ...(heads.available ? [headSection] : []),
     adjustSection,
   ]
 
@@ -597,7 +751,13 @@ export function Panel({
    */
   const shown = sections.find((section) => section.id === (openTab ?? lastTab.current)) ?? null
   const pickerPart = (id: string) =>
-    id === 'grilla' && gridPicker ? gridPicker : id === 'ajustes' && adjustPicker ? 'picker' : 'filas'
+    id === 'grilla' && gridPicker
+      ? gridPicker
+      : id === 'cabeza' && headPicker
+        ? headPicker
+        : id === 'ajustes' && adjustPicker
+          ? 'picker'
+          : 'filas'
   const viewKey = shown ? `${shown.id}:${pickerPart(shown.id)}` : ''
   const previousView = useRef({ key: viewKey, open: openTab !== null })
   const viewMotion = useRef('is-rise')

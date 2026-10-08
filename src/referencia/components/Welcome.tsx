@@ -1,8 +1,10 @@
 import { copy } from '../../shared/copy'
-import { Button, UploadIcon } from '../../shared/ui'
+import { Button, CameraIcon, UploadIcon } from '../../shared/ui'
 
 interface Props {
   onUpload: () => void
+  /** Sacar la foto con la cámara. Sin él —un archivo suelto, sin cámara— no se ofrece. */
+  onCamera?: () => void
 }
 
 /**
@@ -19,18 +21,24 @@ interface Props {
  * El link de sugerencias no está acá: vive en `Panel`, compartiendo la fila
  * de abajo con el botón de volver.
  */
-export function Welcome({ onUpload }: Props) {
+export function Welcome({ onUpload, onCamera }: Props) {
   return (
     <div className="welcome">
       <div className="welcome-text">
         <h2>{copy.welcome.greeting}</h2>
         <p>{copy.welcome.intro}</p>
-        <p>{copy.welcome.hint}</p>
       </div>
 
-      <Button variant="loud" icon={<UploadIcon />} onClick={onUpload}>
-        {copy.welcome.upload}
-      </Button>
+      <div className="welcome-actions">
+        <Button variant="loud" icon={<UploadIcon />} onClick={onUpload}>
+          {copy.welcome.upload}
+        </Button>
+        {onCamera && (
+          <Button variant="quiet" icon={<CameraIcon />} onClick={onCamera}>
+            {copy.camera.use}
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

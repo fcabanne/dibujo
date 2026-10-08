@@ -36,12 +36,18 @@ export function loadSession(): AppState {
           weight: Math.min(6, Math.max(1, Math.round(parsed.grid?.style?.weight ?? DEFAULT_STATE.grid.style.weight))),
         },
       },
+      head: {
+        ...DEFAULT_STATE.head,
+        ...parsed.head,
+        style: { ...DEFAULT_STATE.head.style, ...parsed.head?.style },
+      },
       effects: {
         ...DEFAULT_STATE.effects,
         ...parsed.effects,
         // `bw` dejó de ser independiente del modo: una sesión vieja pudo guardarlo
         // suelto (Bordes en color, por ejemplo, que ya no puede pasar). Se
         // recalcula siempre desde el modo final y nunca se lee del storage.
+        opacity: Math.min(1, Math.max(0, parsed.effects?.opacity ?? 1)),
         bw: (EFFECT_MODES[parsed.effects?.mode ?? DEFAULT_STATE.effects.mode] ?? EFFECT_MODES.original)
           .bw,
       },

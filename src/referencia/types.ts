@@ -66,6 +66,12 @@ export interface Effects {
   edges: number
   /** 0 = apagado; si no, a cuántos tonos se aplasta la foto. */
   tones: number
+  /**
+   * Cuánto se ve la foto, 0..1, fundida contra papel blanco: como mirarla a través
+   * de una hoja de calco. Sirve para que la grilla y la cabeza se lean solas. Es la
+   * única que **no** fija el modo: cambiar de modo la conserva.
+   */
+  opacity: number
 }
 
 export type PaperId = 'none' | 'a5' | 'a4' | 'a3' | 'a2' | 'custom'
@@ -101,8 +107,22 @@ export interface ExportState {
   labels: boolean
 }
 
+/**
+ * La cabeza de construcción encima de la cara. Como la grilla: arranca en
+ * `'none'`, y elegir una es un paso que se da a propósito. Hoy hay una sola
+ * manera de construirla —la de Loomis—, y el modo deja lugar para otras.
+ */
+export type HeadMode = 'none' | 'loomis'
+
+export interface HeadState {
+  mode: HeadMode
+  /** Color, opacidad y espesor, con la misma escala relativa que la grilla. */
+  style: GridStyle
+}
+
 export interface AppState {
   grid: GridState
+  head: HeadState
   effects: Effects
   paper: Paper
   export: ExportState

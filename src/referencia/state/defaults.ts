@@ -9,7 +9,7 @@ import type { AppState, Effects, EffectsMode } from '../types'
  * —"siempre es blanco y negro" es parte de lo que son, no una casilla aparte— y
  * Blanco y negro es su propio modo, no un interruptor sobre los otros tres.
  */
-export const EFFECT_MODES: Record<EffectsMode, Omit<Effects, 'mode'>> = {
+export const EFFECT_MODES: Record<EffectsMode, Omit<Effects, 'mode' | 'opacity'>> = {
   original: { bw: false, light: 0, contrast: 0, edges: 0, tones: 0 },
   bw: { bw: true, light: 0, contrast: 0, edges: 0, tones: 0 },
   // La luz arriba y el contraste abajo aplastan la foto a un gris parejo; encima de
@@ -22,6 +22,7 @@ export const EFFECT_MODES: Record<EffectsMode, Omit<Effects, 'mode'>> = {
 export const NEUTRAL_EFFECTS: Effects = {
   mode: 'original',
   ...EFFECT_MODES.original,
+  opacity: 1,
 }
 
 export const DEFAULT_STATE: AppState = {
@@ -34,6 +35,10 @@ export const DEFAULT_STATE: AppState = {
       opacity: 0.75,
       weight: 4,
     },
+  },
+  head: {
+    mode: 'none',
+    style: { color: '#ffffff', opacity: 0.9, weight: 3 },
   },
   effects: NEUTRAL_EFFECTS,
   paper: { id: 'none', w: 21, h: 29.7 },

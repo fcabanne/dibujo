@@ -4,7 +4,9 @@ import { MobileUI, type Tab } from './components/mobile/MobileUI'
 import { Welcome } from './components/Welcome'
 import { Overlay, type Category } from './components/Overlay'
 import { computeLayout } from './domain/geometry'
+import { exportScene } from './export'
 import { useCompact } from './hooks/useCompact'
+import { deliver } from '../shared/deliver'
 import { loadArtwork } from '../shared/imageStore'
 import { DEFAULT_STATE } from './state/defaults'
 import { loadSession, saveSession } from './state/persistence'
@@ -99,9 +101,13 @@ export function App() {
 
   // Una obra nueva abre lo suyo: en escritorio la burbuja de la obra, en el celular
   // su pestaña, con el tamaño real arriba — es lo que sigue después de subirla.
+  /** Cuántos dibujos llegaron en esta visita: cada uno nuevo se cuelga en la pared. */
+  const [arrival, setArrival] = useState(0)
+
   const handleArtworkDropped = useCallback(
     (src: string, aspect: number) => {
       dispatch({ type: 'artwork/replace', src, aspect })
+      setArrival((n) => n + 1)
       if (compact) setTab('obra')
       else setOpen('artwork')
     },
@@ -128,6 +134,16 @@ export function App() {
   }, [])
 
   /**
+   * Descargar la foto del cuadro colgado, con la luz como se está viendo. Va lo
+   * confirmado y no la vista previa: el clic sobre el botón ya no está sobre una
+   * muestra. En el celular sale por la hoja de compartir, que guarda en Fotos.
+   */
+  const handleSave = useCallback(async () => {
+    const output = await exportScene(state, sceneRef.current.parallax ?? { x: 0, y: 0 }, compact)
+    await deliver(output)
+  }, [state, compact])
+
+  /**
    * Sin un dibujo propio va la pantalla de inicio, como en Referencia y la mesa de luz,
    * en el celular y en el escritorio: el dibujo de ejemplo hacía creer que ya había
    * algo cargado. Mientras IndexedDB no contestó no se muestra ninguna de las dos
@@ -143,6 +159,8 @@ export function App() {
       {showCanvas && (
         <Canvas
           state={shown}
+          committed={state}
+          arrival={arrival}
           dispatch={dispatch}
           sceneRef={sceneRef}
           onLayout={handleLayout}
@@ -168,6 +186,7 @@ export function App() {
             freeArea={freeArea}
             onArtwork={handleArtworkDropped}
             onRemove={handleRemove}
+            onSave={handleSave}
           />
         ) : (
           <Overlay
@@ -180,6 +199,7 @@ export function App() {
             open={open}
             onOpenChange={setOpen}
             onRemove={handleRemove}
+            onSave={handleSave}
           />
         ))}
     </div>

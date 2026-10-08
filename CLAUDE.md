@@ -72,6 +72,11 @@ vacía y la cachea. El navegador tira `does not provide an export named 'X'` con
 archivo perfecto en disco, y no se arregla recargando: hay que reiniciar el server.
 Para sobrescribir: escribir a `.tmp` y `mv` encima, o usar la herramienta Edit.
 
+**`npm run deploy` publica la rama en la que estás, entera.** El sitio es uno solo:
+publicar desde una rama atrasada vuelve atrás las herramientas que no tocaste. Por eso
+`deploy.mjs` trae `main` y se niega a publicar si la rama no lo contiene. Lo terminado
+se lleva a `main` (con un PR), y `main` es siempre la versión completa.
+
 **Cada página se compila por separado** (`scripts/build.mjs`). No es capricho: el
 plugin que incrusta todo en un solo `.html` activa `inlineDynamicImports`, y rollup
 rechaza esa opción cuando hay más de una entrada. De a una, cada página conserva la
@@ -89,6 +94,16 @@ transiciones CSS quedan congeladas a mitad de camino y `requestAnimationFrame` s
 suspende, así que las posiciones y opacidades que se midan pueden ser de una
 animación a medio correr. Para medir estado final: desactivar transiciones, o forzar
 cuadros con capturas de pantalla.
+
+**El audio nace con un gesto.** Un `AudioContext` creado antes de que la persona toque
+algo nace suspendido y no suena. Enmarcado lo crea recién en el primer gesto
+(`unlockSound` en `sound/engine.ts`), y hasta entonces `play` no hace nada. El que lo
+escucha es un efecto propio del lienzo, para las dos capas: cuando vivía con los
+manejadores del mouse, el celular no lo despertaba nunca y no sonaba nada. Safari de
+iPhone cuenta como gesto el final del toque, así que se escucha también `touchend`.
+En un iPhone con la llave de silencio puesta, el audio de una página no suena.
+En pruebas automáticas, cargar el dibujo con `setInputFiles` no cuenta como gesto:
+sin un clic del mouse no hay sonidos que contar.
 
 ## Cómo está armada la portada
 
@@ -116,6 +131,15 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/shared/referenceImage.ts` — la foto en dos versiones a la vez: el Blob
   original intacto (lo que se exporta) y una copia liviana rasterizada (lo que se ve).
   Lo usa Referencia, que promete devolver la foto en su tamaño.
+- `src/shared/deliver.ts` — entrega un archivo hecho en el navegador: la hoja de
+  compartir donde existe (en un celular guarda en Fotos), si no la descarga común.
+- `src/shared/loomis/` — la cabeza de Loomis: el detector de caras (`detect.ts`), la
+  pose y la lente (`pose.ts`), el armado de la cabeza (`loomis.ts`) y, encima de todo,
+  `head.ts`: resolver las cabezas de una foto una vez y pintarlas en cualquier
+  rectángulo. Lo usa Referencia, en la pestaña Cabeza y en la cámara. Ver "La cabeza
+  de Loomis".
+- `src/shared/useCamera.ts` — prende una cámara (la de atrás o la de adelante) en un
+  `<video>`, con la linterna donde el teléfono la presta. Lo usan la mesa y la cámara de Referencia.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio. Guarda data
@@ -145,11 +169,16 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/marco/render/` — las capas de la escena, de la pared hacia el espectador. La luz
   viaja como dato entre todas: es lo que hace que el conjunto lea como un objeto y
   no como recortes apilados.
+- `src/marco/gl/` — el cuadro en 3D, con WebGL2: lo que se ve. Ver "El
+  cuadro en 3D".
 - `src/marco/interaction/` — qué parte del cuadro está bajo el puntero, o bajo el dedo.
 - `src/marco/components/` — el lienzo y las dos capas de controles que se apoyan
   encima: la de escritorio (`Overlay` y `hud/`) y la del celular (`mobile/`).
 - `src/marco/hooks/` — `useCompact` decide qué capa va; `useTilt` lee la inclinación
   del teléfono.
+- `src/marco/physics/` — el cuadro como cosa: cuánto pesa, cómo cuelga del clavo y
+  qué hace cuando se lo cambia. Ver "El cuadro tiene cuerpo".
+- `src/marco/sound/` — los sonidos, fabricados en el navegador. Ver "Sonidos".
 
 **En escritorio la UI no tiene barra ni paneles.** Los controles se apoyan sobre la
 parte que editan (en el celular sí hay barra: ver más abajo). Los anchos se arrastran directamente sobre el cuadro.
@@ -159,8 +188,8 @@ Las referencias visuales son Tiny Glade y Outside the Blocks.
 fijos en píxeles: con un margen constante los controles se despegan de su esquina
 apenas se hace zoom.
 
-**Lo que se sumó al render para que se vea más real**, y que ve también el escritorio
-porque es el mismo render:
+**Lo que se sumó al render 2D para que se vea más real.** Es el render de la pared, y
+el del cuadro entero donde no hay WebGL2 (o con `?2d`):
 
 - **El foco cae también sobre el cuadro** (`drawObjectFalloff` en `wall.ts`), no solo
   sobre la pared: unos pocos puntos de caída hacia los bordes lejanos del pozo de luz.
@@ -220,6 +249,148 @@ porque es el mismo render:
   apagado en Safari —en todo iPhone, entonces— y la sombra salía como tres rectángulos
   de borde duro. El respaldo usa `shadowBlur` para la sombra y un achicar-y-agrandar
   para el mate. Chrome sigue por el camino de siempre y da lo mismo que antes.
+
+### El cuadro en 3D
+
+En escritorio y en el celular el cuadro —moldura, passe-partout, obra, vidrio, clips— lo dibuja WebGL2
+(`gl/`) en un lienzo encima del de la pared, que sigue siendo 2D. Lo mueve el mismo
+cuerpo (`physics/`) y lo mira el mismo ojo (`eyeOf`): el render cambia, el resto no.
+
+- **Proyección de ventana** (`VERTEX` en `gl/shaders.ts`): el plano del frente del
+  cuadro cae exactamente sobre los rectángulos del 2D (`composeRects`), y lo que sale
+  hacia el ojo se agranda y se corre como se vería desde ahí. Por eso las burbujas, la
+  cartela, las cotas y lo que se agarra con el mouse no se enteran de cuál de los dos
+  dibuja.
+- **Las mallas se rearman en cada cuadro** (`gl/meshes.ts`): son unos pocos cientos de
+  vértices, y así las medidas que llegan con resorte no piden nada. La moldura es el
+  perfil de `profile.ts` levantado a lo ancho y cortado a 45°; la normal sale de su
+  pendiente, así que la luz cae sobre la forma y no sobre un degradé pintado.
+- **Un solo programa para todo**, y el material por uniforms (`uMode`). Luz física
+  (GGX), el papel y el cartón dejan pasar un poco de luz (`wrap`), y el foco cae hacia
+  los bordes como en el 2D.
+- **Un estudio que se refleja** (`gl/environment.ts`), horneado una vez: la silueta del
+  que mira, una ventana con parantes, una caja de luz y un riel de focos, en un pedazo
+  chico del cuarto, porque un vidrio a metro y medio refleja solo lo que está detrás de
+  quien mira. La pared del cuarto se pinta en el shader con el color elegido. Lo leen
+  el vidrio, el metal y las lacas, más borroso cuanto más rugosos.
+- **Los vidrios** (`GLASS` en `gl/renderer.ts`): el común refleja claro; el antirreflejo
+  refleja poco y borroso y tiene una piel de puntitos —la cáscara de naranja del
+  acrílico—, que se ve donde le pega el reflejo; el mate, la misma piel más marcada y
+  una bruma, y desenfoca la obra poco, que está a milímetros del vidrio.
+- **La madera tiene dos tonos**: la baldosa de `wood.ts` dice dónde cae el anillo y el
+  shader pone la madera temprana más clara y amarilla y la tardía más oscura y roja, con
+  el promedio en el color de la muestra. Cada listón tiene su tono, el tono va y viene a
+  lo largo, la fibra brilla a lo largo de la veta y se mueve con el ojo, el roble tiene
+  poro y "brillante" y "satinado" llevan una laca encima.
+- **La sombra en la pared también es del 3D** (`shadowOf` y `wallShadow`): el cuadro
+  —ya con su pose— proyectado desde el foco sobre el plano de la pared, lo que barre
+  entre su cara de atrás y la de adelante. Del lado del foco no hay nada, la penumbra
+  se abre con la separación de la pared y es más densa pegada al canto. El ángulo se
+  aplana (`SHADOW_RAKE`): proyectada tal cual desde un foco tan alto caía lejos y se
+  leía despegada.
+- **Las muestras de moldura del abanico las pinta el mismo 3D** (`gl/chips.ts`): un
+  listón de arriba en un contexto aparte, compartido por todas. Lo que se elige es lo
+  que se ve enmarcado.
+- **El fundido de materiales tiene su capa** (`.fade-layer`), encima de los dos
+  lienzos: pintado en el de la pared, el 3D lo tapaba. Por eso el contexto WebGL
+  conserva su imagen (`preserveDrawingBuffer`), para poder copiarla.
+- **Si no hay 3D, hay 2D**: sin WebGL2, si no compila, o si el navegador pierde el
+  contexto, el lienzo de siempre dibuja el cuadro entero. Para comparar: `?2d` fuerza
+  el plano, `?gl=split` muestra mitad y mitad, y con `?debug` la tecla G pasa de uno a
+  otro.
+- **En el celular también**, con tres diferencias:
+  - El lienzo GL va a densidad 1,5: casi no se distingue de 2 y es la mitad de píxeles que sombrear.
+  - Se pinta solo cuando el 2D se pinta (`paintedRef`), así que quieto no gasta nada.
+  - La inclinación del teléfono y el dedo sobre la pared mueven el ojo, como el mouse.
+- **Las muestras del celular salen del mismo 3D:** la tira de colores mira el material de frente, con un listón plano y la muestra en el medio de la banda. Las tarjetas de perfil miran el listón de abajo (`look` en `paintGlChip`).
+
+### El cuadro tiene cuerpo
+
+El estado guarda la verdad —las medidas redondeadas que se encargan—, y el lienzo
+dibuja un **cuerpo** (`physics/body.ts`) que la persigue con resortes
+(`stepSpring` en `shared/motion.ts`). Nada del cuadro cambia de golpe: crece hasta su
+medida, se asienta, se balancea y se queda. Lo que se ve y lo que se encarga no se
+desencuentran porque pasan por la misma cuenta (`Dims` y `layoutFromDims` en
+`geometry.ts`), y la cartela recibe siempre las medidas de verdad. Es rígido: madera,
+vidrio y cartón no se estiran ni se aplastan. El encanto sale del peso, del sonido y
+de lo de alrededor, no de deformarlo.
+
+- **Pesa lo que pesaría** (`mass.ts`): densidades reales, la madera según el color como
+  la veta, el metal como perfil hueco, y el vidrio, que es lo que más pesa. El peso no
+  decide cuánto tarda en balancearse —eso es la forma, como en todo péndulo— sino
+  cuánto cuesta moverlo y con cuánta calma llega.
+- **Cuelga de un clavo** (`pendulum.ts`), un poco por encima del centro. Lo frenan el
+  aire y, sobre todo, el roce del alambre en el clavo: por eso se detiene en seco en
+  vez de temblar para siempre. Ya casi quieto, el alambre lo deja exactamente
+  nivelado: un cuadro torcido no sirve para juzgar nada.
+- **Las bandas tienen muescas** (`interaction/drag.ts`). Cerca de cada medio centímetro
+  la banda se queda pegada; después se estira hacia el siguiente y al cruzar la mitad
+  salta, se pasa un pelo y vuelve, con un clic. Pasado el máximo resiste como un
+  elástico. La cota late con cada muesca, que es lo que se ve aunque a escala normal
+  la banda se mueva pocos píxeles. El arrastre despacha solo cuando la medida
+  redondeada cambia.
+- **Agarrar una banda lo aprieta contra la pared**: la cuña de la sombra se cierra —del
+  todo arriba, casi nada abajo, donde ya apoya—. Al soltarlo, el alambre lo devuelve
+  con un rebote y un vaivén chico del lado de donde se tiraba.
+- **Elegir algo lo asienta** (`settle` y `sway`): baja si ganó peso, sube si perdió, y
+  vuelve a su lugar; y un vaivén leve del lado de la burbuja que se usó. Sacar el
+  vidrio se nota; un color nuevo, apenas. La pared no es del cuadro: no lo mueve.
+  Qué cambió se deduce comparando lo que se ve con lo confirmado
+  (`physics/reactions.ts`): las muestras no saben nada de pesos ni de sonidos.
+- **Girar la obra es descolgarla, girarla y volver a colgarla**: el cuadro se despega
+  de la pared, gira con peso —el primer cuadro es idéntico al anterior— y vuelve a
+  apoyar. El encuadre sigue a la caja del cuadro girado (`turnedBox`).
+- **Un dibujo nuevo se cuelga** (`hang`): aparece más arriba y despegado, el alambre se
+  engancha en el clavo y el cuadro se apoya contra la pared. Recargar no lo vuelve a
+  colgar: lo cuenta `arrival`, en `App`.
+- **Se puede empujar**, agarrándolo por la obra: se inclina sobre el clavo hacia la
+  mano y al soltarlo se balancea. Es un juguete, no una función.
+- **Mientras no está derecho**, el aro, el hilo y las cotas se apartan (`tilted`): un
+  aro derecho sobre un cuadro torcido mentiría. La cartela y las burbujas lo siguen con
+  su propio resorte, un pelo atrasadas, como cosas aparte.
+- **El render se banca la pose** (`render/pose.ts`): las capas del objeto se dibujan
+  transformadas, y lo que es del cuarto —el reflejo del vidrio, la caída del foco, la
+  sombra de los ganchitos— queda en el espacio de la pantalla. El puntero se lleva al
+  espacio del cuadro antes de preguntar qué hay debajo (`toObject`).
+- **En el celular, el mismo cuerpo**: se asienta, se balancea, gira con peso y se
+  cuelga, y suena igual que en la compu: el dedo arrastrando una banda agarra, hace
+  clic en cada muesca y suelta como el mouse, y el deslizador del cajón suena a muesca,
+  con el tono del ancho (`width` en `Reaction`), no a moldura nueva. Lo que no hay es
+  empujarlo con el dedo —el dedo sobre la obra abre la obra—. En cambio, **cuelga a
+  plomo** (`plumb` en `body.ts`): si el teléfono gira en su plano, el cuadro sigue
+  derecho respecto del mundo y en la pantalla se lo ve girar al revés, con un resorte
+  que lo hace llegar con peso. Sigue un décimo del giro (`ROLL_FOLLOW`), hasta 2°:
+  entero, y aun un cuarto, era demasiado. Sale del acelerómetro (`roll` en `useTilt`), sin recentrar
+  —la plomada es absoluta—, y se suelta con el teléfono acostado.
+  Antes cada movimiento del teléfono lo empujaba y se sacudía todo el tiempo. El
+  lienzo sigue pintando mientras el cuerpo se mueve y se duerme cuando se queda quieto.
+- **Con `prefers-reduced-motion` todo llega en el acto**, en las dos capas. El sonido
+  sí suena: no es movimiento.
+
+**La luz está quieta; lo que se mueve es el ojo.** El foco está atornillado al cuarto
+(`REST_LIGHT`): el puntero —o la inclinación del teléfono— corre el ojo (`eyeOf`), y
+con él los brillos de la moldura, el canto, el reflejo del vidrio y la pared de atrás.
+El cuadro queda quieto en pantalla y la pared y la sombra se corren unos píxeles
+detrás de él (`wallShift`): entre el canto y la sombra se abre o se cierra una
+rendija, que es lo que dice que el cuadro cuelga y no está pegado.
+
+### Sonidos
+
+Se fabrican en el navegador, sin archivos (`sound/synth.ts`): cada uno es una receta
+(`sound/recipes.ts`). Todo suena a madera —la muesca, agarrar, elegir una moldura—,
+sea del material que sea: que el metal sonara a metal se probó y distraía; el sonido
+acompaña el gesto, no describe el material. La madera no son tonos puros, que suenan a
+xilofón de juguete: es un golpe de ruido que hace resonar unas pocas frecuencias del
+cuerpo (`knock`), con varias versiones que se turnan para que dos clics nunca sean el
+mismo. El vidrio es un golpecito bajo de la misma familia: como campanita se oía como
+una notificación. Todo muy bajo, con un pelo de sala, y el motor (`sound/engine.ts`)
+cuida que una ráfaga no lastime. Se calla con el parlante al lado de "Dejame
+sugerencias" —en el celular, en la pastilla de arriba, al lado de descargar—, y la
+elección se recuerda (`cuadros:sonido`).
+
+Para afinar de oído: `MASTER` en `engine.ts` sube o baja todo junto, y cada receta
+tiene su nivel. Con `?debug` en la dirección, `window.__marco` expone la escena, el
+cuerpo y cada sonido que se pidió; con `?perf`, además, los tiempos de cuadro.
 
 ### En escritorio
 
@@ -298,6 +469,21 @@ aplica al salir del campo y no en cada tecla (acotar en cada tecla hace imposibl
 **Volver abajo a la izquierda y "Dejame sugerencias" abajo a la derecha** (`.hud-back`,
 `.hud-link`), como en la mesa de luz y en Referencia, cada uno en su pastilla. Aparecen
 con los controles y se van con ellos. Los abanicos las esquivan.
+
+**Descargar va arriba a la derecha, solo, en su pastilla** (`.hud-save` en escritorio,
+`.m-save` en el celular). Abajo no entra: en el celular, al lado de volver y las cinco
+pestañas, se sale de un teléfono de 390 px. Baja la foto del cuadro colgado
+(`src/marco/export.ts`) sin preguntar nada: JPG, 9:16 a 1440×2560 en el celular (para
+una historia o un reel) y 16:9 a 2560×1440 en la compu. No es una captura: la escena se
+vuelve a pintar con `renderScene` en un lienzo aparte, sin controles, sin zoom y sin
+cartela, con el cuadro entero al medio. La luz sí es la de la pantalla (el paralaje del
+momento, que el lienzo publica en `SceneSnapshot.parallax`). El lienzo lógico tiene
+tamaño de pantalla y se agranda con la densidad, como con `devicePixelRatio`: lo que el
+render mide en píxeles —desenfoques, trazos— sale igual que en la app. En el celular el
+cuadro esquiva el botón (`FreeArea.avoid`): baja lo justo, y de a poco, solo si su
+esquina lo pisaría. Acostado y con un cajón abierto, el botón se va. Se entrega con
+`deliver` (`shared/deliver.ts`, el mismo de Referencia): en el celular, la hoja de
+compartir, que guarda directo en Fotos.
 
 **Sin dibujo, la pantalla de inicio** (`components/Welcome.tsx`), en el escritorio igual
 que en el celular. El lienzo y los controles recién existen con un dibujo propio, y se
@@ -444,7 +630,8 @@ nada; el dedo sobre la pared sigue corriendo la luz.
 
 **Un material nuevo se funde sobre el anterior** en vez de saltar (`looksKey` y
 `snapshot` en `Canvas.tsx`). Solo lo que cambia sin mover nada de lugar —color,
-acabado, perfil, vidrio, pared—: un cambio de medida con fundido se vería doble.
+acabado, perfil, vidrio, pared—: un cambio de medida con fundido se vería doble. En
+escritorio también, más corto: acompaña al puntero que pasa por las muestras.
 
 **El lienzo no pinta si nada cambió** (`paintedRef`). En escritorio el loop pinta
 siempre; en un teléfono eso es batería gastada en una imagen quieta. Compara contra
@@ -560,6 +747,39 @@ cierra. `DownloadDialog` lo maneja a mano, y escucha `close` con
 React lo entrega de forma despareja. Quedarse encerrado en un modal es de las peores
 cosas que puede hacer una interfaz: no confiar en el comportamiento nativo acá.
 
+**La pestaña Cabeza dibuja la cabeza de Loomis encima de la cara**, con el giro y la
+perspectiva de la foto. Es la misma idea que la grilla —líneas de construcción sobre la
+referencia— y se porta igual: arranca en "Ninguna" (`state.head.mode`), tiene color,
+espesor y opacidad con la misma escala relativa (`state.head.style`, un `GridStyle`), y
+pasa por `paintScene`, así que sale en la pantalla, en el export y en la mesa de luz.
+Va encima de la grilla, y **con su mismo trazo**: liso, sin halo, y lo que queda del
+otro lado de la bola como la subdivisión, a mitad de opacidad y de grosor (`drawLoomis`).
+
+- **El detector se baja recién al elegir Loomis** (`useHeads`): unos quince megas que
+  quien solo quiere la grilla no paga. Corre una vez por foto sobre la copia liviana, y
+  lo encontrado se queda. En la versión suelta (`file://`) no hay de dónde bajarlo y la
+  pestaña no aparece (`canDetect`).
+- **Las cabezas se resuelven en los píxeles de la copia liviana** (`HeadScene`) y se
+  pintan en cualquier rectángulo con una escala uniforme: como la grilla en fracciones,
+  una sola cuenta para todos los destinos.
+- **La lente no se elige**: es la que anotó la cámara en el EXIF del original o, si no
+  anotó, la estimada mirando las caras. Hubo un slider para corregirla a mano y se
+  sacó: con la cara bien detectada no hacía falta, y era una perilla que había que
+  explicar.
+
+**La foto también se saca con la cámara** (`CameraCapture`), desde la bienvenida o la
+pestaña Foto: un visor a pantalla completa con cerrar, dar vuelta, flash donde el
+teléfono lo presta, y "Sacar foto". Si la cabeza está prendida, el Loomis va encima en
+vivo para encuadrar la pose: la detección corre en cada cuadro en un
+`requestAnimationFrame`, fuera del estado de React, con el detector de video, y la lente
+se estima con la primera cara. La de adelante se ve y se saca en espejo. La foto entra
+como cualquier subida (`handleFile`), a la resolución de la cámara. En la versión
+suelta, o sin cámara, no se ofrece (`canUseCamera`).
+
+**Con la foto muy apagada y líneas claras, un aviso propone pasarlas a negro**
+(`LinesHint`): arriba y al medio de la foto, chico, con la X para cerrarlo. Sugiere y no
+decide —el color es de quien dibuja—, y cerrado no vuelve en la sesión.
+
 **El margen de seguridad es una constante** (`SAFE_MARGIN`), no un control: toda
 impresora se come unos milímetros del borde. Por la misma razón la hoja se orienta
 sola según la foto — una foto apaisada sobre un A4 parado desperdicia media hoja y
@@ -578,7 +798,12 @@ mismo número saldría minúsculo con ocho divisiones y descomunal con dos.
 
 **Los ajustes de imagen son cuatro modos cerrados**, no cinco perillas (`EffectsMode`
 y `EFFECT_MODES`). Cada modo fija los valores que no le importan y deja a la vista
-solo los que sí: Original ninguna, Blanco y negro una, Bordes una, Facetado tres. Las
+solo los que sí: Original ninguna, Blanco y negro una, Bordes una, Facetado tres. Y todos,
+al final, **cuánto se ve la foto** (`effects.opacity`): la foto se funde contra papel
+blanco, como debajo de una hoja de calco, para que la grilla y la cabeza se lean solas.
+Es lo único de `effects` que el modo no fija —cambiar de modo la conserva— y lo único que
+no pasa por el shader: se aplica al pintar (`paintPhoto`), así que arrastrarla no
+recalcula la foto. Sale en el export y en la mesa. Las
 perillas sueltas eran honestas pero pedían entender qué es una curva y qué es un
 sobel, y acá lo que se elige es cómo mirar la referencia. **`bw` ya no es
 independiente del modo** — antes sobrevivía a cambiar de modo a propósito, pero
@@ -596,9 +821,9 @@ grandes, no un menú que se abre encima. Ese picker **sobrevive a cambiar de
 pestaña** — si quedó en "Ninguna", o a mitad de elegir un modo de Ajustes, volver a
 esa pestaña lo encuentra como se dejó. Lo único que lo cierra es una foto nueva
 (`Panel.tsx`, el `useEffect` que también abre la pestaña de grilla). Y un modo sin nada
-que configurar —"Ninguna" en la grilla, "Original" en Ajustes— deja su picker
-abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fila
-sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
+que configurar —"Ninguna" en la grilla o en la cabeza— deja su picker abierto siempre
+(`gridPicker` y `headPicker`): la vista cerrada sería una fila sola con un vacío abajo.
+"Original" en Ajustes era uno de estos hasta que tuvo la opacidad de la foto.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz y
 Enmarcado también**. No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y
@@ -827,3 +1052,40 @@ pantalla. Parece que anda hasta que se mueve el papel y no pasa nada, así que
 
 La foto se guarda como las demás, en IndexedDB bajo su propia clave (`'mesa'`), y la
 opacidad y las esquinas en localStorage.
+
+## La cabeza de Loomis
+
+`src/shared/loomis/`. Dibuja la cabeza de Loomis encima de una cara, girada como la
+cabeza y en la perspectiva de la lente. Hoy la usa Referencia (la pestaña Cabeza y el
+visor de la cámara).
+
+Empezó como una herramienta aparte, **Cabeza**, y se fusionó con Referencia: la grilla
+y la cabeza son lo mismo para quien dibuja, líneas de construcción sobre la referencia.
+`cabeza/` quedó solo como redirección (`public/cabeza/index.html`) para los links viejos.
+
+- `detect.ts` — MediaPipe Face Landmarker, **en el procesador**: en Android el camino
+  de la GPU devolvía caras corridas o ninguna, sin dar error. El modelo
+  (`public/caras/face_landmarker.task`) y el WebAssembly se sirven desde el mismo
+  sitio; el WebAssembly lo copia `scripts/mediapipe.mjs` desde node_modules antes de
+  `dev` y de cada build, y no se commitea. Un detector por modo (foto y video).
+- `pose.ts` — la pose sale de calzar la cara canónica (`canonical.ts`, los 468 puntos
+  de MediaPipe en centímetros) sobre los puntos detectados, con Gauss-Newton y la lente
+  que corresponda. La de MediaPipe es solo el punto de partida: la calcula con una
+  lente fija. Si el ajuste empeora o deja la cabeza detrás de la cámara, vuelve a ella.
+- **La lente**: la que anotó la cámara en el EXIF (`exif.ts`, la focal equivalente a
+  35 mm) si está; si no, se estima probando de 14 a 200 mm y quedándose con la que
+  mejor calza (`fitLens`). Anda en fotos de cerca —en una selfie dio lo mismo que el
+  EXIF— y de lejos casi no discrimina, pero ahí la perspectiva tampoco se nota. No se
+  elige a mano.
+- `loomis.ts` — la cabeza armada una vez sobre la cara canónica: los tercios salen de
+  las cejas (punto 9), la base de la nariz (2) y el mentón (152). La bola tiene radio
+  de un tercio y medio, con la frente sobre su superficie; los costados la cortan con
+  un círculo de un tercio, y la oreja va entre la línea de las cejas y la de la nariz.
+  Debajo de la nariz la bola no se dibuja: la tapan la cara y la mandíbula. Lo que
+  queda del otro lado va como la subdivisión de la grilla, a mitad de opacidad y de
+  grosor.
+- `head.ts` — `solveHeads` resuelve las cabezas de una imagen una vez, en sus píxeles;
+  `paintHeads` las pinta en cualquier rectángulo con una escala uniforme.
+- **Para revisar el calce**, lo que sirvió fue dibujar los puntos detectados y los de la
+  cara modelo proyectada con la pose (`project` sobre `CANONICAL`). Si coinciden y algo
+  se ve mal, el problema está en `loomis.ts`, no en la detección.
