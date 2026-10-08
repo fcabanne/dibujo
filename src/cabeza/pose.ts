@@ -96,6 +96,7 @@ export function solvePose(
   let t: Vec3 = [...start.t]
   const n = CANONICAL.length / 3
   let error = Infinity
+  let first = Infinity
 
   for (let it = 0; it < iterations; it++) {
     // JᵀJ (6×6) y Jᵀr: el sistema normal, armado punto por punto.
@@ -148,6 +149,7 @@ export function solvePose(
     }
 
     error = Math.sqrt(sum / n)
+    if (it === 0) first = error
     // Un poco de amortiguación (Levenberg): sin ella, de lejos, z se dispara.
     for (let r = 0; r < 6; r++) A[r * 7] *= 1.001
     const step = solve6(A, b)
@@ -159,6 +161,11 @@ export function solvePose(
     if (Math.hypot(...step) < 1e-6) break
   }
 
+  // Si el ajuste se fue de mambo —la cabeza detrás de la cámara, o peor que al
+  // empezar—, mejor el punto de partida que una cabeza cruzando la pantalla.
+  if (!(t[2] > 0) || !Number.isFinite(error) || error > first * 1.5) {
+    return { pose: start, error: first }
+  }
   return { pose: { R, t }, error }
 }
 

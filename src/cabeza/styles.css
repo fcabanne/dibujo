@@ -16,7 +16,6 @@ body,
 body {
   margin: 0;
   overflow: hidden;
-  overscroll-behavior: none;
   background: var(--ds-background);
 }
 
@@ -41,10 +40,22 @@ body {
   animation: ds-fade var(--ds-dur-slow) var(--ds-ease);
 }
 
-/* Lo que está pasando con el detector, arriba y al medio. */
+/* Recargar, arriba a la derecha. */
+.topbar {
+  position: absolute;
+  top: calc(var(--ds-space-4) + env(safe-area-inset-top));
+  right: var(--ds-space-4);
+  z-index: 2;
+}
+
+.topbar .ds-button {
+  box-shadow: 0 6px 18px rgb(16 16 16 / 0.22);
+}
+
+/* Lo que está pasando con el detector, arriba y al medio, debajo de recargar. */
 .status {
   position: absolute;
-  top: calc(var(--ds-space-5) + env(safe-area-inset-top));
+  top: calc(var(--ds-space-4) + 64px + env(safe-area-inset-top));
   left: 50%;
   z-index: 2;
   margin: 0;

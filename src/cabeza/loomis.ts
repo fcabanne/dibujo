@@ -209,13 +209,16 @@ export function drawLoomis(
     const [u, v] = project(cam, pose, p)
     return [u * scale, v * scale] as const
   }
+  // Un punto pegado o detrás de la cámara se proyecta al infinito: no se dibuja.
+  const inFront = (p: Vec3) => project(cam, pose, p)[2] > 1
+  if (!inFront(CENTER)) return
 
   // Los costados, apenas velados cuando se ven: es lo que hace leer el corte como un plano.
   ctx.save()
   ctx.fillStyle = style.color
   ctx.globalAlpha = 0.14
   for (const plane of HEAD.planes) {
-    if (!facing(plane[0])) continue
+    if (!facing(plane[0]) || !plane.every((m) => inFront(m.p))) continue
     ctx.beginPath()
     plane.forEach((m, i) => {
       const [x, y] = toScreen(m.p)
@@ -244,7 +247,7 @@ export function drawLoomis(
       for (const line of lines) {
         let open = false
         for (let i = 0; i < line.length; i++) {
-          const show = facing(line[i]) === visible
+          const show = facing(line[i]) === visible && inFront(line[i].p)
           const [x, y] = toScreen(line[i].p)
           if (show && open) ctx.lineTo(x, y)
           else if (show) {

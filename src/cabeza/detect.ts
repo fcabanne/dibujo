@@ -22,18 +22,18 @@ function load(): Promise<FaceLandmarker> {
   landmarker ??= (async () => {
     const base = new URL('./', window.location.href)
     const fileset = await FilesetResolver.forVisionTasks(new URL('wasm', base).href)
-    const options = (delegate: 'GPU' | 'CPU') => ({
-      baseOptions: { modelAssetPath: new URL('face_landmarker.task', base).href, delegate },
-      runningMode: 'IMAGE' as const,
+    // En el procesador y no en la placa: en celulares Android el camino de la GPU
+    // devolvía caras corridas o ninguna, sin dar error. Para una foto sola el
+    // procesador tarda una fracción de segundo, que no se nota.
+    return await FaceLandmarker.createFromOptions(fileset, {
+      baseOptions: {
+        modelAssetPath: new URL('face_landmarker.task', base).href,
+        delegate: 'CPU',
+      },
+      runningMode: 'IMAGE',
       numFaces: 4,
       outputFacialTransformationMatrixes: true,
     })
-    try {
-      return await FaceLandmarker.createFromOptions(fileset, options('GPU'))
-    } catch {
-      // Sin WebGL que le sirva, en el procesador: más lento, pero anda.
-      return await FaceLandmarker.createFromOptions(fileset, options('CPU'))
-    }
   })()
   // Si falló, que el próximo intento empiece de cero y no herede el error.
   landmarker.catch(() => (landmarker = null))

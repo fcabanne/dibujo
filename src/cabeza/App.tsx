@@ -82,6 +82,8 @@ export function App() {
     if (!photo) return
     let cancelled = false
     setStatus('looking')
+    // Lo de la foto anterior se va enseguida: nada de cabezas viejas sobre la nueva.
+    setImage(null)
     setFaces([])
     setGuessedLens(null)
     const img = new Image()
@@ -171,6 +173,14 @@ export function App() {
       {photo ? (
         <>
           {image && <Stage image={image} poses={poses} cam={{ ...baseCam, f: focalPx(lens, width, height) }} />}
+
+          {/* Recargar la página entera: en el celular no hay otra forma a mano de
+              traer la última versión, ni de empezar de cero si algo se trabó. */}
+          <div className="topbar">
+            <Button variant="quiet" onClick={() => window.location.reload()}>
+              {copy.cabeza.reload}
+            </Button>
+          </div>
 
           {message && <p className="pill status">{message}</p>}
 

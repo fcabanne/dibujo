@@ -161,6 +161,7 @@
     "intro": "Subí una foto de una persona, o sacala ahora, y te dibujo encima la cabeza de Loomis con el giro y la perspectiva de la foto.",
     "hint": "Anda mejor con la cara bien a la vista. La foto no sale de tu celu.",
     "change": "Cambiar foto",
+    "reload": "Recargar",
     "lens": "Lente",
     "lensValue": "{n} mm",
     "lensCamera": "{n} mm · de la cámara",
