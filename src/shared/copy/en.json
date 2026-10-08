@@ -157,7 +157,7 @@
 
   "cabeza": {
     "name": "Head",
-    "intro": "Upload a photo of a person or use the camera, and I'll draw the Loomis head over it with the photo's turn and perspective. Nothing leaves your phone.",
+    "intro": "This tool lets you lay a Loomis-style head over a photo or over the camera.",
     "useCamera": "Use the camera",
     "photo": "Photo",
     "camera": "Camera",

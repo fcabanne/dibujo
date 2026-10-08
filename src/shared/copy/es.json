@@ -157,7 +157,7 @@
 
   "cabeza": {
     "name": "Cabeza",
-    "intro": "Subi una foto de una persona o usa la camara, y te dibujo encima la cabeza de Loomis con el giro y la perspectiva de la foto. Nada sale de tu celu.",
+    "intro": "Esta tool te permite superponer una cabeza tipo Loomis sobre una foto o usando la camara.",
     "useCamera": "Usar la camara",
     "photo": "Foto",
     "camera": "Camara",
