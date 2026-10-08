@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { build } from 'vite'
+import './mediapipe.mjs'
 
 /**
  * Compila cada página por separado.
@@ -12,7 +13,7 @@ import { build } from 'vite'
  *
  * Para sumar una herramienta: crear su `<nombre>/index.html` y agregarla acá.
  */
-const PAGES = ['index.html', 'marco/index.html', 'referencia/index.html', 'mesa/index.html']
+const PAGES = ['index.html', 'marco/index.html', 'referencia/index.html', 'mesa/index.html', 'cabeza/index.html']
 
 const root = process.cwd()
 

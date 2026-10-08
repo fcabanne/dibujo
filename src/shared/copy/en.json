@@ -156,6 +156,23 @@
     }
   },
 
+  "cabeza": {
+    "name": "Head",
+    "intro": "Upload a photo of a person, or take one now, and I'll draw the Loomis head over it with the photo's turn and perspective.",
+    "hint": "Works best with the face clearly in view. The photo never leaves your phone.",
+    "change": "Change photo",
+    "lens": "Lens",
+    "lensValue": "{n} mm",
+    "lensCamera": "{n} mm · from the camera",
+    "lensGuess": "{n} mm · estimated",
+    "reset": "Back to the {source} lens",
+    "fromCamera": "camera's",
+    "estimated": "estimated",
+    "looking": "Looking for the face…",
+    "noFace": "I couldn't find a face in this photo.",
+    "failed": "The face detector couldn't load."
+  },
+
   "marco": {
     "name": "Framing",
     "tabs": {
