@@ -40,6 +40,8 @@ export {
   FlashlightIcon,
   SpeakerIcon,
   SpeakerOffIcon,
+  CameraIcon,
+  FlipCameraIcon,
   ChevronDownIcon,
   ProportionalIcon,
   SquareIcon,

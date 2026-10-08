@@ -1,4 +1,4 @@
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision'
+import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult } from '@mediapipe/tasks-vision'
 import { fromMediaPipe, type Landmarks, type Pose } from './pose'
 
 /**
@@ -10,53 +10,87 @@ import { fromMediaPipe, type Landmarks, type Pose } from './pose'
  */
 
 export interface DetectedFace {
-  /** Los 468 puntos de la malla, en píxeles de la foto. */
+  /** Los 468 puntos de la malla, en píxeles de la imagen. */
   points: Landmarks
   /** La pose que estimó MediaPipe con su lente fija: el punto de partida. */
   start: Pose
 }
 
-let landmarker: Promise<FaceLandmarker> | null = null
+type Mode = 'IMAGE' | 'VIDEO'
 
-function load(): Promise<FaceLandmarker> {
-  landmarker ??= (async () => {
+/**
+ * Uno por modo. MediaPipe deja cambiar de modo sobre la marcha, pero el de video
+ * arrastra lo que vio en el cuadro anterior para seguir la cara: mezclarlos es pedir
+ * que una foto herede la cara del video.
+ */
+const landmarkers: Partial<Record<Mode, Promise<FaceLandmarker>>> = {}
+
+function load(mode: Mode): Promise<FaceLandmarker> {
+  const cached = landmarkers[mode]
+  if (cached) return cached
+  const created = (async () => {
     const base = new URL('./', window.location.href)
     const fileset = await FilesetResolver.forVisionTasks(new URL('wasm', base).href)
     // En el procesador y no en la placa: en celulares Android el camino de la GPU
-    // devolvía caras corridas o ninguna, sin dar error. Para una foto sola el
-    // procesador tarda una fracción de segundo, que no se nota.
+    // devolvía caras corridas o ninguna, sin dar error. Para una foto el procesador
+    // tarda una fracción de segundo; en video da unos quince cuadros por segundo.
     return await FaceLandmarker.createFromOptions(fileset, {
       baseOptions: {
         modelAssetPath: new URL('face_landmarker.task', base).href,
         delegate: 'CPU',
       },
-      runningMode: 'IMAGE',
-      numFaces: 4,
+      runningMode: mode,
+      numFaces: mode === 'IMAGE' ? 4 : 1,
       outputFacialTransformationMatrixes: true,
     })
   })()
+  landmarkers[mode] = created
   // Si falló, que el próximo intento empiece de cero y no herede el error.
-  landmarker.catch(() => (landmarker = null))
-  return landmarker
+  created.catch(() => delete landmarkers[mode])
+  return created
 }
 
 /** Empezar a bajar el modelo antes de que haga falta: pesa unos megas. */
 export function preload() {
-  void load().catch(() => {})
+  void load('IMAGE').catch(() => {})
+}
+
+/** Prepara el detector de video; mientras no esté, `detectFrame` devuelve null. */
+export function prepareVideo(): Promise<unknown> {
+  return load('VIDEO')
 }
 
 export async function detectFaces(image: HTMLImageElement): Promise<DetectedFace[]> {
-  const detector = await load()
-  const result = detector.detect(image)
-  const w = image.naturalWidth
-  const h = image.naturalHeight
-  return result.faceLandmarks.map((marks, i) => {
+  const detector = await load('IMAGE')
+  return toFaces(detector.detect(image), image.naturalWidth, image.naturalHeight)
+}
+
+let videoDetector: FaceLandmarker | null = null
+
+/**
+ * Las caras de un cuadro de video. Sincrónico, para llamarlo en cada cuadro: si el
+ * detector todavía no cargó, null.
+ */
+export function detectFrame(video: HTMLVideoElement, time: number): DetectedFace[] | null {
+  if (!videoDetector) {
+    void landmarkers.VIDEO?.then((d) => (videoDetector = d))
+    return null
+  }
+  return toFaces(videoDetector.detectForVideo(video, time), video.videoWidth, video.videoHeight)
+}
+
+function toFaces(result: FaceLandmarkerResult, w: number, h: number): DetectedFace[] {
+  const faces: DetectedFace[] = []
+  result.faceLandmarks.forEach((marks, i) => {
+    const matrix = result.facialTransformationMatrixes[i]
+    if (!matrix || marks.length < 468) return
     // Los últimos diez son los iris: la cara canónica tiene 468.
     const points = new Float64Array(468 * 2)
     for (let k = 0; k < 468; k++) {
       points[k * 2] = marks[k].x * w
       points[k * 2 + 1] = marks[k].y * h
     }
-    return { points, start: fromMediaPipe(result.facialTransformationMatrixes[i].data) }
+    faces.push({ points, start: fromMediaPipe(matrix.data) })
   })
+  return faces
 }

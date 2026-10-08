@@ -37,6 +37,7 @@ index.html      portada, el bifurcador hacia las herramientas
 marco/          probador de enmarcado
 referencia/     preparador de la foto de referencia
 mesa/           la mesa de luz
+cabeza/         la cabeza de Loomis sobre una foto (prueba de concepto, sin portada)
 src/
   portada/      estilos de la portada
   shared/
@@ -46,6 +47,7 @@ src/
   marco/        el probador de enmarcado
   referencia/   el preparador de la foto de referencia
   mesa/         la mesa de luz
+  cabeza/       la cabeza de Loomis
 ```
 
 **Para sumar una herramienta:** crear `<nombre>/index.html`, su carpeta en `src/`, y
@@ -128,6 +130,8 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   Lo usa Referencia, que promete devolver la foto en su tamaño.
 - `src/shared/deliver.ts` — entrega un archivo hecho en el navegador: la hoja de
   compartir donde existe (en un celular guarda en Fotos), si no la descarga común.
+- `src/shared/useCamera.ts` — prende una cámara (la de atrás o la de adelante) en un
+  `<video>`, con la linterna donde el teléfono la presta. Lo usan la mesa y Cabeza.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio. Guarda data
@@ -1002,3 +1006,43 @@ pantalla. Parece que anda hasta que se mueve el papel y no pasa nada, así que
 
 La foto se guarda como las demás, en IndexedDB bajo su propia clave (`'mesa'`), y la
 opacidad y las esquinas en localStorage.
+
+## Cómo está armada Cabeza
+
+**Prueba de concepto**: publicada en `cabeza/` pero todavía **no está en la portada**, y
+lleva `noindex`. Se llega con el link.
+
+Dibuja la cabeza de Loomis encima de una foto o de la cámara en vivo, girada como la
+cabeza y en la perspectiva de la lente.
+
+- `detect.ts` — MediaPipe Face Landmarker, **en el procesador**: en Android el camino
+  de la GPU devolvía caras corridas o ninguna, sin dar error. El modelo
+  (`public/cabeza/face_landmarker.task`) y el WebAssembly se sirven desde el mismo
+  sitio; el WebAssembly lo copia `scripts/mediapipe.mjs` desde node_modules antes de
+  `dev` y de cada build, y no se commitea. Un detector por modo (foto y video).
+- `pose.ts` — la pose sale de calzar la cara canónica (`canonical.ts`, los 468 puntos
+  de MediaPipe en centímetros) sobre los puntos detectados, con Gauss-Newton y la lente
+  que corresponda. La de MediaPipe es solo el punto de partida: la calcula con una
+  lente fija. Si el ajuste empeora o deja la cabeza detrás de la cámara, vuelve a ella.
+- **La lente**: la que anotó la cámara en el EXIF (`exif.ts`, la focal equivalente a
+  35 mm) si está; si no, se estima probando de 14 a 200 mm y quedándose con la que
+  mejor calza (`fitLens`). Anda en fotos de cerca —en una selfie dio lo mismo que el
+  EXIF— y de lejos casi no discrimina, pero ahí la perspectiva tampoco se nota. Se
+  corrige a mano en el cajón de la foto.
+- `loomis.ts` — la cabeza armada una vez sobre la cara canónica: los tercios salen de
+  las cejas (punto 9), la base de la nariz (2) y el mentón (152). La bola tiene radio
+  de un tercio y medio, con la frente sobre su superficie; los costados la cortan con
+  un círculo de un tercio, y la oreja va entre la línea de las cejas y la de la nariz.
+  Debajo de la nariz la bola no se dibuja: la tapan la cara y la mandíbula. Lo que
+  queda del otro lado va punteado.
+- **Una foto nueva recarga la página** (`replacePhoto`): se guarda, se recarga y la
+  página la levanta. Así nada de la foto anterior queda a medio camino.
+- **Abajo**: volver; la foto (abre el cajón con la miniatura y la lente), la cámara y
+  cuánto se ve la imagen de abajo. Con la foto apagada queda el dibujo solo: la línea
+  es oscura con un halo del color del papel.
+- **La cámara en vivo** corre la detección en cada cuadro en un `requestAnimationFrame`,
+  fuera del estado de React. La de adelante se ve en espejo. La lente se estima con la
+  primera cara y se queda. "Sacar foto" guarda el cuadro como se ve y recarga.
+- `?puntos` en la dirección dibuja en rojo los puntos detectados y en cian la cara
+  modelo con la pose calculada. Si coinciden y algo se ve mal, el problema está en
+  `loomis.ts`, no en la detección.

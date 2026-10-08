@@ -40,22 +40,22 @@ body {
   animation: ds-fade var(--ds-dur-slow) var(--ds-ease);
 }
 
-/* Recargar, arriba a la derecha. */
-.topbar {
+/* Lo que ve la cámara va abajo del lienzo, que lo pinta con la cabeza encima: el
+   video sigue corriendo para el detector pero no se ve dos veces. */
+.camera {
   position: absolute;
-  top: calc(var(--ds-space-4) + env(safe-area-inset-top));
-  right: var(--ds-space-4);
-  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.topbar .ds-button {
-  box-shadow: 0 6px 18px rgb(16 16 16 / 0.22);
-}
-
-/* Lo que está pasando con el detector, arriba y al medio, debajo de recargar. */
+/* Lo que está pasando con el detector, arriba y al medio. */
 .status {
   position: absolute;
-  top: calc(var(--ds-space-4) + 64px + env(safe-area-inset-top));
+  top: calc(var(--ds-space-5) + env(safe-area-inset-top));
   left: 50%;
   z-index: 2;
   margin: 0;
@@ -118,16 +118,118 @@ body {
   min-width: 0;
 }
 
-/* Restablecer, arriba de la barra y al medio. Aparece solo cuando hay algo
-   que deshacer. */
-.reset {
-  display: flex;
-  justify-content: center;
-  animation: ds-rise 0.22s var(--ds-ease);
+/* Una tarjeta del fondo claro del sistema, flotando sobre la foto o la cámara. */
+.card {
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
 }
 
-.reset .ds-button {
-  box-shadow: 0 6px 18px rgb(16 16 16 / 0.22);
+/* --- el cajón de la foto -------------------------------------------
+   La miniatura y la lente, como la pestaña de la foto en Referencia: se
+   despliega arriba de la barra y la foto se acomoda arriba de él. */
+
+.drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-5);
+  animation: ds-rise var(--ds-dur) var(--ds-ease);
+}
+
+.drawer-photo {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: center;
+}
+
+.thumb {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: var(--ds-radius-small);
+  background: var(--ds-accent-light);
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Entera y sin recortar: la proporción de la foto es información. */
+  object-fit: contain;
+}
+
+.photo-meta {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-accent-dark);
+}
+
+/* La fila de la lente: el nombre un tercio y el control dos, como en Referencia. */
+.field-row {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  min-height: var(--ds-control-field);
+}
+
+.field-row > :not(.field-name) {
+  flex: 2 1 0;
+  min-width: 0;
+}
+
+.field-name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ds-text-field);
+  color: var(--ds-accent-dark);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+  justify-content: flex-end;
+}
+
+/* --- la cámara ------------------------------------------------------ */
+
+/* Dar vuelta, sacar la foto y el flash, arriba de la barra y al medio. */
+.shutter {
+  display: flex;
+  justify-content: center;
+  animation: ds-rise var(--ds-dur) var(--ds-ease);
+}
+
+.shutter .pill {
+  gap: var(--ds-space-2);
+}
+
+/* Cuando la cámara no anda: una tarjeta al medio que dice qué pasó. */
+.trouble {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: min(320px, calc(100% - 32px));
+  padding: var(--ds-space-6);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.trouble p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
 }
 
 /* --- la pantalla de inicio -----------------------------------------
@@ -141,7 +243,7 @@ body {
   flex-direction: column;
   gap: var(--ds-space-7);
   align-items: center;
-  width: 290px;
+  width: 302px;
   max-width: calc(100% - var(--ds-space-7));
   text-align: center;
   transform: translate(-50%, -50%);
@@ -159,6 +261,7 @@ body {
   margin: 0;
   font: var(--ds-text-title);
   color: var(--ds-black);
+  text-transform: uppercase;
 }
 
 .welcome-text p {
@@ -167,12 +270,16 @@ body {
   color: var(--ds-black);
 }
 
-.welcome .ds-button {
-  font: var(--ds-text-control);
+/* Subir una foto o usar la cámara: dos entradas, una debajo de la otra. */
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  align-items: center;
 }
 
 .welcome-text > *,
-.welcome > .ds-button {
+.welcome-actions {
   animation: ds-rise var(--ds-dur-slow) var(--ds-ease) backwards;
 }
 
@@ -184,7 +291,7 @@ body {
   animation-delay: 140ms;
 }
 
-.welcome > .ds-button {
+.welcome-actions {
   animation-delay: 240ms;
 }
 
