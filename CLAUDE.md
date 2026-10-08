@@ -749,7 +749,9 @@ perspectiva de la foto. Es la misma idea que la grilla —líneas de construcci�
 referencia— y se porta igual: arranca en "Ninguna" (`state.head.mode`), tiene color,
 espesor y opacidad con la misma escala relativa (`state.head.style`, un `GridStyle`), y
 pasa por `paintScene`, así que sale en la pantalla, en el export y en la mesa de luz.
-Va encima de la grilla.
+Va encima de la grilla, y **con su mismo trazo**: liso, sin halo, y lo que queda del
+otro lado de la bola como la subdivisión, a mitad de opacidad y de grosor (`halo: null`
+en `drawLoomis`; Cabeza sigue con halo y punteado).
 
 - **El detector se baja recién al elegir Loomis** (`useHeads`): unos quince megas que
   quien solo quiere la grilla no paga. Corre una vez por foto sobre la copia liviana, y
@@ -758,8 +760,10 @@ Va encima de la grilla.
 - **Las cabezas se resuelven en los píxeles de la copia liviana** (`HeadScene`) y se
   pintan en cualquier rectángulo con una escala uniforme: como la grilla en fracciones,
   una sola cuenta para todos los destinos.
-- **La lente**: la elegida a mano (`state.head.lens`), o la que anotó la cámara en el
-  EXIF del original, o la estimada mirando las caras. Una foto nueva la vuelve a `null`.
+- **La lente no se elige**: es la que anotó la cámara en el EXIF del original o, si no
+  anotó, la estimada mirando las caras. Hubo un slider para corregirla a mano y se
+  sacó: con la cara bien detectada no hacía falta, y era una perilla que había que
+  explicar.
 
 **El margen de seguridad es una constante** (`SAFE_MARGIN`), no un control: toda
 impresora se come unos milímetros del borde. Por la misma razón la hoja se orienta
@@ -779,7 +783,12 @@ mismo número saldría minúsculo con ocho divisiones y descomunal con dos.
 
 **Los ajustes de imagen son cuatro modos cerrados**, no cinco perillas (`EffectsMode`
 y `EFFECT_MODES`). Cada modo fija los valores que no le importan y deja a la vista
-solo los que sí: Original ninguna, Blanco y negro una, Bordes una, Facetado tres. Las
+solo los que sí: Original ninguna, Blanco y negro una, Bordes una, Facetado tres. Y todos,
+al final, **cuánto se ve la foto** (`effects.opacity`): la foto se funde contra papel
+blanco, como debajo de una hoja de calco, para que la grilla y la cabeza se lean solas.
+Es lo único de `effects` que el modo no fija —cambiar de modo la conserva— y lo único que
+no pasa por el shader: se aplica al pintar (`paintPhoto`), así que arrastrarla no
+recalcula la foto. Sale en el export y en la mesa. Las
 perillas sueltas eran honestas pero pedían entender qué es una curva y qué es un
 sobel, y acá lo que se elige es cómo mirar la referencia. **`bw` ya no es
 independiente del modo** — antes sobrevivía a cambiar de modo a propósito, pero
@@ -797,9 +806,9 @@ grandes, no un menú que se abre encima. Ese picker **sobrevive a cambiar de
 pestaña** — si quedó en "Ninguna", o a mitad de elegir un modo de Ajustes, volver a
 esa pestaña lo encuentra como se dejó. Lo único que lo cierra es una foto nueva
 (`Panel.tsx`, el `useEffect` que también abre la pestaña de grilla). Y un modo sin nada
-que configurar —"Ninguna" en la grilla, "Original" en Ajustes— deja su picker
-abierto siempre (`gridPicker` y `adjustPicker`): la vista cerrada sería una fila
-sola con un vacío abajo. Por eso Ajustes abre directo en sus cuatro tarjetas.
+que configurar —"Ninguna" en la grilla o en la cabeza— deja su picker abierto siempre
+(`gridPicker` y `headPicker`): la vista cerrada sería una fila sola con un vacío abajo.
+"Original" en Ajustes era uno de estos hasta que tuvo la opacidad de la foto.
 
 **Referencia usa el sistema de diseño y el archivo de textos, y Mesa de luz y
 Enmarcado también**. No hay un hexadecimal ni un tamaño de letra sueltos en `referencia/styles.css`, y

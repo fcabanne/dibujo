@@ -203,7 +203,13 @@ function silhouette(eye: Vec3): Line[] {
 
 export interface LoomisStyle {
   color: string
-  halo: string
+  /**
+   * Con halo, la cabeza se dibuja como en Cabeza: un halo debajo de la línea, los
+   * costados apenas velados y lo de atrás punteado. Sin halo (`null`), como la
+   * grilla de Referencia: trazo liso, y lo de atrás como su subdivisión, a mitad de
+   * opacidad y de grosor.
+   */
+  halo: string | null
   width: number
 }
 
@@ -240,6 +246,7 @@ export function drawLoomis(
 
   // Los costados, apenas velados cuando se ven: es lo que hace leer el corte como un plano.
   ctx.save()
+  if (style.halo === null) ctx.globalAlpha = 0
   ctx.fillStyle = style.color
   ctx.globalAlpha = base * 0.14
   for (const plane of HEAD.planes) {
@@ -256,18 +263,26 @@ export function drawLoomis(
 
   const lines = [...HEAD.lines, ...silhouette(eye)]
 
-  // Dos pasadas: el halo oscuro abajo, para que se lea sobre una cara clara, y la
-  // línea encima.
-  for (const pass of ['halo', 'line'] as const) {
+  // Con halo, dos pasadas: el halo abajo, para que se lea sobre una cara clara, y la
+  // línea encima. Sin halo, una sola, lisa como la grilla.
+  const halo = style.halo
+  const passes = halo === null ? (['line'] as const) : (['halo', 'line'] as const)
+  for (const pass of passes) {
     for (const visible of [false, true]) {
       ctx.save()
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
-      ctx.strokeStyle = pass === 'halo' ? style.halo : style.color
-      const w = visible ? style.width : style.width * 0.7
-      ctx.lineWidth = pass === 'halo' ? w + 2 : w
-      ctx.globalAlpha = base * (visible ? (pass === 'halo' ? 0.5 : 1) : pass === 'halo' ? 0.2 : 0.45)
-      if (!visible) ctx.setLineDash([style.width * 2.5, style.width * 3])
+      if (halo === null) {
+        ctx.strokeStyle = style.color
+        ctx.lineWidth = visible ? style.width : Math.max(0.5, style.width / 2)
+        ctx.globalAlpha = base * (visible ? 1 : 0.5)
+      } else {
+        ctx.strokeStyle = pass === 'halo' ? halo : style.color
+        const w = visible ? style.width : style.width * 0.7
+        ctx.lineWidth = pass === 'halo' ? w + 2 : w
+        ctx.globalAlpha = base * (visible ? (pass === 'halo' ? 0.5 : 1) : pass === 'halo' ? 0.2 : 0.45)
+        if (!visible) ctx.setLineDash([style.width * 2.5, style.width * 3])
+      }
       ctx.beginPath()
       for (const line of lines) {
         let open = false

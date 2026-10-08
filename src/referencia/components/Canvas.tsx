@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { copy } from '../../shared/copy'
 import { easeOut, prefersReducedMotion, tween } from '../../shared/motion'
 import { aspectOf, type Reference } from '../../shared/referenceImage'
 import { createEffects, type EffectsRenderer } from '../render/effects'
 import type { HeadScene } from '../../shared/loomis/head'
-import { fitRect, paintGrid, paintHead } from '../render/scene'
+import { fitRect, paintGrid, paintHead, paintPhoto } from '../render/scene'
 import type { AppState, GridState } from '../types'
 
 interface Props {
@@ -117,6 +117,15 @@ export function Canvas({
   /** La foto en el modo de Ajustes anterior, fundida debajo del nuevo. */
   const photoFadeRef = useRef<{ from: HTMLCanvasElement; start: number } | null>(null)
   const previousEffects = useRef({ reference, mode: state.effects.mode })
+  /**
+   * Lo que le importa al shader, sin cuánto se ve la foto: esa se aplica al pintar,
+   * y arrastrar su slider no tiene por qué volver a pasar la foto por la placa.
+   */
+  const { mode, bw, light, contrast, edges, tones } = state.effects
+  const shaderEffects = useMemo(
+    () => ({ mode, bw, light, contrast, edges, tones, opacity: 1 }),
+    [mode, bw, light, contrast, edges, tones],
+  )
 
   const stateRef = useRef(state)
   const refRef = useRef(reference)
@@ -221,20 +230,19 @@ export function Canvas({
     let fading = false
     ctx.imageSmoothingQuality = 'high'
 
+    const scene = stateRef.current
+    const opacity = scene.effects.opacity
     const photoFade = photoFadeRef.current
     if (photoFade) {
       const t = Math.min(1, (now - photoFade.start) / FADE)
-      ctx.drawImage(photoFade.from, rect.x, rect.y, rect.w, rect.h)
-      ctx.globalAlpha = easeOut(t)
-      ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
-      ctx.globalAlpha = 1
+      paintPhoto(ctx, rect, photoFade.from, opacity)
+      paintPhoto(ctx, rect, photo, opacity, easeOut(t))
       if (t < 1) fading = true
       else photoFadeRef.current = null
     } else {
-      ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+      paintPhoto(ctx, rect, photo, opacity)
     }
 
-    const scene = stateRef.current
     const gridFade = gridFadeRef.current
     if (gridFade) {
       const e = easeOut(Math.min(1, (now - gridFade.start) / FADE))
@@ -273,10 +281,10 @@ export function Canvas({
     // Solo al cambiar de modo: las perillas de adentro se arrastran, y un
     // fundido por cada paso haría que la foto llegue siempre tarde al dedo.
     const before = previousEffects.current
-    previousEffects.current = { reference, mode: state.effects.mode }
+    previousEffects.current = { reference, mode: shaderEffects.mode }
     if (
       before.reference === reference &&
-      before.mode !== state.effects.mode &&
+      before.mode !== shaderEffects.mode &&
       photoRef.current &&
       !prefersReducedMotion()
     ) {
@@ -288,10 +296,10 @@ export function Canvas({
     }
 
     photoRef.current = effectsRef.current
-      ? effectsRef.current.apply(preview, preview.width, preview.height, state.effects)
+      ? effectsRef.current.apply(preview, preview.width, preview.height, shaderEffects)
       : preview
     schedule()
-  }, [reference, state.effects, schedule, onEffectsSupport])
+  }, [reference, shaderEffects, schedule, onEffectsSupport])
 
   // La grilla que cambia de un toque se funde con la anterior.
   useEffect(() => {

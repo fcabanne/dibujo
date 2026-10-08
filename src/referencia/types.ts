@@ -66,6 +66,12 @@ export interface Effects {
   edges: number
   /** 0 = apagado; si no, a cuántos tonos se aplasta la foto. */
   tones: number
+  /**
+   * Cuánto se ve la foto, 0..1, fundida contra papel blanco: como mirarla a través
+   * de una hoja de calco. Sirve para que la grilla y la cabeza se lean solas. Es la
+   * única que **no** fija el modo: cambiar de modo la conserva.
+   */
+  opacity: number
 }
 
 export type PaperId = 'none' | 'a5' | 'a4' | 'a3' | 'a2' | 'custom'
@@ -110,12 +116,6 @@ export type HeadMode = 'none' | 'loomis'
 
 export interface HeadState {
   mode: HeadMode
-  /**
-   * La lente elegida a mano, como focal equivalente a 35 mm. `null` mientras no se
-   * la toque: entonces manda la que anotó la cámara o, si no anotó, la estimada.
-   * Una foto nueva la vuelve a `null`.
-   */
-  lens: number | null
   /** Color, opacidad y espesor, con la misma escala relativa que la grilla. */
   style: GridStyle
 }

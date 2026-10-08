@@ -51,7 +51,7 @@ const EDGES: IconSpec = [0, 0, 'M 3 16 L 8 8 L 12 13 L 16 6 L 21 11']
 const FACETS: IconSpec = [0, 0, 'M 12 3 L 20 8 L 20 16 L 12 21 L 4 16 L 4 8 Z']
 const FLASHLIGHT: IconSpec = [0, 0, 'M 7 3 L 17 3 L 17 6 L 15 10 L 15 20 C 15 20.5523 14.5523 21 14 21 L 10 21 C 9.44772 21 9 20.5523 9 20 L 9 10 L 7 6 L 7 3 Z M 7 6 L 17 6 M 12 13 L 12 15']
 const SPEAKER: IconSpec = [0, 0, 'M 11 5 L 6 9 L 3 9 L 3 15 L 6 15 L 11 19 L 11 5 Z M 15.5 8.5 C 16.4 9.4 17 10.6 17 12 C 17 13.4 16.4 14.6 15.5 15.5 M 18.5 5.5 C 20.2 7.2 21 9.5 21 12 C 21 14.5 20.2 16.8 18.5 18.5']
-const HEAD: IconSpec = [0, 0, 'M 12 2.5 C 15.87 2.5 19 5.63 19 9.5 C 19 11.4 18.25 13.12 17 14.4 L 15.5 18.5 L 12 21.5 L 8.5 18.5 L 7 14.4 C 5.75 13.12 5 11.4 5 9.5 C 5 5.63 8.13 2.5 12 2.5 Z M 5 9.5 L 19 9.5 M 12 2.5 L 12 21.5']
+const HEAD: IconSpec = [0, 0, 'M 8.5 21 L 8.5 17.6 C 6.3 16.3 5 13.9 5 11.2 C 5 6.7 8.6 3 13 3 C 16.6 3 19.5 5.8 19.5 9.4 L 21 12.6 L 19.5 13.1 L 19.5 15.2 C 19.5 16.2 18.7 17 17.7 17 L 15.5 17 L 15.5 21']
 const CAMERA: IconSpec = [0, 0, 'M 3 8 C 3 7.45 3.45 7 4 7 L 7 7 L 9 4 L 15 4 L 17 7 L 20 7 C 20.55 7 21 7.45 21 8 L 21 19 C 21 19.55 20.55 20 20 20 L 4 20 C 3.45 20 3 19.55 3 19 L 3 8 Z M 12 9.5 C 14.21 9.5 16 11.29 16 13.5 C 16 15.71 14.21 17.5 12 17.5 C 9.79 17.5 8 15.71 8 13.5 C 8 11.29 9.79 9.5 12 9.5 Z']
 const FLIP: IconSpec = [0, 0, 'M 20 12 C 20 7.58 16.42 4 12 4 C 9.38 4 7.06 5.26 5.6 7.2 M 4 12 C 4 16.42 7.58 20 12 20 C 14.62 20 16.94 18.74 18.4 16.8 M 5.6 3.5 L 5.6 7.2 L 9.3 7.2 M 18.4 20.5 L 18.4 16.8 L 14.7 16.8']
 const SPEAKEROFF: IconSpec = [0, 0, 'M 11 5 L 6 9 L 3 9 L 3 15 L 6 15 L 11 19 L 11 5 Z M 16 9 L 22 15 M 22 9 L 16 15']
@@ -239,8 +239,8 @@ export function SpeakerOffIcon({ className }: IconProps) {
 }
 
 /**
- * La cabeza de construcción: la bola, la línea de las cejas, el eje del medio y la
- * mandíbula hasta el mentón.
+ * Una cabeza de perfil, mirando a la derecha: el cráneo, la frente, la nariz, el
+ * mentón y el cuello.
  *
  * **Tampoco viene de Figma.** La usa Referencia para la pestaña Cabeza. Cuando se
  * dibuje en el archivo, se reemplaza el `d`.

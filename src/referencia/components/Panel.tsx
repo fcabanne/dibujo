@@ -32,7 +32,6 @@ import { CustomColorOption, Hint, NAMED_COLORS, Row, Section } from './controls'
 import type { Action } from '../state/reducer'
 import type { AppState, EffectsMode, GridMode, HeadMode, PaperId } from '../types'
 import type { HeadStatus } from '../hooks/useHeads'
-import { LENS_MAX, LENS_MIN } from '../../shared/loomis/pose'
 
 interface Props {
   state: AppState
@@ -50,15 +49,7 @@ interface Props {
    * Lo que se sabe de las cabezas de la foto. `available` en falso —un archivo
    * abierto con doble clic, sin de dónde bajar el detector— saca la pestaña.
    */
-  heads: {
-    available: boolean
-    status: HeadStatus
-    /** La lente con la que se está dibujando, manual o no. */
-    lens: number
-    /** La que manda si no se toca: la de la cámara o la estimada. */
-    autoLens: number | null
-    fromCamera: boolean
-  }
+  heads: { available: boolean; status: HeadStatus }
 }
 
 /**
@@ -125,11 +116,6 @@ const HEAD_OPTIONS: PickerOption<HeadMode>[] = [
   { value: 'loomis', label: copy.head.loomis, icon: <HeadIcon />, wide: true },
   { value: 'none', label: copy.head.none, icon: <CloseIcon />, wide: true },
 ]
-
-/** La lente va en escala logarítmica: de 14 a 200 mm, un paso es siempre "un poco más". */
-const lensToSlider = (mm: number) =>
-  Math.round((100 * Math.log(mm / LENS_MIN)) / Math.log(LENS_MAX / LENS_MIN))
-const sliderToLens = (v: number) => LENS_MIN * Math.pow(LENS_MAX / LENS_MIN, v / 100)
 
 /** Cómo se llama el modo elegido, para la fila cerrada del Dropdown. */
 const TYPE_NAMES: Record<GridMode, string> = {
@@ -359,15 +345,16 @@ export function Panel({
 
   /**
    * Qué picker se ve en cada pestaña. No sale solo del estado `picker`: un
-   * modo que no tiene nada que configurar —"Ninguna" en la grilla,
-   * "Original" en Ajustes— deja su picker abierto siempre, porque la vista
-   * cerrada sería una fila sola con un vacío abajo. Así es como la pestaña de
-   * Ajustes abre directo en sus cuatro tarjetas, y como "Ninguna" sigue en
-   * su picker aunque se haya cargado otra foto.
+   * modo que no tiene nada que configurar —"Ninguna" en la grilla o en la
+   * cabeza— deja su picker abierto siempre, porque la vista cerrada sería una
+   * fila sola con un vacío abajo. Así es como "Ninguna" sigue en su picker
+   * aunque se haya cargado otra foto. "Original" en Ajustes era uno de estos
+   * hasta que tuvo su perilla: cuánto se ve la foto.
    */
   const gridPicker =
     picker === 'color' ? 'color' : picker === 'tipo' || grid.mode === 'none' ? 'tipo' : null
-  const adjustPicker = picker === 'ajustes' || effects.mode === 'original'
+  // Original ya no se queda en las tarjetas: ahora tiene su perilla, cuánto se ve la foto.
+  const adjustPicker = picker === 'ajustes'
   const headPicker =
     picker === 'cabezaColor'
       ? 'color'
@@ -566,46 +553,6 @@ export function Panel({
             />
           </Row>
 
-          {/* La lente cambia la perspectiva de la cabeza: gran angular de cerca, tele
-              de lejos. Sale sola de la foto, y se corrige a mano. */}
-          <Row label={copy.head.lens}>
-            <Slider
-              label={copy.head.lens}
-              value={lensToSlider(heads.lens)}
-              min={0}
-              max={100}
-              step={1}
-              disabled={heads.status !== 'ready'}
-              onChange={(v) => dispatch({ type: 'head/patch', patch: { lens: sliderToLens(v) } })}
-              // En la posición de la lente actual, su número exacto: el slider
-              // tiene cien pasos y redondeado diría otro.
-              format={(v) =>
-                fill(copy.head.lensValue, {
-                  n: Math.round(v === lensToSlider(heads.lens) ? heads.lens : sliderToLens(v)),
-                })
-              }
-            />
-          </Row>
-          {heads.status === 'ready' && (
-            <Hint>
-              {head.lens !== null
-                ? copy.head.lensManual
-                : heads.fromCamera
-                  ? copy.head.lensCamera
-                  : copy.head.lensGuess}
-            </Hint>
-          )}
-          {head.lens !== null && heads.autoLens !== null && (
-            <Button
-              variant="quiet"
-              onClick={() => dispatch({ type: 'head/patch', patch: { lens: null } })}
-            >
-              {fill(copy.head.resetLens, {
-                source: heads.fromCamera ? copy.head.fromCamera : copy.head.estimated,
-              })}
-            </Button>
-          )}
-
           <Row label={copy.grid.weight}>
             <Slider
               label={copy.grid.weight}
@@ -647,12 +594,7 @@ export function Panel({
         options={ADJUST_OPTIONS}
         onChange={(mode) => {
           dispatch({ type: 'effects/mode', mode })
-          // "Original" se queda en las tarjetas, igual que "Ninguna": no hay
-          // nada que ajustar abajo.
-          if (mode !== 'original') {
-            setPicker('ajustes')
-            closePickerSoon()
-          }
+          closePickerSoon()
         }}
       />
     ) : (
@@ -670,7 +612,8 @@ export function Panel({
         {/* Cada modo muestra solo la perilla que le importa. El resto de los
             valores los fija él, y esconderlos es el punto: son los que hay que
             entender para usar esto, y no hay por qué entenderlos. Original no
-            muestra ninguna. */}
+            muestra ninguna propia: solo la de cuánto se ve la foto, que va en
+            todos. */}
         {effects.mode === 'bw' && (
           <Row label={copy.adjust.contrast}>
             <Slider
@@ -735,6 +678,20 @@ export function Panel({
             </Row>
           </>
         )}
+
+        {/* Cuánto se ve la foto, en todos los modos: con la foto apagada, la
+            grilla y la cabeza se leen solas, como sobre una hoja de calco. */}
+        <Row label={copy.adjust.opacity}>
+          <Slider
+            label={copy.adjust.opacity}
+            value={Math.round(effects.opacity * 100)}
+            min={0}
+            max={100}
+            step={5}
+            onChange={(v) => dispatch({ type: 'effects/patch', patch: { opacity: v / 100 } })}
+            format={(v) => fill(copy.grid.opacityValue, { n: v })}
+          />
+        </Row>
       </>
     ),
   }

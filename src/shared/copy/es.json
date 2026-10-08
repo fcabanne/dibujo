@@ -79,20 +79,13 @@
     "type": "Cabeza",
     "none": "Ninguna",
     "loomis": "Loomis",
-    "lens": "Lente",
-    "lensValue": "{n} mm",
-    "lensCamera": "La lente la anoto la camara.",
-    "lensGuess": "La lente esta estimada mirando la cara.",
-    "lensManual": "La lente esta elegida a mano.",
-    "resetLens": "Volver a la lente {source}",
-    "fromCamera": "de la camara",
-    "estimated": "estimada",
     "looking": "Buscando la cara...",
     "noFace": "No encontre ninguna cara en esta foto.",
     "failed": "No se pudo cargar el detector de caras."
   },
 
   "adjust": {
+    "opacity": "Opacidad",
     "tab": "Ajustes",
     "title": "Ajustes",
     "blackAndWhite": "Blanco y negro",

@@ -32,11 +32,12 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, head: { ...state.head, style: { ...state.head.style, ...action.patch } } }
     case 'effects/patch':
       return { ...state, effects: { ...state.effects, ...action.patch } }
-    // Cambiar de modo reescribe todo, `bw` incluido.
+    // Cambiar de modo reescribe todo, `bw` incluido. Todo menos cuánto se ve la foto,
+    // que es de la foto y no del modo.
     case 'effects/mode':
       return {
         ...state,
-        effects: { mode: action.mode, ...EFFECT_MODES[action.mode] },
+        effects: { mode: action.mode, ...EFFECT_MODES[action.mode], opacity: state.effects.opacity },
       }
     case 'paper/patch':
       return { ...state, paper: { ...state.paper, ...action.patch } }

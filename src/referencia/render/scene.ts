@@ -23,7 +23,7 @@ export function paintScene(
   /** Las cabezas ya resueltas para la foto, o null si no hay (ver `paintHead`). */
   head: HeadScene | null = null,
 ): void {
-  ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+  paintPhoto(ctx, rect, photo, state.effects.opacity)
   paintGrid(ctx, rect, state, aspect, labels)
   paintHead(ctx, rect, state, head)
 }
@@ -49,6 +49,30 @@ export function paintHead(
     opacity: style.opacity,
     lineWidth: lineWidthFor(rect, style),
   })
+}
+
+/**
+ * La foto, fundida contra papel blanco según cuánto se ve. Blanco y no
+ * transparente: un JPEG no tiene transparencia y la saldría negra, y en la hoja
+ * impresa el papel es blanco igual. Suelta para el lienzo, que la usa también en
+ * sus fundidos: `alpha` es el de ese fundido, y se multiplica.
+ */
+export function paintPhoto(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  photo: CanvasImageSource,
+  opacity: number,
+  alpha = 1,
+): void {
+  ctx.save()
+  if (opacity < 1) {
+    ctx.globalAlpha = alpha
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+  }
+  ctx.globalAlpha = alpha * opacity
+  ctx.drawImage(photo, rect.x, rect.y, rect.w, rect.h)
+  ctx.restore()
 }
 
 /**

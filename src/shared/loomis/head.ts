@@ -45,10 +45,9 @@ export interface HeadPaintStyle {
 }
 
 /**
- * Pinta las cabezas dentro de `rect`, que tiene la proporción de la foto.
- *
- * Con un halo del tono opuesto a la línea: la cabeza cruza pelo, piel y fondo, y
- * una línea blanca sobre una frente clara desaparece.
+ * Pinta las cabezas dentro de `rect`, que tiene la proporción de la foto, con el
+ * mismo trazo que la grilla: liso, de un color, sin halo. Lo de atrás de la bola va
+ * como la subdivisión, a mitad de opacidad y de grosor.
  */
 export function paintHeads(
   ctx: CanvasRenderingContext2D,
@@ -63,22 +62,9 @@ export function paintHeads(
   ctx.rect(0, 0, rect.w, rect.h)
   ctx.clip()
   ctx.globalAlpha = style.opacity
-  const halo = isLight(style.color) ? 'rgb(16 16 16)' : 'rgb(251 248 242)'
   const scale = rect.w / scene.width
   for (const pose of scene.poses) {
-    drawLoomis(ctx, scene.cam, pose, scale, { color: style.color, halo, width: style.lineWidth })
+    drawLoomis(ctx, scene.cam, pose, scale, { color: style.color, halo: null, width: style.lineWidth })
   }
   ctx.restore()
-}
-
-/** Si un color es claro: decide el tono del halo. Acepta `#rgb` y `#rrggbb`. */
-function isLight(color: string): boolean {
-  const hex = color.replace('#', '')
-  const full = hex.length === 3 ? hex.replace(/./g, (c) => c + c) : hex
-  const n = parseInt(full.slice(0, 6), 16)
-  if (Number.isNaN(n)) return true
-  const r = (n >> 16) & 255
-  const g = (n >> 8) & 255
-  const b = n & 255
-  return 0.299 * r + 0.587 * g + 0.114 * b > 140
 }

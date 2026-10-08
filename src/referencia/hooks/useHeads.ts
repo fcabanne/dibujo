@@ -23,10 +23,11 @@ interface Found {
  * por foto, sobre la copia liviana —la misma que se ve—, y lo encontrado se queda:
  * apagar y prender la cabeza no vuelve a buscar.
  *
- * La lente sale, en este orden, de la elegida a mano (`manualLens`), de la que anotó
- * la cámara en el EXIF del original, o de la estimada mirando las caras.
+ * La lente sale de la que anotó la cámara en el EXIF del original o, si no anotó,
+ * de la estimada mirando las caras. No se elige a mano: con la foto bien detectada
+ * no hace falta, y era una perilla que nadie sabía para qué estaba.
  */
-export function useHeads(reference: Reference | null, wanted: boolean, manualLens: number | null) {
+export function useHeads(reference: Reference | null, wanted: boolean) {
   const [found, setFound] = useState<Found | null>(null)
   const [status, setStatus] = useState<HeadStatus>('idle')
 
@@ -58,8 +59,7 @@ export function useHeads(reference: Reference | null, wanted: boolean, manualLen
     }
   }, [reference, wanted, current])
 
-  const autoLens = current ? (current.cameraLens ?? current.guessedLens) : null
-  const lens = manualLens ?? autoLens ?? 50
+  const lens = (current ? (current.cameraLens ?? current.guessedLens) : null) ?? 50
 
   const scene: HeadScene | null = useMemo(() => {
     if (!current || !current.faces.length) return null
@@ -70,8 +70,5 @@ export function useHeads(reference: Reference | null, wanted: boolean, manualLen
   return {
     status: current || status === 'looking' || status === 'failed' ? status : 'idle',
     scene,
-    lens,
-    autoLens,
-    fromCamera: current?.cameraLens != null,
   }
 }

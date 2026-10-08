@@ -32,7 +32,7 @@ export function App() {
   const compact = useCompact()
   const noteTimer = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
-  const heads = useHeads(reference, state.head.mode !== 'none', state.head.lens)
+  const heads = useHeads(reference, state.head.mode !== 'none')
 
   // Estable: el diálogo se suscribe a `close` con ella, y una función nueva por
   // render lo haría re-suscribirse en cada cambio de estado.
@@ -79,8 +79,6 @@ export function App() {
       try {
         const next = await openReferenceFile(file)
         setReference(next)
-        // La lente elegida a mano era de la otra foto.
-        dispatch({ type: 'head/patch', patch: { lens: null } })
         void saveOriginal('referencia', next.blob, next.name)
       } catch (error) {
         notify(error instanceof Error ? error.message : copy.notices.loadFailed)
@@ -180,13 +178,7 @@ export function App() {
         effectsSupported={effectsSupported}
         compact={compact}
         onDrawer={setDrawer}
-        heads={{
-          available: canDetect,
-          status: heads.status,
-          lens: heads.lens,
-          autoLens: heads.autoLens,
-          fromCamera: heads.fromCamera,
-        }}
+        heads={{ available: canDetect, status: heads.status }}
       />
 
       {/* Uno solo para toda la app: lo usan la pantalla de inicio y el botón de
