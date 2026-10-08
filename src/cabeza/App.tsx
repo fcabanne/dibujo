@@ -5,6 +5,7 @@ import { loadArtwork, saveArtwork } from '../shared/imageStore'
 import { openInstagram } from '../shared/suggestions'
 import { BackIcon, Button, IconButton, PhotoIcon, Slider, UploadIcon } from '../shared/ui'
 import { detectFaces, preload, type DetectedFace } from './detect'
+import { CANONICAL } from './canonical'
 import { focal35 } from './exif'
 import { drawLoomis } from './loomis'
 import {
@@ -13,6 +14,7 @@ import {
   MEDIAPIPE_VFOV,
   fitLens,
   focalPx,
+  project,
   rescale,
   solvePose,
   type Camera,
@@ -172,7 +174,14 @@ export function App() {
 
       {photo ? (
         <>
-          {image && <Stage image={image} poses={poses} cam={{ ...baseCam, f: focalPx(lens, width, height) }} />}
+          {image && (
+            <Stage
+              image={image}
+              faces={faces}
+              poses={poses}
+              cam={{ ...baseCam, f: focalPx(lens, width, height) }}
+            />
+          )}
 
           {/* Recargar la página entera: en el celular no hay otra forma a mano de
               traer la última versión, ni de empezar de cero si algo se trabó. */}
@@ -257,7 +266,20 @@ export function App() {
 }
 
 /** La foto encajada arriba de la barra, y las cabezas encima. */
-function Stage({ image, poses, cam }: { image: HTMLImageElement; poses: Pose[]; cam: Camera }) {
+/** `?puntos` en la dirección: los puntos detectados y los de la cara modelo, para revisar el calce. */
+const SHOW_POINTS = new URLSearchParams(window.location.search).has('puntos')
+
+function Stage({
+  image,
+  faces,
+  poses,
+  cam,
+}: {
+  image: HTMLImageElement
+  faces: DetectedFace[]
+  poses: Pose[]
+  cam: Camera
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight })
 
@@ -300,8 +322,20 @@ function Stage({ image, poses, cam }: { image: HTMLImageElement; poses: Pose[]; 
         width: 1.6,
       })
     }
+    if (SHOW_POINTS) {
+      faces.forEach((face, k) => {
+        for (let i = 0; i < 468; i++) {
+          // Rojo lo que vio el detector, cian dónde cae la cara modelo con esta pose.
+          const [u, v] = project(cam, poses[k], [CANONICAL[i * 3], CANONICAL[i * 3 + 1], CANONICAL[i * 3 + 2]])
+          ctx.fillStyle = '#0ff'
+          ctx.fillRect(u * scale - 1, v * scale - 1, 2, 2)
+          ctx.fillStyle = '#f00'
+          ctx.fillRect(face.points[i * 2] * scale - 1, face.points[i * 2 + 1] * scale - 1, 2, 2)
+        }
+      })
+    }
     ctx.restore()
-  }, [image, poses, cam, size])
+  }, [image, faces, poses, cam, size])
 
   return <canvas ref={canvasRef} className="stage" style={{ width: size.w, height: size.h }} />
 }

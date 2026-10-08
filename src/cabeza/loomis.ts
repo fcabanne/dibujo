@@ -50,13 +50,21 @@ const sphereNormal = (p: Vec3): Vec3 => [
   (p[2] - CENTER[2]) / RADIUS,
 ]
 
-/** Un arco sobre la bola, recortado donde la cortan los costados. */
-function sphereArc(point: (a: number) => Vec3, from: number, to: number): Line[] {
+/**
+ * Un arco sobre la bola, recortado donde la cortan los costados y donde `keep`
+ * diga que no va.
+ */
+function sphereArc(
+  point: (a: number) => Vec3,
+  from: number,
+  to: number,
+  keep: (p: Vec3) => boolean = () => true,
+): Line[] {
   const lines: Line[] = []
   let current: Line = []
   for (let i = 0; i <= SEGMENTS; i++) {
     const p = point(from + ((to - from) * i) / SEGMENTS)
-    if (Math.abs(p[0]) > SIDE + 1e-6) {
+    if (Math.abs(p[0]) > SIDE + 1e-6 || !keep(p)) {
       if (current.length > 1) lines.push(current)
       current = []
       continue
@@ -102,6 +110,18 @@ function headLines(): { lines: Line[]; planes: Line[] } {
       { p: [x, cy, cz - UNIT], n },
       { p: [x, cy, cz + UNIT], n },
     ])
+
+    // La oreja: entre la línea de las cejas y la de la nariz, apenas detrás de
+    // la vertical del corte.
+    const ear: Line = []
+    for (let i = 0; i <= SEGMENTS / 2; i++) {
+      const a = (4 * Math.PI * i) / SEGMENTS
+      ear.push({
+        p: [x, cy - UNIT / 2 + (UNIT / 2) * Math.sin(a), cz - 0.3 * UNIT + 0.28 * UNIT * Math.cos(a)],
+        n,
+      })
+    }
+    lines.push(ear)
   }
 
   // El plano de la cara: de las cejas a la nariz y al mentón, por el medio.
@@ -175,6 +195,9 @@ function silhouette(eye: Vec3): Line[] {
     ],
     0,
     2 * Math.PI,
+    // Debajo de la nariz la bola queda detrás de la cara y la mandíbula: dibujada,
+    // es una línea suelta cruzando la boca.
+    (p) => p[1] >= NOSE[1],
   ).map((line) => line.map(({ p }) => ({ p, n: null })))
 }
 
