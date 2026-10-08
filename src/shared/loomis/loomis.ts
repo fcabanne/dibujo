@@ -76,9 +76,8 @@ function sphereArc(
 }
 
 /** Las líneas fijas de la cabeza: no dependen de la pose. */
-function headLines(): { lines: Line[]; planes: Line[] } {
+function headLines(): { lines: Line[] } {
   const lines: Line[] = []
-  const planes: Line[] = []
   const [cx, cy, cz] = CENTER
 
   // La línea de las cejas: el ecuador de la bola, de un corte al otro.
@@ -100,7 +99,6 @@ function headLines(): { lines: Line[]; planes: Line[] } {
       const a = (2 * Math.PI * i) / SEGMENTS
       circle.push({ p: [x, cy + UNIT * Math.sin(a), cz + UNIT * Math.cos(a)], n })
     }
-    planes.push(circle)
     lines.push(circle)
     lines.push([
       { p: [x, cy + UNIT, cz], n },
@@ -163,7 +161,7 @@ function headLines(): { lines: Line[]; planes: Line[] } {
     { p: [chinHalf, CHIN[1], CHIN[2] - 0.3], n: [0, -0.4, 1] },
   ])
 
-  return { lines, planes }
+  return { lines }
 }
 
 const HEAD = headLines()
@@ -203,13 +201,7 @@ function silhouette(eye: Vec3): Line[] {
 
 export interface LoomisStyle {
   color: string
-  /**
-   * Con halo, la cabeza se dibuja como en Cabeza: un halo debajo de la línea, los
-   * costados apenas velados y lo de atrás punteado. Sin halo (`null`), como la
-   * grilla de Referencia: trazo liso, y lo de atrás como su subdivisión, a mitad de
-   * opacidad y de grosor.
-   */
-  halo: string | null
+  /** El grosor de la línea, en píxeles del lienzo. */
   width: number
 }
 
@@ -217,8 +209,10 @@ export interface LoomisStyle {
  * Dibuja la cabeza. `scale` lleva de píxeles de la foto a píxeles del lienzo, que
  * ya tiene corrido el origen hasta la esquina de la foto.
  *
- * Lo que queda del otro lado de la bola va punteado y más suave: se dibuja igual,
- * como hace quien construye la cabeza, pero no se confunde con lo que se ve.
+ * Con el trazo de la grilla de Referencia: liso y de un color. Lo que queda del
+ * otro lado de la bola se dibuja igual, como hace quien construye la cabeza, pero
+ * como la subdivisión de la grilla —a mitad de opacidad y de grosor—, para que no se
+ * confunda con lo que se ve.
  */
 export function drawLoomis(
   ctx: CanvasRenderingContext2D,
@@ -228,7 +222,7 @@ export function drawLoomis(
   style: LoomisStyle,
 ) {
   const eye = cameraInHead(pose)
-  // Todo lo de adentro se multiplica por la opacidad con la que llega el contexto.
+  // Todo se multiplica por la opacidad con la que llega el contexto.
   const base = ctx.globalAlpha
   const facing = (m: Mark) => {
     if (!m.n) return true
@@ -244,66 +238,35 @@ export function drawLoomis(
   const inFront = (p: Vec3) => project(cam, pose, p)[2] > 1
   if (!inFront(CENTER)) return
 
-  // Los costados, apenas velados cuando se ven: es lo que hace leer el corte como un plano.
-  ctx.save()
-  if (style.halo === null) ctx.globalAlpha = 0
-  ctx.fillStyle = style.color
-  ctx.globalAlpha = base * 0.14
-  for (const plane of HEAD.planes) {
-    if (!facing(plane[0]) || !plane.every((m) => inFront(m.p))) continue
-    ctx.beginPath()
-    plane.forEach((m, i) => {
-      const [x, y] = toScreen(m.p)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.fill()
-  }
-  ctx.restore()
-
   const lines = [...HEAD.lines, ...silhouette(eye)]
 
-  // Con halo, dos pasadas: el halo abajo, para que se lea sobre una cara clara, y la
-  // línea encima. Sin halo, una sola, lisa como la grilla.
-  const halo = style.halo
-  const passes = halo === null ? (['line'] as const) : (['halo', 'line'] as const)
-  for (const pass of passes) {
-    for (const visible of [false, true]) {
-      ctx.save()
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      if (halo === null) {
-        ctx.strokeStyle = style.color
-        ctx.lineWidth = visible ? style.width : Math.max(0.5, style.width / 2)
-        ctx.globalAlpha = base * (visible ? 1 : 0.5)
-      } else {
-        ctx.strokeStyle = pass === 'halo' ? halo : style.color
-        const w = visible ? style.width : style.width * 0.7
-        ctx.lineWidth = pass === 'halo' ? w + 2 : w
-        ctx.globalAlpha = base * (visible ? (pass === 'halo' ? 0.5 : 1) : pass === 'halo' ? 0.2 : 0.45)
-        if (!visible) ctx.setLineDash([style.width * 2.5, style.width * 3])
+  for (const visible of [false, true]) {
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = style.color
+    ctx.lineWidth = visible ? style.width : Math.max(0.5, style.width / 2)
+    ctx.globalAlpha = base * (visible ? 1 : 0.5)
+    ctx.beginPath()
+    for (const line of lines) {
+      let open = false
+      for (let i = 0; i < line.length; i++) {
+        const show = facing(line[i]) === visible && inFront(line[i].p)
+        const [x, y] = toScreen(line[i].p)
+        if (show && open) ctx.lineTo(x, y)
+        else if (show) {
+          // Arrancar desde el punto anterior, para que no queden huecos donde cambia.
+          if (i > 0) {
+            const [px, py] = toScreen(line[i - 1].p)
+            ctx.moveTo(px, py)
+            ctx.lineTo(x, y)
+          } else ctx.moveTo(x, y)
+          open = true
+        } else open = false
       }
-      ctx.beginPath()
-      for (const line of lines) {
-        let open = false
-        for (let i = 0; i < line.length; i++) {
-          const show = facing(line[i]) === visible && inFront(line[i].p)
-          const [x, y] = toScreen(line[i].p)
-          if (show && open) ctx.lineTo(x, y)
-          else if (show) {
-            // Arrancar desde el punto anterior, para que no queden huecos donde cambia.
-            if (i > 0) {
-              const [px, py] = toScreen(line[i - 1].p)
-              ctx.moveTo(px, py)
-              ctx.lineTo(x, y)
-            } else ctx.moveTo(x, y)
-            open = true
-          } else open = false
-        }
-      }
-      ctx.stroke()
-      ctx.restore()
     }
+    ctx.stroke()
+    ctx.restore()
   }
 }
 

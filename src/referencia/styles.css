@@ -127,8 +127,16 @@ body {
    Cada parte llega un poco después que la de arriba. La barra de abajo
    llega última: es de otra conversación. */
 .welcome-text > *,
-.welcome > .ds-button {
+.welcome-actions {
   animation: ds-rise var(--ds-dur-slow) var(--ds-ease) backwards;
+}
+
+/* Subir o sacar con la cámara: una debajo de la otra, y la que se usa más, arriba. */
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  align-items: center;
 }
 
 .welcome-text > :nth-child(2) {
@@ -139,7 +147,7 @@ body {
   animation-delay: 140ms;
 }
 
-.welcome > .ds-button {
+.welcome-actions {
   animation-delay: 240ms;
 }
 
@@ -672,6 +680,114 @@ body {
    si alguien lo estaba leyendo, lo ve irse. */
 .note.is-leaving {
   animation: ds-sink var(--ds-dur) var(--ds-ease) forwards;
+}
+
+/* --- la cámara --------------------------------------------------------
+   Un visor a pantalla completa encima de todo: la cámara de borde a borde y,
+   abajo, cerrar por un lado y dar vuelta, sacar y el flash por el otro. Ver
+   `CameraCapture`. */
+
+.camera-capture {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--ds-black);
+  animation: ds-fade-in var(--ds-dur) var(--ds-ease);
+}
+
+/* El video corre para el detector pero no se ve: lo pinta el lienzo, con la cabeza. */
+.camera-capture video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.camera-capture canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.camera-bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-4);
+  padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom));
+}
+
+.camera-bar .tabbar {
+  align-items: center;
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.28);
+}
+
+.camera-trouble {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  align-items: center;
+  width: min(320px, calc(100% - 32px));
+  padding: var(--ds-space-6);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.camera-trouble p {
+  margin: 0;
+  font: var(--ds-text-body);
+  color: var(--ds-black);
+}
+
+/* --- el aviso de las líneas claras -------------------------------------
+   Arriba y al medio de la foto, flotando: una pastilla del fondo claro con
+   la frase, la propuesta y la X. Ver `LinesHint`. */
+
+.lines-hint {
+  position: absolute;
+  top: calc(var(--ds-space-4) + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - var(--ds-space-6));
+  padding: var(--ds-space-1) var(--ds-space-1) var(--ds-space-1) var(--ds-space-5);
+  border-radius: var(--ds-radius-group);
+  background: var(--ds-background);
+  box-shadow: 0 10px 30px rgb(16 16 16 / 0.22);
+  transform: translateX(-50%);
+  animation: ds-fade-in var(--ds-dur-slow) var(--ds-ease);
+}
+
+/* En escritorio, al medio de la foto y no de la ventana: la columna ocupa la derecha. */
+.app:not(.is-compact) .lines-hint {
+  left: calc((100% - 360px) / 2);
+  max-width: calc(100% - 360px - var(--ds-space-6));
+}
+
+.lines-hint p {
+  margin: 0;
+  font: var(--ds-text-meta);
+  color: var(--ds-black);
+}
+
+.lines-hint .ds-button {
+  flex: none;
 }
 
 /* --- el diálogo de descarga ------------------------------------------- */

@@ -64,7 +64,7 @@ export function paintHeads(
   ctx.globalAlpha = style.opacity
   const scale = rect.w / scene.width
   for (const pose of scene.poses) {
-    drawLoomis(ctx, scene.cam, pose, scale, { color: style.color, halo: null, width: style.lineWidth })
+    drawLoomis(ctx, scene.cam, pose, scale, { color: style.color, width: style.lineWidth })
   }
   ctx.restore()
 }

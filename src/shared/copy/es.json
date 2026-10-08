@@ -84,6 +84,19 @@
     "failed": "No se pudo cargar el detector de caras."
   },
 
+  "camera": {
+    "use": "Sacar con la camara",
+    "flip": "Dar vuelta la camara",
+    "shoot": "Sacar foto",
+    "close": "Cerrar la camara",
+    "torchOn": "Prender el flash",
+    "torchOff": "Apagar el flash",
+    "insecure": "La camara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
+    "denied": "La camara esta bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
+    "noCamera": "No se encontro ninguna camara.",
+    "retry": "Reintentar"
+  },
+
   "adjust": {
     "opacity": "Opacidad",
     "tab": "Ajustes",
@@ -128,6 +141,8 @@
   },
 
   "notices": {
+    "lightLines": "Las lineas claras casi no se ven.",
+    "toBlack": "Pasar a negro",
     "done": "Listo: {file}",
     "shared": "Compartido",
     "loadFailed": "No se pudo cargar la imagen",
@@ -165,36 +180,6 @@
       "qr": "Codigo QR que abre la mesa de luz",
       "link": "O escribi esta direccion:"
     }
-  },
-
-  "cabeza": {
-    "name": "Cabeza",
-    "intro": "Esta tool te permite superponer una cabeza tipo Loomis sobre una foto o usando la camara.",
-    "useCamera": "Usar la camara",
-    "photo": "Foto",
-    "camera": "Camara",
-    "change": "Subir otra foto",
-    "opacity": "Cuanto se ve la foto",
-    "opacityValue": "{n}%",
-    "lens": "Lente",
-    "lensValue": "{n} mm",
-    "lensCamera": "La lente la anoto la camara",
-    "lensGuess": "La lente esta estimada mirando la cara",
-    "lensManual": "La lente esta elegida a mano",
-    "reset": "Volver a la lente {source}",
-    "fromCamera": "de la camara",
-    "estimated": "estimada",
-    "looking": "Buscando la cara...",
-    "noFace": "No encontre ninguna cara en esta foto.",
-    "failed": "No se pudo cargar el detector de caras.",
-    "flip": "Dar vuelta la camara",
-    "shoot": "Sacar foto",
-    "torchOn": "Prender el flash",
-    "torchOff": "Apagar el flash",
-    "insecure": "La camara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
-    "denied": "La camara esta bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
-    "noCamera": "No se encontro ninguna camara.",
-    "retry": "Reintentar"
   },
 
   "marco": {

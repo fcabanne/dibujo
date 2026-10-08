@@ -100,8 +100,8 @@ Esta lista es la deuda entre el código y el archivo. Cuanto más corta, mejor.
    del set (24×24, trazo 2, puntas redondas) y marcados en `icons.tsx` como los que no
    vienen del archivo. Linterna lo usa la mesa de luz para prender la luz de la
    cámara; Parlante (y su versión tachada), Enmarcado para callar el sonido;
-   Cámara y Dar vuelta, Cabeza para la cámara en vivo; Cabeza, la pestaña de
-   Referencia con la cabeza de Loomis.
+   Cámara y Dar vuelta, Referencia para sacar la foto con la cámara; Cabeza, su
+   pestaña con la cabeza de Loomis.
 4. **No hay estados dibujados** — ni hover, ni foco, ni deshabilitado. Los que hay
    están resueltos con opacidad y con tokens que ya existen, sin colores nuevos, y
    están marcados como derivados en `components.css`. La excepción es el ± apagado

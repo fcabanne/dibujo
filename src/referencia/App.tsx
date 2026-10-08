@@ -7,6 +7,8 @@ import { useCompact } from './hooks/useCompact'
 import { useHeads } from './hooks/useHeads'
 import { canDetect } from '../shared/loomis/detect'
 import { DownloadDialog } from './components/DownloadDialog'
+import { CameraCapture, canUseCamera } from './components/CameraCapture'
+import { LinesHint } from './components/LinesHint'
 import { Panel } from './components/Panel'
 import { Welcome } from './components/Welcome'
 import { deliver } from '../shared/deliver'
@@ -25,6 +27,8 @@ export function App() {
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState(false)
+  /** El visor de la cámara, abierto encima de todo. */
+  const [camera, setCamera] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [effectsSupported, setEffectsSupported] = useState(true)
   /** El cajón de controles del celular: la foto se acomoda arriba de él. */
@@ -164,7 +168,9 @@ export function App() {
             if (file) void handleFile(file)
           }}
         >
-          {ready && <Welcome onUpload={pickFile} />}
+          {ready && (
+            <Welcome onUpload={pickFile} onCamera={canUseCamera ? () => setCamera(true) : undefined} />
+          )}
         </div>
       )}
 
@@ -173,6 +179,7 @@ export function App() {
         dispatch={dispatch}
         reference={reference}
         onPickFile={pickFile}
+        onCamera={canUseCamera ? () => setCamera(true) : undefined}
         onRemove={removePhoto}
         onDownload={() => setDialog(true)}
         effectsSupported={effectsSupported}
@@ -194,6 +201,19 @@ export function App() {
           e.target.value = ''
         }}
       />
+
+      {reference && <LinesHint state={state} dispatch={dispatch} />}
+
+      {camera && (
+        <CameraCapture
+          head={state.head}
+          onCapture={(file) => {
+            setCamera(false)
+            void handleFile(file)
+          }}
+          onClose={() => setCamera(false)}
+        />
+      )}
 
       <DownloadDialog
         open={dialog}

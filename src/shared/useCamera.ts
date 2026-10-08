@@ -11,7 +11,7 @@ export type Facing = 'environment' | 'user'
 
 /**
  * Prende la cámara y la deja corriendo en el `<video>`. Por defecto la de atrás, la
- * que usa la mesa de luz; Cabeza deja elegir.
+ * que usa la mesa de luz; la cámara de Referencia deja elegir.
  *
  * El permiso no se pregunta dos veces ni se explica: se llama a `getUserMedia`
  * recién cuando hay una foto (`enabled`) y el que pregunta es el navegador, con su

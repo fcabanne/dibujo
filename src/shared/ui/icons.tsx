@@ -254,8 +254,8 @@ export function HeadIcon({ className }: IconProps) {
 /**
  * La cámara, y dar vuelta la cámara (de la de atrás a la de adelante).
  *
- * **Tampoco vienen de Figma.** Los usa Cabeza para pasar de la foto a la cámara en
- * vivo. El cuerpo con su joroba y el lente; las dos flechas que se persiguen en
+ * **Tampoco vienen de Figma.** Los usa Referencia para sacar la foto con la
+ * cámara. El cuerpo con su joroba y el lente; las dos flechas que se persiguen en
  * círculo. Cuando se dibujen en el archivo, se reemplazan los `d`.
  */
 export function CameraIcon({ className }: IconProps) {

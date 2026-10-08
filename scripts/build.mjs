@@ -13,7 +13,7 @@ import './mediapipe.mjs'
  *
  * Para sumar una herramienta: crear su `<nombre>/index.html` y agregarla acá.
  */
-const PAGES = ['index.html', 'marco/index.html', 'referencia/index.html', 'mesa/index.html', 'cabeza/index.html']
+const PAGES = ['index.html', 'marco/index.html', 'referencia/index.html', 'mesa/index.html']
 
 const root = process.cwd()
 

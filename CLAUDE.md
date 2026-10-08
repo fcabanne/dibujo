@@ -37,7 +37,6 @@ index.html      portada, el bifurcador hacia las herramientas
 marco/          probador de enmarcado
 referencia/     preparador de la foto de referencia
 mesa/           la mesa de luz
-cabeza/         la cabeza de Loomis sobre una foto (prueba de concepto, sin portada)
 src/
   portada/      estilos de la portada
   shared/
@@ -47,7 +46,6 @@ src/
   marco/        el probador de enmarcado
   referencia/   el preparador de la foto de referencia
   mesa/         la mesa de luz
-  cabeza/       la cabeza de Loomis
 ```
 
 **Para sumar una herramienta:** crear `<nombre>/index.html`, su carpeta en `src/`, y
@@ -133,10 +131,10 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
 - `src/shared/loomis/` — la cabeza de Loomis: el detector de caras (`detect.ts`), la
   pose y la lente (`pose.ts`), el armado de la cabeza (`loomis.ts`) y, encima de todo,
   `head.ts`: resolver las cabezas de una foto una vez y pintarlas en cualquier
-  rectángulo. Lo usan Referencia (la pestaña Cabeza) y Cabeza. Ver "Cómo está armada
-  Cabeza".
+  rectángulo. Lo usa Referencia, en la pestaña Cabeza y en la cámara. Ver "La cabeza
+  de Loomis".
 - `src/shared/useCamera.ts` — prende una cámara (la de atrás o la de adelante) en un
-  `<video>`, con la linterna donde el teléfono la presta. Lo usan la mesa y Cabeza.
+  `<video>`, con la linterna donde el teléfono la presta. Lo usan la mesa y la cámara de Referencia.
 - `src/shared/imageStore.ts` — guarda la imagen en IndexedDB, **aparte** de la
   configuración. Van separadas porque cuando iban juntas en localStorage una foto
   pesada reventaba la cuota y se perdía la sesión entera en silencio. Guarda data
@@ -750,8 +748,7 @@ referencia— y se porta igual: arranca en "Ninguna" (`state.head.mode`), tiene 
 espesor y opacidad con la misma escala relativa (`state.head.style`, un `GridStyle`), y
 pasa por `paintScene`, así que sale en la pantalla, en el export y en la mesa de luz.
 Va encima de la grilla, y **con su mismo trazo**: liso, sin halo, y lo que queda del
-otro lado de la bola como la subdivisión, a mitad de opacidad y de grosor (`halo: null`
-en `drawLoomis`; Cabeza sigue con halo y punteado).
+otro lado de la bola como la subdivisión, a mitad de opacidad y de grosor (`drawLoomis`).
 
 - **El detector se baja recién al elegir Loomis** (`useHeads`): unos quince megas que
   quien solo quiere la grilla no paga. Corre una vez por foto sobre la copia liviana, y
@@ -764,6 +761,19 @@ en `drawLoomis`; Cabeza sigue con halo y punteado).
   anotó, la estimada mirando las caras. Hubo un slider para corregirla a mano y se
   sacó: con la cara bien detectada no hacía falta, y era una perilla que había que
   explicar.
+
+**La foto también se saca con la cámara** (`CameraCapture`), desde la bienvenida o la
+pestaña Foto: un visor a pantalla completa con cerrar, dar vuelta, flash donde el
+teléfono lo presta, y "Sacar foto". Si la cabeza está prendida, el Loomis va encima en
+vivo para encuadrar la pose: la detección corre en cada cuadro en un
+`requestAnimationFrame`, fuera del estado de React, con el detector de video, y la lente
+se estima con la primera cara. La de adelante se ve y se saca en espejo. La foto entra
+como cualquier subida (`handleFile`), a la resolución de la cámara. En la versión
+suelta, o sin cámara, no se ofrece (`canUseCamera`).
+
+**Con la foto muy apagada y líneas claras, un aviso propone pasarlas a negro**
+(`LinesHint`): arriba y al medio de la foto, chico, con la X para cerrarlo. Sugiere y no
+decide —el color es de quien dibuja—, y cerrado no vuelve en la sesión.
 
 **El margen de seguridad es una constante** (`SAFE_MARGIN`), no un control: toda
 impresora se come unos milímetros del borde. Por la misma razón la hoja se orienta
@@ -1038,16 +1048,15 @@ pantalla. Parece que anda hasta que se mueve el papel y no pasa nada, así que
 La foto se guarda como las demás, en IndexedDB bajo su propia clave (`'mesa'`), y la
 opacidad y las esquinas en localStorage.
 
-## Cómo está armada Cabeza
+## La cabeza de Loomis
 
-**Prueba de concepto**: publicada en `cabeza/` pero todavía **no está en la portada**, y
-lleva `noindex`. Se llega con el link. **Se está fusionando con Referencia**: la cabeza
-sobre una foto ya es la pestaña Cabeza de allá; falta llevar la cámara como otra forma
-de cargar la foto, y entonces `cabeza/` se va. El código de la cabeza vive en
-`src/shared/loomis/`.
+`src/shared/loomis/`. Dibuja la cabeza de Loomis encima de una cara, girada como la
+cabeza y en la perspectiva de la lente. Hoy la usa Referencia (la pestaña Cabeza y el
+visor de la cámara).
 
-Dibuja la cabeza de Loomis encima de una foto o de la cámara en vivo, girada como la
-cabeza y en la perspectiva de la lente.
+Empezó como una herramienta aparte, **Cabeza**, y se fusionó con Referencia: la grilla
+y la cabeza son lo mismo para quien dibuja, líneas de construcción sobre la referencia.
+`cabeza/` quedó solo como redirección (`public/cabeza/index.html`) para los links viejos.
 
 - `detect.ts` — MediaPipe Face Landmarker, **en el procesador**: en Android el camino
   de la GPU devolvía caras corridas o ninguna, sin dar error. El modelo
@@ -1061,22 +1070,17 @@ cabeza y en la perspectiva de la lente.
 - **La lente**: la que anotó la cámara en el EXIF (`exif.ts`, la focal equivalente a
   35 mm) si está; si no, se estima probando de 14 a 200 mm y quedándose con la que
   mejor calza (`fitLens`). Anda en fotos de cerca —en una selfie dio lo mismo que el
-  EXIF— y de lejos casi no discrimina, pero ahí la perspectiva tampoco se nota. Se
-  corrige a mano en el cajón de la foto.
+  EXIF— y de lejos casi no discrimina, pero ahí la perspectiva tampoco se nota. No se
+  elige a mano.
 - `loomis.ts` — la cabeza armada una vez sobre la cara canónica: los tercios salen de
   las cejas (punto 9), la base de la nariz (2) y el mentón (152). La bola tiene radio
   de un tercio y medio, con la frente sobre su superficie; los costados la cortan con
   un círculo de un tercio, y la oreja va entre la línea de las cejas y la de la nariz.
   Debajo de la nariz la bola no se dibuja: la tapan la cara y la mandíbula. Lo que
-  queda del otro lado va punteado.
-- **Una foto nueva recarga la página** (`replacePhoto`): se guarda, se recarga y la
-  página la levanta. Así nada de la foto anterior queda a medio camino.
-- **Abajo**: volver; la foto (abre el cajón con la miniatura y la lente), la cámara y
-  cuánto se ve la imagen de abajo. Con la foto apagada queda el dibujo solo: la línea
-  es oscura con un halo del color del papel.
-- **La cámara en vivo** corre la detección en cada cuadro en un `requestAnimationFrame`,
-  fuera del estado de React. La de adelante se ve en espejo. La lente se estima con la
-  primera cara y se queda. "Sacar foto" guarda el cuadro como se ve y recarga.
-- `?puntos` en la dirección dibuja en rojo los puntos detectados y en cian la cara
-  modelo con la pose calculada. Si coinciden y algo se ve mal, el problema está en
-  `loomis.ts`, no en la detección.
+  queda del otro lado va como la subdivisión de la grilla, a mitad de opacidad y de
+  grosor.
+- `head.ts` — `solveHeads` resuelve las cabezas de una imagen una vez, en sus píxeles;
+  `paintHeads` las pinta en cualquier rectángulo con una escala uniforme.
+- **Para revisar el calce**, lo que sirvió fue dibujar los puntos detectados y los de la
+  cara modelo proyectada con la pose (`project` sobre `CANONICAL`). Si coinciden y algo
+  se ve mal, el problema está en `loomis.ts`, no en la detección.

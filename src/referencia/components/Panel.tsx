@@ -5,6 +5,7 @@ import { openInstagram } from '../../shared/suggestions'
 import {
   BackIcon,
   Button,
+  CameraIcon,
   ChoiceGroup,
   CloseIcon,
   ContrastIcon,
@@ -38,6 +39,8 @@ interface Props {
   dispatch: (action: Action) => void
   reference: Reference | null
   onPickFile: () => void
+  /** Sacar la foto con la cámara. Sin él no se ofrece: no hay cámara que prestar. */
+  onCamera?: () => void
   onRemove: () => void
   onDownload: () => void
   effectsSupported: boolean
@@ -161,6 +164,7 @@ export function Panel({
   dispatch,
   reference,
   onPickFile,
+  onCamera,
   onRemove,
   onDownload,
   effectsSupported,
@@ -264,6 +268,11 @@ export function Panel({
           <Button variant="quiet" icon={<UploadIcon />} onClick={onPickFile}>
             {copy.photo.change}
           </Button>
+          {onCamera && (
+            <IconButton label={copy.camera.use} onClick={onCamera}>
+              <CameraIcon />
+            </IconButton>
+          )}
           <IconButton label={copy.photo.remove} onClick={onRemove}>
             <CloseIcon />
           </IconButton>

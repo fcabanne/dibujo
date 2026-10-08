@@ -84,6 +84,19 @@
     "failed": "The face detector couldn't load."
   },
 
+  "camera": {
+    "use": "Take it with the camera",
+    "flip": "Switch camera",
+    "shoot": "Take photo",
+    "close": "Close the camera",
+    "torchOn": "Turn the flash on",
+    "torchOff": "Turn the flash off",
+    "insecure": "The camera needs the published site: browsers don't lend it to a file opened with a double click.",
+    "denied": "The camera is blocked for this site. Allow it from the lock in the address bar.",
+    "noCamera": "No camera was found.",
+    "retry": "Try again"
+  },
+
   "adjust": {
     "opacity": "Opacity",
     "tab": "Looks",
@@ -128,6 +141,8 @@
   },
 
   "notices": {
+    "lightLines": "Light lines barely show.",
+    "toBlack": "Make them black",
     "done": "Done: {file}",
     "shared": "Shared",
     "loadFailed": "Couldn't load the image",
@@ -165,36 +180,6 @@
       "qr": "QR code that opens the light table",
       "link": "Or type this address:"
     }
-  },
-
-  "cabeza": {
-    "name": "Head",
-    "intro": "This tool lets you lay a Loomis-style head over a photo or over the camera.",
-    "useCamera": "Use the camera",
-    "photo": "Photo",
-    "camera": "Camera",
-    "change": "Upload another photo",
-    "opacity": "How much of the photo shows",
-    "opacityValue": "{n}%",
-    "lens": "Lens",
-    "lensValue": "{n} mm",
-    "lensCamera": "The lens was noted by the camera",
-    "lensGuess": "The lens is estimated from the face",
-    "lensManual": "The lens is picked by hand",
-    "reset": "Back to the {source} lens",
-    "fromCamera": "camera's",
-    "estimated": "estimated",
-    "looking": "Looking for the face...",
-    "noFace": "I couldn't find a face in this photo.",
-    "failed": "The face detector couldn't load.",
-    "flip": "Switch camera",
-    "shoot": "Take photo",
-    "torchOn": "Turn the flash on",
-    "torchOff": "Turn the flash off",
-    "insecure": "The camera needs the published site: browsers don't lend it to a file opened with a double click.",
-    "denied": "The camera is blocked for this site. Allow it from the lock in the address bar.",
-    "noCamera": "No camera was found.",
-    "retry": "Try again"
   },
 
   "marco": {
