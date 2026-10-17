@@ -33,12 +33,12 @@ contexto seguro, así que abierta como `file://` no tendría con qué funcionar.
 ## Estructura
 
 ```
-index.html      portada, el bifurcador hacia las herramientas
+index.html      portada: la escena de lápices y una pantalla por herramienta
 marco/          probador de enmarcado
 referencia/     preparador de la foto de referencia
 mesa/           la mesa de luz
 src/
-  portada/      estilos de la portada
+  portada/      estilos de la portada y la escena de lápices (escena/)
   shared/
     ui/         el sistema de diseño: tokens, componentes, íconos, fuentes
     copy/       los textos de pantalla, un archivo por idioma
@@ -107,18 +107,42 @@ sin un clic del mouse no hay sonidos que contar.
 
 ## Cómo está armada la portada
 
-HTML y CSS sueltos, y un solo script: el que abre Instagram en la app (`main.ts`). Habla como la pantalla de inicio de Referencia
-—"Hola artista!", una frase, el link a Instagram abajo— y usa su mismo sistema de
-diseño. **Las herramientas van en el orden en que se usan**: la foto, el calcado, el
-marco. Las tres ilustraciones son **la misma pera** en esos tres momentos (la foto
-con la grilla, calcada sobre el papel, colgada en la pared), dibujada una sola vez
-en un `<defs>` al principio del archivo; así la portada se lee como un recorrido y no
-como tres cosas sueltas. El único movimiento es el trazo de la mesa de luz, que se
-completa al pasar por encima: sin hover la tarjeta dice exactamente lo mismo.
+Un scroll por pantalla, en este orden (Instagram al final):
+
+1. **La escena de lápices** (`src/portada/escena/`), en 3D con three.js: la foto de
+   referencia de Facu hecha escena. Arriba el saludo —"Hola artista!", una frase—. El
+   lápiz rojo y el portaminas ruedan al inclinar el celu y se mueven al sacudirlo; el
+   resto está fijo. El dedo no empuja nada, para que el toque sirva para hacer
+   scroll. En compu se inclinan con las flechas y se sacuden con la barra espaciadora.
+   Solo dibuja mientras esa pantalla se ve, y se carga después de que la página
+   aparece (`main.ts`). En iOS el sensor pide permiso: aparece el botón "Activar
+   movimiento". Sin WebGL queda el fondo y el título.
+2. **Una pantalla por herramienta**, en el orden en que se usan: Referencia, Mesa de
+   luz, Enmarcado. Cuando una toma el foco su imagen se oscurece un poco y aparece
+   encima el texto con "Probar ahora". El foco lo calcula `main.ts` con el scroll y lo
+   deja en la variable CSS `--foco` (0 a 1) de cada sección; sin JavaScript queda en 1
+   y todo se ve. **La imagen de cada herramienta es hoy un dibujito de placeholder**
+   (la pera de las tres tarjetas de antes): cuando haya imagen real va un
+   `<img class="herramienta-img">` en su lugar, y el resto queda igual.
+
+El texto de la portada está en el HTML, como siempre. **Gaegu no trae tildes, ñ ni
+¿ ¡**, así que se escribe sin ellos.
+
+**Lo que viene de generalito.** `src/portada/escena/` es la página `herramientas` de
+https://github.com/fcabanne/generalito (carpeta `web/herramientas`), copiada acá: física
+propia (`fisica.js`, XPBD, sin librerías), los objetos 3D (`objetos/`: lápiz,
+portaminas, lápiz de color), la luz y el piso (`escenario.js`, `escena.js`), la
+composición medida de la foto (`composicion.js`, en cm) y `index.js`, que arma todo y
+devuelve `iniciarEscena(canvas, contenedor)`. Está en JavaScript sin tipos
+(`allowJs`). `three` va fijado en 0.186.0, la versión con la que se hizo. Si algo se
+mejora en generalito hay que traerlo a mano: son copias, no un vínculo.
 
 **Los colores del dibujito salen de `--ds-*`**, como todo lo demás: papel, grafito,
 moldura, lápiz. La única excepción son los de la foto, escritos en el `<defs>`: es
-una foto y no interfaz, y tiene que leerse distinta del dibujo en grafito.
+una foto y no interfaz, y tiene que leerse distinta del dibujo en grafito. Las tres
+ilustraciones son **la misma pera** en tres momentos (la foto con la grilla, calcada
+sobre el papel, colgada en la pared), dibujada una sola vez en un `<defs>` al
+principio del archivo.
 
 ## Código que comparten las herramientas
 

@@ -65,19 +65,39 @@
     </svg>
 
     <main class="portada">
-      <header>
-        <h1>Hola artista!</h1>
-        <p>
-          Hice estas mini herramientas para acompanarte en todo el camino: desde la
-          foto de referencia hasta el dibujo colgado en la pared.
-        </p>
-      </header>
+      <!--
+        Primera pantalla: la escena de lapices en 3D (src/portada/escena). Se mueve con
+        la inclinacion del celu y al sacudirlo. Sin JavaScript queda el fondo y el titulo.
+      -->
+      <section class="hero" id="inicio">
+        <canvas
+          class="hero-lienzo"
+          id="lienzo"
+          role="img"
+          aria-label="Un lapiz rojo y un portaminas sobre una hoja, en 3D. Se mueven al inclinar o sacudir el celular."
+        ></canvas>
+        <div class="hero-texto">
+          <h1>Hola artista!</h1>
+          <p>
+            Hice estas mini herramientas para acompanarte en todo el camino: desde la
+            foto de referencia hasta el dibujo colgado en la pared.
+          </p>
+        </div>
+        <button class="ds-button ds-button--quiet hero-permiso" id="permiso" type="button" hidden>
+          Activar movimiento
+        </button>
+        <a class="hero-bajar" href="#referencia" aria-label="Ver las herramientas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" /></svg>
+        </a>
+      </section>
 
-      <ol class="tools">
-        <li>
-          <a class="tool" href="./referencia/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
+      <!--
+        Cuando la persona mande la imagen de la herramienta, va en lugar del dibujito:
+        <img class="herramienta-img" src="..." alt="" />. Todo lo demas queda igual.
+      -->
+      <section class="herramienta" id="referencia" aria-labelledby="referencia-titulo">
+        <div class="herramienta-arte">
+          <svg viewBox="0 0 240 180" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
                 <g transform="translate(120 90)">
                   <use href="#foto" />
                   <g class="grilla" stroke-width="1.2" opacity="0.85">
@@ -85,18 +105,23 @@
                   </g>
                 </g>
               </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Referencia</strong>
-              <span>Preparale una grilla, la estructura de la cabeza y algunos ajustes a tu foto antes de empezar.</span>
-            </span>
-          </a>
-        </li>
+        </div>
+        <div class="herramienta-velo" aria-hidden="true"></div>
+        <div class="herramienta-texto">
+          <span class="herramienta-numero" aria-hidden="true">1 de 3</span>
+          <h2 id="referencia-titulo">Referencia</h2>
+          <p>Preparale una grilla, la estructura de la cabeza y algunos ajustes a tu foto antes de empezar.</p>
+          <a class="ds-button ds-button--quiet" href="./referencia/">Probar ahora</a>
+        </div>
+      </section>
 
-        <li>
-          <a class="tool" href="./mesa/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
+      <!--
+        Cuando la persona mande la imagen de la herramienta, va en lugar del dibujito:
+        <img class="herramienta-img" src="..." alt="" />. Todo lo demas queda igual.
+      -->
+      <section class="herramienta" id="mesa-de-luz" aria-labelledby="mesa-de-luz-titulo">
+        <div class="herramienta-arte">
+          <svg viewBox="0 0 240 180" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
                 <g transform="translate(120 90)">
                   <rect class="papel" x="-58" y="-73" width="116" height="146" />
                   <use href="#foto" opacity="0.3" />
@@ -115,20 +140,23 @@
                   </g>
                 </g>
               </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Mesa de luz</strong>
-              <span>Apunta el celu al papel y calca tu foto como en una mesa de luz.</span>
-              <!-- Solo en una compu: en el celular ya está donde tiene que estar. -->
-              <span class="tool-note">Es para usar desde el celu.</span>
-            </span>
-          </a>
-        </li>
+        </div>
+        <div class="herramienta-velo" aria-hidden="true"></div>
+        <div class="herramienta-texto">
+          <span class="herramienta-numero" aria-hidden="true">2 de 3</span>
+          <h2 id="mesa-de-luz-titulo">Mesa de luz</h2>
+          <p>Apunta el celu al papel y calca tu foto como en una mesa de luz.</p>
+          <a class="ds-button ds-button--quiet" href="./mesa/">Probar ahora</a>
+        </div>
+      </section>
 
-        <li>
-          <a class="tool" href="./marco/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
+      <!--
+        Cuando la persona mande la imagen de la herramienta, va en lugar del dibujito:
+        <img class="herramienta-img" src="..." alt="" />. Todo lo demas queda igual.
+      -->
+      <section class="herramienta" id="enmarcado" aria-labelledby="enmarcado-titulo">
+        <div class="herramienta-arte">
+          <svg viewBox="0 0 240 180" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
                 <g transform="translate(120 88)">
                   <rect class="sombra" x="-54" y="-70" width="108" height="140" transform="translate(3 5)" />
                   <rect class="moldura" x="-54" y="-70" width="108" height="140" />
@@ -139,18 +167,21 @@
                   </g>
                 </g>
               </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Enmarcado</strong>
-              <span>Proba marcos y passe-partout sobre tu dibujo, y llevate las medidas.</span>
-            </span>
-          </a>
-        </li>
-      </ol>
+        </div>
+        <div class="herramienta-velo" aria-hidden="true"></div>
+        <div class="herramienta-texto">
+          <span class="herramienta-numero" aria-hidden="true">3 de 3</span>
+          <h2 id="enmarcado-titulo">Enmarcado</h2>
+          <p>Proba marcos y passe-partout sobre tu dibujo, y llevate las medidas.</p>
+          <a class="ds-button ds-button--quiet" href="./marco/">Probar ahora</a>
+        </div>
+      </section>
 
-      <a class="ds-link portada-link" href="https://instagram.com/facucabanne" target="_blank" rel="noreferrer">
-        Dejame sugerencias →
-      </a>
+      <footer class="pie">
+        <a class="ds-link portada-link" href="https://instagram.com/facucabanne" target="_blank" rel="noreferrer">
+          Dejame sugerencias →
+        </a>
+      </footer>
     </main>
   </body>
 </html>

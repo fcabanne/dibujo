@@ -4,105 +4,227 @@
 /* ------------------------------------------------------------------
    Portada: el bifurcador hacia las herramientas.
 
-   Habla como la pantalla de inicio de Referencia (Figma 18:76) y usa su
-   mismo sistema: un saludo, una frase, y las tres herramientas en el
-   orden en que se usan — la foto, el calcado, el marco.
+   Un scroll por pantalla. Primero la escena de lapices en 3D con el saludo;
+   despues una pantalla por herramienta, en el orden en que se usan —la foto,
+   el calcado, el marco—. Cuando una herramienta toma el foco, su imagen se
+   oscurece un poco y aparece encima el texto con el boton para probarla.
+
+   El foco lo calcula `main.ts` y lo deja en `--foco` (0 a 1). Sin JavaScript
+   `--foco` queda en 1: todo se ve y los links funcionan.
    ------------------------------------------------------------------ */
 
+html {
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+}
+
 body {
-  min-height: 100vh;
   margin: 0;
-  display: grid;
-  place-items: center;
-  padding: var(--ds-space-7) var(--ds-space-5);
+  overscroll-behavior-y: none;
 }
 
 .portada {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-7);
-  align-items: center;
+  display: block;
+}
+
+/* --- primera pantalla: la escena ------------------------------------ */
+
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  /* el verde salvia de la escena: se ve antes de que cargue */
+  background: #c5c7b1;
+  scroll-snap-align: start;
+}
+
+.hero-lienzo {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
-  max-width: 920px;
+  height: 100%;
+  /* el dedo no empuja nada: el toque es para hacer scroll */
+  touch-action: pan-y;
+  opacity: 0;
+  transition: opacity var(--ds-dur-slow) var(--ds-ease);
 }
 
-.portada header {
+.hero.listo .hero-lienzo {
+  opacity: 1;
+}
+
+.hero-texto {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-5);
-  max-width: 420px;
-  text-align: center;
+  gap: var(--ds-space-4);
+  padding: calc(var(--ds-space-7) + env(safe-area-inset-top)) var(--ds-space-6) 0;
+  max-width: 460px;
+  pointer-events: none;
 }
 
-.portada h1 {
+.hero-texto h1 {
   margin: 0;
   font: var(--ds-text-title);
+  font-size: 40px;
+  line-height: 1.05;
+  color: var(--ds-black);
 }
 
-.portada header p {
+.hero-texto p {
   margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--ds-black);
 }
 
-.tools {
+.hero-permiso {
+  position: absolute;
+  right: var(--ds-space-5);
+  bottom: calc(var(--ds-space-7) + env(safe-area-inset-bottom));
+}
+
+.hero-permiso[hidden] {
+  display: none;
+}
+
+.hero-bajar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--ds-space-6);
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  place-items: center;
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  margin-left: calc(var(--ds-control-min) / -2);
+  color: var(--ds-black);
 }
 
-.tool {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border-radius: var(--ds-radius-group);
-  background: var(--ds-white);
+.hero-bajar svg {
+  width: var(--ds-icon);
+  height: var(--ds-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-bajar:focus-visible {
+  outline: 2px solid var(--ds-black);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
+}
+
+/* --- una pantalla por herramienta ----------------------------------- */
+
+.herramienta {
+  --foco: 1;
+  position: relative;
+  display: grid;
+  align-items: end;
+  height: 100vh;
+  height: 100svh;
   overflow: hidden;
-  color: inherit;
-  text-decoration: none;
-  transition: transform 260ms var(--ds-ease);
-}
-
-.tool-art {
-  display: block;
+  scroll-snap-align: start;
   background: var(--ds-accent-light);
 }
 
-.tool-art svg {
+/* Con JavaScript el foco arranca en 0 y lo mueve el scroll. */
+.js .herramienta {
+  --foco: 0;
+}
+
+.herramienta-arte,
+.herramienta-velo {
+  position: absolute;
+  inset: 0;
+}
+
+.herramienta-arte {
+  display: grid;
+  place-items: center;
+}
+
+.herramienta-arte svg {
   display: block;
   width: 100%;
   height: auto;
+  /* respira un poco mas cuando la herramienta toma el foco */
+  transform: scale(calc(1 + var(--foco) * 0.06));
 }
 
-.tool-body {
+/* La imagen de verdad llena la pantalla entera. */
+.herramienta-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(calc(1 + var(--foco) * 0.06));
+}
+
+/* El velo oscuro: de nada a medio negro segun el foco. */
+.herramienta-velo {
+  background: var(--ds-black);
+  opacity: calc(var(--foco) * 0.62);
+}
+
+.herramienta-texto {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-2);
-  padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-6);
+  align-items: flex-start;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-6) var(--ds-space-6) calc(var(--ds-space-7) + env(safe-area-inset-bottom));
+  color: var(--ds-white);
+  opacity: clamp(0, calc((var(--foco) - 0.35) * 1.8), 1);
+  transform: translateY(calc((1 - var(--foco)) * 28px));
 }
 
-.tool-body strong {
-  font: var(--ds-text-label);
-  color: var(--ds-accent-dark);
+.herramienta-numero {
+  font: var(--ds-text-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
 }
 
-/* Solo se ve con mouse: en el celular la mesa ya está donde tiene que estar. */
-.tool-note {
-  display: none;
-  color: var(--ds-accent-dark);
+.herramienta-texto h2 {
+  margin: 0;
+  font: var(--ds-text-title);
+  font-size: 44px;
+  line-height: 1;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .tool-note {
-    display: block;
-  }
+.herramienta-texto p {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 22px;
+  line-height: 1.2;
 }
 
-.tool:focus-visible {
-  outline: 2px solid var(--ds-accent-dark);
-  outline-offset: 3px;
+.herramienta-texto .ds-button {
+  text-decoration: none;
+  margin-top: var(--ds-space-2);
+}
+
+/* --- el pie --------------------------------------------------------- */
+
+.pie {
+  display: grid;
+  place-items: center;
+  min-height: 30svh;
+  padding: var(--ds-space-7) var(--ds-space-5);
+  scroll-snap-align: end;
+}
+
+.pie .portada-link {
+  padding: var(--ds-space-4);
 }
 
 /* --- los colores de las ilustraciones --------------------------------
@@ -144,70 +266,19 @@ body {
   fill: var(--ds-accent-light);
 }
 
-/* --- el calcado de la mesa de luz -----------------------------------
-   El trazo está a medio hacer y el lápiz apoyado donde quedó. Al pasar
-   por encima termina la vuelta: es lo único que se mueve, y no esconde
-   nada — sin hover la tarjeta dice exactamente lo mismo. */
-
-.trazo path {
-  fill: none;
-  stroke: var(--ds-black);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-dasharray: 62 100;
-  transition: stroke-dasharray 900ms var(--ds-ease);
-}
-
-.lapiz {
-  transition: opacity 300ms var(--ds-ease);
-}
-
-@media (hover: hover) {
-  .tool:hover {
-    transform: translateY(-4px);
-  }
-
-  .tool:hover .trazo path {
-    stroke-dasharray: 100 100;
-  }
-
-  .tool:hover .lapiz {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .tool,
-  .trazo path,
-  .lapiz {
-    transition: none;
+  html {
+    scroll-behavior: auto;
   }
 }
 
-/* --- pantalla angosta ------------------------------------------------
-   Una debajo de la otra, con el dibujito al costado del nombre: tres
-   tarjetas altas no entran enteras y la tercera quedaría fuera de vista. */
-
-@media (max-width: 720px) {
-  .tools {
-    grid-template-columns: 1fr;
-    gap: var(--ds-space-4);
+@media (min-width: 720px) {
+  .hero-texto {
+    padding-left: var(--ds-space-7);
   }
 
-  .tool {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .tool-art {
-    flex: none;
-    width: 42%;
-    align-self: stretch;
-    display: grid;
-    place-items: center;
-  }
-
-  .tool-body {
-    padding: var(--ds-space-4) var(--ds-space-5);
+  .herramienta-texto {
+    padding-left: var(--ds-space-7);
+    padding-bottom: calc(var(--ds-space-7) * 1.5);
   }
 }
