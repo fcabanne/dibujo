@@ -47,7 +47,8 @@ export async function iniciarEscena(canvas, contenedor) {
       { n: [0, 1, 0], d: 0, tipo: 'piso' },
       { n: [0, -1, 0], d: -TECHO, tipo: 'pared' },
       // el carril: el material 'vidrio' es liso y elástico, así rebotan
-      { n: [1, 0, 0], d: px(LIMITES.izquierda), tipo: 'pared', material: 'vidrio' },
+      // a la izquierda, el borde de la pantalla: los lápices pueden llegar hasta ahí
+      { n: [1, 0, 0], d: px(-e.tx / e.s), tipo: 'pared', material: 'vidrio' },
       { n: [-1, 0, 0], d: -px(LIMITES.derecha), tipo: 'pared', material: 'vidrio' },
       { n: [0, 0, 1], d: px(LIMITES.arriba), tipo: 'pared', material: 'vidrio' },
       { n: [0, 0, -1], d: -px(LIMITES.abajo), tipo: 'pared', material: 'vidrio' },

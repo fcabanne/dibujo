@@ -33,5 +33,6 @@ export const COLISIONES = [
 ];
 
 // Los límites del carril, en px de la foto. Los lápices pueden pisar el texto,
-// pero no salirse de la hoja: a la izquierda, arriba (el clip) y abajo.
-export const LIMITES = { izquierda: 150, derecha: 800, arriba: 330, abajo: 1260 };
+// pero no salirse de la hoja: arriba (el clip) y abajo. A la izquierda el límite
+// es el borde de la pantalla (index.js).
+export const LIMITES = { derecha: 800, arriba: 330, abajo: 1260 };

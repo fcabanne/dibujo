@@ -37,7 +37,7 @@ if (hero) {
 }
 
 // --- parallax de las fotos de las tarjetas -----------------------------
-const PARALLAX = 18 // px: lo que sobra de la foto arriba y abajo del marco
+const PARALLAX = 54 // px: lo que sobra de la foto arriba y abajo del marco
 const tarjetas = [...document.querySelectorAll<HTMLElement>('.tarjeta')]
 
 function alScroll() {
@@ -72,7 +72,17 @@ const vigia = new IntersectionObserver(
   },
   { threshold: 0.4 },
 )
-for (const trazo of document.querySelectorAll('.trazo')) vigia.observe(trazo)
+for (const trazo of document.querySelectorAll('.trazo:not(.trazo-boton)')) vigia.observe(trazo)
+
+// Los círculos de "Probar" arrancan cuando ya subieron un poco en la pantalla:
+// recién entrando por abajo no se ven bien en el celular.
+const vigiaProbar = new IntersectionObserver(
+  (entradas) => {
+    for (const e of entradas) e.target.classList.toggle('viva', e.isIntersecting)
+  },
+  { threshold: 0.9, rootMargin: '0px 0px -38% 0px' },
+)
+for (const trazo of document.querySelectorAll('.trazo-boton')) vigiaProbar.observe(trazo)
 
 // --- la escena -----------------------------------------------------
 const lienzo = document.querySelector<HTMLCanvasElement>('#lienzo')

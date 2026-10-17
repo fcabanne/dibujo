@@ -120,7 +120,7 @@ arriba abajo —el diseño está en Figma "Mi web", nodo 45:582—:
    estamos pidiendo; por ahora no importa). Solo dibuja mientras el hero se ve.
 2. **Una tarjeta por herramienta** (Referencia, Mesa de luz, Enmarcado), en el orden
    en que se usan. Toda la foto es el link; adentro lleva el título y "Probar →"
-   rodeado. La foto se corre un poco con el scroll (parallax, `--py`, ±18 px) dentro
+   rodeado. La foto se corre un poco con el scroll (parallax, `--py`, ±54 px) dentro
    de un marco quieto.
 3. **El pie**: "Dejame sugerencias →".
 
@@ -139,7 +139,7 @@ un solo `.html`, y con los JPG pesaría varios MB). Si se cambia una foto, se vu
 exportar a WebP (calidad 80).
 
 **Los trazos a mano** (`.trazo`: el círculo de "artistas", la flecha de bajar y los
-círculos de "Probar") son SVG con tres versiones del mismo trazo, apenas distintas
+círculos de "Probar") son SVG de 1,5 px de grosor, con tres versiones del mismo trazo, apenas distintas
 (salen de los vectores de Figma con una deformación chica). Con `html.anima` se
 muestran de a una, a saltos (stop motion, CSS puro), solo mientras se ven (`.viva`,
 `main.ts`). La flecha además salta y desaparece al empezar a hacer scroll; "artistas"
