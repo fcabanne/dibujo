@@ -72,17 +72,7 @@ const vigia = new IntersectionObserver(
   },
   { threshold: 0.4 },
 )
-for (const trazo of document.querySelectorAll('.trazo:not(.trazo-boton)')) vigia.observe(trazo)
-
-// Los círculos de "Probar" arrancan cuando ya subieron un poco en la pantalla:
-// recién entrando por abajo no se ven bien en el celular.
-const vigiaProbar = new IntersectionObserver(
-  (entradas) => {
-    for (const e of entradas) e.target.classList.toggle('viva', e.isIntersecting)
-  },
-  { threshold: 0.9, rootMargin: '0px 0px -38% 0px' },
-)
-for (const trazo of document.querySelectorAll('.trazo-boton')) vigiaProbar.observe(trazo)
+for (const trazo of document.querySelectorAll('.trazo')) vigia.observe(trazo)
 
 // --- la escena -----------------------------------------------------
 const lienzo = document.querySelector<HTMLCanvasElement>('#lienzo')
