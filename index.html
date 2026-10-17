@@ -8,149 +8,73 @@
     <script type="module" src="/src/portada/main.ts"></script>
   </head>
   <body class="ds">
-    <!--
-      Las tres ilustraciones son la misma pera en tres momentos: la foto con la
-      grilla, calcada sobre el papel, colgada en la pared. Se dibuja una sola vez
-      acá y cada tarjeta la usa a su manera, así el recorrido se lee de corrido.
-    -->
-    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
-      <defs>
-        <path
-          id="pera"
-          d="M0-44c-7 0-11 7-11 15 0 10-19 19-19 42 0 21 13 35 30 35s30-14 30-35c0-23-19-32-19-42 0-8-4-15-11-15z"
-        />
-        <path id="pera-tallo" d="M0-44c0-5 2-9 6-12" />
-        <path id="pera-hoja" d="M3-51c8-8 19-8 24-3-7 7-17 8-24 3z" />
-
-        <linearGradient id="pera-piel" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#e3d86a" />
-          <stop offset="0.55" stop-color="#b9c24e" />
-          <stop offset="1" stop-color="#6f8a33" />
-        </linearGradient>
-        <linearGradient id="foto-fondo" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#e9ddc8" />
-          <stop offset="0.68" stop-color="#d9c7a8" />
-          <stop offset="0.68" stop-color="#b58d63" />
-          <stop offset="1" stop-color="#8f6a45" />
-        </linearGradient>
-
-        <!--
-          La foto entera, en 100 × 130, con el centro en el origen. Sus colores
-          son los únicos que no salen del sistema de diseño, y a propósito: es
-          una foto, no interfaz, y tiene que leerse distinta del dibujo en grafito.
-        -->
-        <g id="foto">
-          <rect x="-50" y="-65" width="100" height="130" fill="url(#foto-fondo)" />
-          <ellipse cx="6" cy="44" rx="34" ry="6" fill="#5b4028" opacity="0.4" />
-          <g transform="translate(0 -2) scale(0.9)">
-            <use href="#pera" fill="url(#pera-piel)" />
-            <ellipse cx="-12" cy="4" rx="5" ry="11" fill="#fff" opacity="0.35" />
-            <use href="#pera-tallo" fill="none" stroke="#5b4028" stroke-width="3" stroke-linecap="round" />
-            <use href="#pera-hoja" fill="#4f7a34" />
-          </g>
-        </g>
-
-        <!-- La pera en grafito: el contorno y un sombreado del lado oscuro. -->
-        <g id="dibujo" class="grafito" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <use href="#pera" stroke-width="1.6" />
-          <use href="#pera-tallo" stroke-width="1.6" />
-          <use href="#pera-hoja" stroke-width="1.3" />
-          <path
-            stroke-width="0.9"
-            opacity="0.7"
-            d="M16 8l8-8M12 20l14-14M10 32l18-18M8 42l19-19M14 44l11-11M-26 58h56"
-          />
-        </g>
-      </defs>
-    </svg>
-
     <main class="portada">
-      <header>
-        <h1>Hola artista!</h1>
-        <p>
-          Hice estas mini herramientas para acompanarte en todo el camino: desde la
-          foto de referencia hasta el dibujo colgado en la pared.
-        </p>
-      </header>
+      <!--
+        Primera pantalla: la foto de la mesa de trabajo, el texto encima y, arriba de todo, la
+        escena 3D de lapices (src/portada/escena), que ruedan con la inclinacion del celu y al
+        sacudirlo. Foto y texto viven en "hero-mundo", en pixeles de la foto, y se escalan juntos
+        (main.ts). Sin JavaScript queda la foto con el texto.
+      -->
+      <section class="hero" id="inicio">
+        <div class="hero-mundo" id="hero-mundo">
+          <img class="hero-foto" src="/src/portada/img/hero.webp" alt="" width="546" height="985" decoding="async" />
+          <a class="hero-firma portada-link" href="https://instagram.com/facucabanne" target="_blank" rel="noreferrer">Facu Cabanne &rarr;</a>
+          <div class="hero-texto">
+            <h1>Herramientas<br />para <span class="palabra">artistas <svg class="trazo trazo-artistas" preserveAspectRatio="none" viewBox="0 0 143.8 58.6" width="143.8" height="58.6" aria-hidden="true" focusable="false"><path pathLength="1" d="M124.4 43.5 C124.3 43.5 124.1 43.5 105.7 43.5 C87.2 43.5 50.5 43.4 31.0 43.3 C10.0 43.1 7.2 41.7 4.8 40.0 C3.7 39.3 3.2 38.2 2.9 37.2 C2.6 36.1 2.5 35.1 3.2 33.5 C4.9 29.8 10.0 25.5 17.4 20.7 C25.6 15.4 36.9 12.3 49.3 8.8 C55.6 7.0 62.4 5.8 75.7 5.0 C88.9 4.2 108.5 3.9 119.4 4.0 C132.0 4.0 135.0 5.1 137.3 6.2 C138.4 6.8 139.1 7.7 139.6 8.6 C140.1 9.5 140.3 10.5 140.1 11.7 C139.7 14.3 132.0 22.2 119.1 34.0 C108.5 43.8 99.2 48.6 92.5 51.6 C86.5 54.3 81.7 54.9 79.3 54.6 C78.3 54.1 77.9 53.0 77.7 51.9 C77.5 50.8 77.6 49.8 78.8 48.1"/><path pathLength="1" d="M124.7 43.9 C124.6 43.9 124.4 43.9 105.2 43.7 C87.9 42.8 50.5 42.0 31.7 42.2 C9.8 42.2 7.8 40.3 6.0 38.7 C5.0 38.1 4.6 37.2 4.1 36.3 C3.6 35.5 3.3 34.6 3.4 33.0 C4.1 29.4 9.3 25.8 17.9 21.8 C26.1 14.1 36.0 12.7 48.1 7.3 C55.7 7.0 62.8 6.3 75.3 4.7 C90.0 3.5 108.6 3.9 120.5 3.9 C132.0 3.4 134.6 3.9 136.7 5.0 C137.7 5.7 138.2 6.7 138.6 7.7 C139.0 8.7 139.1 9.7 139.0 10.8 C139.2 13.5 132.1 22.0 119.7 34.2 C108.2 43.2 97.9 48.6 92.5 50.5 C87.3 54.6 82.2 56.1 79.4 55.6 C78.2 54.8 77.4 53.5 76.8 52.2 C76.4 51.0 76.3 50.0 77.4 48.4"/><path pathLength="1" d="M122.9 43.1 C122.7 43.1 122.6 43.1 105.2 42.5 C86.1 42.6 50.1 44.2 29.4 44.2 C9.0 44.0 5.9 42.3 3.6 39.9 C2.6 38.8 2.5 37.5 2.5 36.3 C2.5 35.2 2.8 34.1 3.6 32.8 C4.7 29.8 9.1 26.7 17.4 20.6 C26.5 15.9 37.3 12.3 49.7 9.2 C54.9 7.2 60.9 4.4 75.2 5.4 C87.5 3.2 108.1 2.5 118.0 4.2 C131.2 2.9 134.5 4.9 137.1 6.6 C138.3 7.3 139.2 8.3 139.9 9.3 C140.7 10.3 141.2 11.4 141.3 12.7 C141.2 15.7 131.3 22.3 119.6 34.4 C108.2 42.9 99.4 49.6 92.9 52.8 C87.1 54.0 82.8 54.8 80.6 55.2 C79.7 55.0 79.4 54.0 79.3 53.0 C79.0 51.9 78.9 50.9 79.6 48.8"/></svg></span></h1>
+            <p>Estas herramientas te ayudan a acelerar tu proceso artistico desde la foto de referencia hasta la obra colgada.</p>
+          </div>
+        </div>
+        <canvas class="hero-lienzo" id="lienzo" aria-hidden="true"></canvas>
+        <a class="hero-bajar" href="#referencia" aria-label="Ver las herramientas"><svg class="trazo trazo-chevron" viewBox="0 0 20.2 23.1" width="20.2" height="23.1" aria-hidden="true" focusable="false"><path pathLength="1" d="M2.8 4.2 C2.7 4.0 4.0 9.7 6.2 18.0 C6.9 20.6 7.6 19.7 8.9 17.2 C10.1 14.7 12.0 10.4 13.4 7.7 C14.9 5.1 15.8 4.1 17.5 2.6"/><path pathLength="1" d="M2.6 3.9 C2.5 3.8 4.5 9.4 6.5 17.9 C6.7 20.5 7.5 19.5 9.1 16.8 C10.6 14.2 12.2 9.9 13.0 7.3 C14.0 4.8 14.9 4.0 16.6 2.7"/><path pathLength="1" d="M2.9 3.6 C2.7 3.4 4.1 9.5 5.3 18.1 C6.3 20.6 6.9 19.9 7.9 17.7 C9.4 15.5 12.2 11.3 14.0 8.5 C15.4 5.6 16.2 4.4 17.7 2.5"/></svg></a>
+      </section>
 
-      <ol class="tools">
-        <li>
-          <a class="tool" href="./referencia/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
-                <g transform="translate(120 90)">
-                  <use href="#foto" />
-                  <g class="grilla" stroke-width="1.2" opacity="0.85">
-                    <path d="M-25-65v130M0-65v130M25-65v130M-50-32.5h100M-50 0h100M-50 32.5h100" />
-                  </g>
-                </g>
-              </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Referencia</strong>
-              <span>Preparale una grilla, la estructura de la cabeza y algunos ajustes a tu foto antes de empezar.</span>
-            </span>
-          </a>
-        </li>
+      <article class="herramienta" id="referencia">
+        <p class="herramienta-numero">1 de 3</p>
+        <a class="tarjeta" href="./referencia/">
+          <div class="tarjeta-foto">
+            <img src="/src/portada/img/referencia.webp" alt="" width="732" height="1050" loading="lazy" decoding="async" />
+          </div>
+          <div class="tarjeta-texto">
+            <h2>Referencia</h2>
+            <span class="probar">Probar &rarr; <svg class="trazo trazo-boton" viewBox="0 0 108.9 55.9" width="108.9" height="55.9" aria-hidden="true" focusable="false"><path pathLength="1" d="M79.6 51.7 C79.6 51.6 62.1 53.4 51.1 52.4 C41.4 51.6 30.3 50.0 20.5 46.1 C9.8 41.8 8.3 40.3 7.0 38.9 C4.1 35.7 3.9 30.7 4.7 26.5 C6.5 18.2 12.0 13.8 18.6 9.6 C22.3 7.2 27.1 6.0 32.2 4.6 C37.7 3.2 46.7 3.1 57.0 3.3 C61.3 3.3 64.0 3.8 69.7 5.5 C75.3 7.1 83.9 10.0 88.9 11.9 C98.6 15.4 102.5 19.8 104.2 22.7 C106.2 26.1 105.0 29.8 104.2 31.6 C102.5 35.7 97.1 39.2 83.2 45.6 C78.1 47.9 71.2 49.2 62.9 50.4 C54.7 51.5 45.1 51.8 37.0 51.7 C29.0 51.5 22.8 50.7 18.1 50.0 C13.4 49.3 10.4 48.6 7.1 47.9"/><path pathLength="1" d="M79.5 52.3 C79.4 52.3 61.5 52.9 51.0 52.5 C41.1 51.0 28.9 50.6 20.4 45.9 C10.5 43.0 9.1 41.1 7.7 39.4 C3.9 35.2 2.5 29.7 3.9 25.4 C6.8 18.0 11.8 15.1 18.3 9.9 C22.2 6.8 26.8 6.0 32.1 5.7 C38.3 3.8 48.0 2.5 57.4 4.3 C61.5 3.5 64.2 3.4 70.0 5.3 C75.6 8.4 83.0 10.3 87.6 11.5 C98.5 16.5 103.8 20.0 105.4 22.3 C106.4 25.1 104.6 29.2 103.9 31.3 C103.1 36.3 97.7 40.4 82.9 45.9 C77.8 49.0 70.5 49.2 61.6 49.9 C54.0 52.3 45.0 50.8 36.2 52.1 C27.9 51.5 22.2 49.9 17.8 50.0 C13.0 50.3 9.6 49.6 6.0 48.3"/><path pathLength="1" d="M79.9 50.3 C79.9 50.3 63.4 52.4 51.4 52.6 C42.4 50.7 31.1 49.9 19.5 45.5 C9.4 42.0 8.3 41.0 7.4 40.0 C5.3 37.1 4.8 32.0 4.6 27.5 C7.4 18.5 13.0 13.0 18.1 8.9 C21.1 7.7 26.1 7.2 31.7 5.0 C37.5 2.8 45.6 4.4 56.1 3.0 C60.9 3.1 63.7 4.1 69.1 6.7 C74.4 7.3 83.5 9.3 89.5 12.2 C99.9 14.5 102.5 18.4 103.3 21.7 C105.1 25.7 105.0 29.5 104.8 31.3 C103.2 35.3 97.4 39.4 82.1 44.5 C77.6 46.8 71.8 49.5 64.0 49.4 C55.1 50.7 45.7 51.8 38.4 50.2 C29.9 51.6 23.0 50.6 18.2 48.8 C13.8 48.1 10.9 48.1 7.6 48.2"/></svg></span>
+          </div>
+        </a>
+        <p class="herramienta-desc">A tu foto de referencia agregale una grilla, la estructura de la cabeza y ajustes de imagen antes de empezar a dibujar.</p>
+      </article>
 
-        <li>
-          <a class="tool" href="./mesa/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
-                <g transform="translate(120 90)">
-                  <rect class="papel" x="-58" y="-73" width="116" height="146" />
-                  <use href="#foto" opacity="0.3" />
-                  <g class="trazo" transform="translate(0 -2) scale(0.9)">
-                    <!-- Repite la forma de #pera: pathLength no atraviesa un <use>. -->
-                    <path
-                      d="M0-44c-7 0-11 7-11 15 0 10-19 19-19 42 0 21 13 35 30 35s30-14 30-35c0-23-19-32-19-42 0-8-4-15-11-15z"
-                      pathLength="100"
-                    />
-                  </g>
-                  <!-- El lápiz, apoyado donde va el trazo. -->
-                  <g class="lapiz" transform="translate(26 7) rotate(35)">
-                    <rect class="lapiz-cuerpo" x="-3.5" y="-58" width="7" height="46" rx="1" />
-                    <path class="lapiz-madera" d="M-3.5-12h7L0 0z" />
-                    <path class="lapiz-mina" d="M-1.2-4h2.4L0 0z" />
-                  </g>
-                </g>
-              </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Mesa de luz</strong>
-              <span>Apunta el celu al papel y calca tu foto como en una mesa de luz.</span>
-              <!-- Solo en una compu: en el celular ya está donde tiene que estar. -->
-              <span class="tool-note">Es para usar desde el celu.</span>
-            </span>
-          </a>
-        </li>
+      <article class="herramienta" id="mesa-de-luz">
+        <p class="herramienta-numero">2 de 3</p>
+        <a class="tarjeta" href="./mesa/">
+          <div class="tarjeta-foto">
+            <img src="/src/portada/img/mesa.webp" alt="" width="732" height="1050" loading="lazy" decoding="async" />
+          </div>
+          <div class="tarjeta-texto">
+            <h2>Mesa de luz</h2>
+            <span class="probar">Probar &rarr; <svg class="trazo trazo-boton" viewBox="0 0 108.9 55.9" width="108.9" height="55.9" aria-hidden="true" focusable="false"><path pathLength="1" d="M79.6 51.7 C79.6 51.6 62.1 53.4 51.1 52.4 C41.4 51.6 30.3 50.0 20.5 46.1 C9.8 41.8 8.3 40.3 7.0 38.9 C4.1 35.7 3.9 30.7 4.7 26.5 C6.5 18.2 12.0 13.8 18.6 9.6 C22.3 7.2 27.1 6.0 32.2 4.6 C37.7 3.2 46.7 3.1 57.0 3.3 C61.3 3.3 64.0 3.8 69.7 5.5 C75.3 7.1 83.9 10.0 88.9 11.9 C98.6 15.4 102.5 19.8 104.2 22.7 C106.2 26.1 105.0 29.8 104.2 31.6 C102.5 35.7 97.1 39.2 83.2 45.6 C78.1 47.9 71.2 49.2 62.9 50.4 C54.7 51.5 45.1 51.8 37.0 51.7 C29.0 51.5 22.8 50.7 18.1 50.0 C13.4 49.3 10.4 48.6 7.1 47.9"/><path pathLength="1" d="M79.5 52.3 C79.4 52.3 61.5 52.9 51.0 52.5 C41.1 51.0 28.9 50.6 20.4 45.9 C10.5 43.0 9.1 41.1 7.7 39.4 C3.9 35.2 2.5 29.7 3.9 25.4 C6.8 18.0 11.8 15.1 18.3 9.9 C22.2 6.8 26.8 6.0 32.1 5.7 C38.3 3.8 48.0 2.5 57.4 4.3 C61.5 3.5 64.2 3.4 70.0 5.3 C75.6 8.4 83.0 10.3 87.6 11.5 C98.5 16.5 103.8 20.0 105.4 22.3 C106.4 25.1 104.6 29.2 103.9 31.3 C103.1 36.3 97.7 40.4 82.9 45.9 C77.8 49.0 70.5 49.2 61.6 49.9 C54.0 52.3 45.0 50.8 36.2 52.1 C27.9 51.5 22.2 49.9 17.8 50.0 C13.0 50.3 9.6 49.6 6.0 48.3"/><path pathLength="1" d="M79.9 50.3 C79.9 50.3 63.4 52.4 51.4 52.6 C42.4 50.7 31.1 49.9 19.5 45.5 C9.4 42.0 8.3 41.0 7.4 40.0 C5.3 37.1 4.8 32.0 4.6 27.5 C7.4 18.5 13.0 13.0 18.1 8.9 C21.1 7.7 26.1 7.2 31.7 5.0 C37.5 2.8 45.6 4.4 56.1 3.0 C60.9 3.1 63.7 4.1 69.1 6.7 C74.4 7.3 83.5 9.3 89.5 12.2 C99.9 14.5 102.5 18.4 103.3 21.7 C105.1 25.7 105.0 29.5 104.8 31.3 C103.2 35.3 97.4 39.4 82.1 44.5 C77.6 46.8 71.8 49.5 64.0 49.4 C55.1 50.7 45.7 51.8 38.4 50.2 C29.9 51.6 23.0 50.6 18.2 48.8 C13.8 48.1 10.9 48.1 7.6 48.2"/></svg></span>
+          </div>
+        </a>
+        <p class="herramienta-desc">Usando la camara del celular como proyector, te permite ver una transparencia de tu imagen de referencia para facilitar el calcado.</p>
+      </article>
 
-        <li>
-          <a class="tool" href="./marco/">
-            <span class="tool-art">
-              <svg viewBox="0 0 240 180" aria-hidden="true">
-                <g transform="translate(120 88)">
-                  <rect class="sombra" x="-54" y="-70" width="108" height="140" transform="translate(3 5)" />
-                  <rect class="moldura" x="-54" y="-70" width="108" height="140" />
-                  <rect class="papel" x="-46" y="-62" width="92" height="124" />
-                  <rect class="bisel" x="-32" y="-48" width="64" height="96" />
-                  <g transform="translate(0 -4) scale(0.7)">
-                    <use href="#dibujo" />
-                  </g>
-                </g>
-              </svg>
-            </span>
-            <span class="tool-body">
-              <strong>Enmarcado</strong>
-              <span>Proba marcos y passe-partout sobre tu dibujo, y llevate las medidas.</span>
-            </span>
-          </a>
-        </li>
-      </ol>
+      <article class="herramienta" id="enmarcado">
+        <p class="herramienta-numero">3 de 3</p>
+        <a class="tarjeta" href="./marco/">
+          <div class="tarjeta-foto">
+            <img src="/src/portada/img/enmarcado.webp" alt="" width="732" height="1050" loading="lazy" decoding="async" />
+          </div>
+          <div class="tarjeta-texto">
+            <h2>Enmarcado</h2>
+            <span class="probar">Probar &rarr; <svg class="trazo trazo-boton" viewBox="0 0 108.9 55.9" width="108.9" height="55.9" aria-hidden="true" focusable="false"><path pathLength="1" d="M79.6 51.7 C79.6 51.6 62.1 53.4 51.1 52.4 C41.4 51.6 30.3 50.0 20.5 46.1 C9.8 41.8 8.3 40.3 7.0 38.9 C4.1 35.7 3.9 30.7 4.7 26.5 C6.5 18.2 12.0 13.8 18.6 9.6 C22.3 7.2 27.1 6.0 32.2 4.6 C37.7 3.2 46.7 3.1 57.0 3.3 C61.3 3.3 64.0 3.8 69.7 5.5 C75.3 7.1 83.9 10.0 88.9 11.9 C98.6 15.4 102.5 19.8 104.2 22.7 C106.2 26.1 105.0 29.8 104.2 31.6 C102.5 35.7 97.1 39.2 83.2 45.6 C78.1 47.9 71.2 49.2 62.9 50.4 C54.7 51.5 45.1 51.8 37.0 51.7 C29.0 51.5 22.8 50.7 18.1 50.0 C13.4 49.3 10.4 48.6 7.1 47.9"/><path pathLength="1" d="M79.5 52.3 C79.4 52.3 61.5 52.9 51.0 52.5 C41.1 51.0 28.9 50.6 20.4 45.9 C10.5 43.0 9.1 41.1 7.7 39.4 C3.9 35.2 2.5 29.7 3.9 25.4 C6.8 18.0 11.8 15.1 18.3 9.9 C22.2 6.8 26.8 6.0 32.1 5.7 C38.3 3.8 48.0 2.5 57.4 4.3 C61.5 3.5 64.2 3.4 70.0 5.3 C75.6 8.4 83.0 10.3 87.6 11.5 C98.5 16.5 103.8 20.0 105.4 22.3 C106.4 25.1 104.6 29.2 103.9 31.3 C103.1 36.3 97.7 40.4 82.9 45.9 C77.8 49.0 70.5 49.2 61.6 49.9 C54.0 52.3 45.0 50.8 36.2 52.1 C27.9 51.5 22.2 49.9 17.8 50.0 C13.0 50.3 9.6 49.6 6.0 48.3"/><path pathLength="1" d="M79.9 50.3 C79.9 50.3 63.4 52.4 51.4 52.6 C42.4 50.7 31.1 49.9 19.5 45.5 C9.4 42.0 8.3 41.0 7.4 40.0 C5.3 37.1 4.8 32.0 4.6 27.5 C7.4 18.5 13.0 13.0 18.1 8.9 C21.1 7.7 26.1 7.2 31.7 5.0 C37.5 2.8 45.6 4.4 56.1 3.0 C60.9 3.1 63.7 4.1 69.1 6.7 C74.4 7.3 83.5 9.3 89.5 12.2 C99.9 14.5 102.5 18.4 103.3 21.7 C105.1 25.7 105.0 29.5 104.8 31.3 C103.2 35.3 97.4 39.4 82.1 44.5 C77.6 46.8 71.8 49.5 64.0 49.4 C55.1 50.7 45.7 51.8 38.4 50.2 C29.9 51.6 23.0 50.6 18.2 48.8 C13.8 48.1 10.9 48.1 7.6 48.2"/></svg></span>
+          </div>
+        </a>
+        <p class="herramienta-desc">Mira tu obra colgada en la pared. Proba marcos, passe-partout, vidrios y colores, y llevate las medidas para encargarlo.</p>
+      </article>
 
-      <a class="ds-link portada-link" href="https://instagram.com/facucabanne" target="_blank" rel="noreferrer">
-        Dejame sugerencias →
-      </a>
+      <footer class="pie">
+        <a class="ds-link portada-link" href="https://instagram.com/facucabanne" target="_blank" rel="noreferrer">
+          Dejame sugerencias &rarr;
+        </a>
+      </footer>
     </main>
   </body>
 </html>

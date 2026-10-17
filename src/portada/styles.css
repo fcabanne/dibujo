@@ -4,210 +4,374 @@
 /* ------------------------------------------------------------------
    Portada: el bifurcador hacia las herramientas.
 
-   Habla como la pantalla de inicio de Referencia (Figma 18:76) y usa su
-   mismo sistema: un saludo, una frase, y las tres herramientas en el
-   orden en que se usan — la foto, el calcado, el marco.
+   Primero el hero: una foto de la mesa de trabajo con el texto encima y los
+   dos lapices en 3D que ruedan con la inclinacion del celu. Despues una
+   tarjeta por herramienta, en el orden en que se usan —la foto, el calcado,
+   el marco—: toda la imagen es el link.
+
+   Medidas del diseno (Figma "Mi web", 45:582), en un celular de 390 px.
    ------------------------------------------------------------------ */
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  min-height: 100vh;
   margin: 0;
+  background: var(--ds-background);
+}
+
+/* Todavia no hay diseno de escritorio: la portada es una columna de celular. */
+.portada {
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--ds-background);
+}
+
+/* --- hero ------------------------------------------------------------ */
+
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  /* el gris verdoso de arriba de la foto, hasta que cargue */
+  background: #d3d6cb;
+}
+
+/* La foto y el texto viven en los pixeles de la foto (546 x 985) y se escalan
+   juntos: `main.ts` calcula --s, --tx y --ty (encuadre.js). Los valores de
+   abajo son los de un celular de 390 x 842 y valen sin JavaScript. */
+.hero-mundo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 546px;
+  height: 985px;
+  transform-origin: 0 0;
+  transform: translate(var(--tx, -80px), var(--ty, -143px)) scale(var(--s, 1));
+}
+
+.hero-foto {
+  display: block;
+  width: 546px;
+  height: 985px;
+}
+
+.hero-firma {
+  position: absolute;
+  top: 350px;
+  left: 104px;
+  font: var(--ds-text-meta);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-black);
+  text-decoration: none;
+}
+
+.hero-texto {
+  position: absolute;
+  top: 398px;
+  left: 104px;
+  width: 259px;
+  color: var(--ds-black);
+}
+
+.hero-texto h1 {
+  margin: 0;
+  font: 700 40px/1.05 var(--ds-font-display);
+  text-transform: uppercase;
+}
+
+.hero-texto p {
+  margin: 12px 0 0;
+  font: 400 20px/1.2 var(--ds-font-display);
+}
+
+/* Los lapices van encima del texto —pueden pisarlo—, y no atajan ningun toque:
+   el dedo es para hacer scroll. */
+.hero-lienzo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ds-dur-slow) var(--ds-ease);
+}
+
+.hero.listo .hero-lienzo {
+  opacity: 1;
+}
+
+.hero-bajar {
+  position: absolute;
+  bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 2;
   display: grid;
   place-items: center;
-  padding: var(--ds-space-7) var(--ds-space-5);
+  width: var(--ds-control-min);
+  height: var(--ds-control-min);
+  margin-left: calc(var(--ds-control-min) / -2);
+  color: var(--ds-black);
+  transition: opacity var(--ds-dur-slow) var(--ds-ease);
 }
 
-.portada {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-7);
-  align-items: center;
-  width: 100%;
-  max-width: 920px;
+.hero-bajar:focus-visible {
+  outline: 2px solid var(--ds-black);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
 }
 
-.portada header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-5);
-  max-width: 420px;
-  text-align: center;
+/* En cuanto la persona empieza a bajar, la flecha ya cumplio. */
+.scrolleo .hero-bajar {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.portada h1 {
-  margin: 0;
-  font: var(--ds-text-title);
-}
+/* --- los trazos a mano ---------------------------------------------------
+   Tres versiones apenas distintas de cada trazo, una encima de la otra. Con la
+   animacion prendida (`html.anima`) se muestran de a una, a saltos, como en un
+   stop motion: el trazo "tiembla" y llama la atencion sin moverse de lugar.
+   Sin la animacion queda la primera version, quieta. */
 
-.portada header p {
-  margin: 0;
-}
-
-.tools {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--ds-space-6);
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tool {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border-radius: var(--ds-radius-group);
-  background: var(--ds-white);
-  overflow: hidden;
-  color: inherit;
-  text-decoration: none;
-  transition: transform 260ms var(--ds-ease);
-}
-
-.tool-art {
-  display: block;
-  background: var(--ds-accent-light);
-}
-
-.tool-art svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.tool-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-2);
-  padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-6);
-}
-
-.tool-body strong {
-  font: var(--ds-text-label);
-  color: var(--ds-accent-dark);
-}
-
-/* Solo se ve con mouse: en el celular la mesa ya está donde tiene que estar. */
-.tool-note {
-  display: none;
-  color: var(--ds-accent-dark);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .tool-note {
-    display: block;
-  }
-}
-
-.tool:focus-visible {
-  outline: 2px solid var(--ds-accent-dark);
-  outline-offset: 3px;
-}
-
-/* --- los colores de las ilustraciones --------------------------------
-   Todo lo que no es la foto sale del sistema: el papel, el grafito, la
-   moldura, el lápiz. La foto tiene sus colores propios en el HTML. */
-
-.papel {
-  fill: var(--ds-white);
-}
-
-.grilla {
-  stroke: var(--ds-white);
-}
-
-.grafito {
-  stroke: var(--ds-black);
-}
-
-.moldura,
-.lapiz-mina {
-  fill: var(--ds-black);
-}
-
-.sombra {
-  fill: var(--ds-accent-secondary);
-  opacity: 0.5;
-}
-
-.bisel {
-  fill: var(--ds-white);
-  stroke: var(--ds-accent-light);
-}
-
-.lapiz-cuerpo {
-  fill: var(--ds-accent-dark);
-}
-
-.lapiz-madera {
-  fill: var(--ds-accent-light);
-}
-
-/* --- el calcado de la mesa de luz -----------------------------------
-   El trazo está a medio hacer y el lápiz apoyado donde quedó. Al pasar
-   por encima termina la vuelta: es lo único que se mueve, y no esconde
-   nada — sin hover la tarjeta dice exactamente lo mismo. */
-
-.trazo path {
+.trazo {
+  position: absolute;
+  overflow: visible;
   fill: none;
-  stroke: var(--ds-black);
-  stroke-width: 1.8;
+  stroke: currentColor;
+  stroke-width: 3;
   stroke-linecap: round;
-  stroke-dasharray: 62 100;
-  transition: stroke-dasharray 900ms var(--ds-ease);
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
-.lapiz {
-  transition: opacity 300ms var(--ds-ease);
+.trazo path:not(:first-child) {
+  opacity: 0;
 }
 
-@media (hover: hover) {
-  .tool:hover {
-    transform: translateY(-4px);
+.palabra {
+  position: relative;
+  display: inline-block;
+}
+
+.trazo-artistas {
+  top: -4.2px;
+  left: -3.2px;
+  width: calc(100% + 6.4px);
+  height: 58.6px;
+}
+
+.trazo-chevron {
+  position: static;
+}
+
+.anima .trazo path {
+  opacity: 0;
+  animation: trazo-tiembla 0.54s steps(1, end) infinite;
+  animation-play-state: paused;
+}
+
+.anima .trazo path:nth-child(2) {
+  animation-delay: -0.36s;
+}
+
+.anima .trazo path:nth-child(3) {
+  animation-delay: -0.18s;
+}
+
+/* `main.ts` le pone "viva" al trazo mientras se ve: no gasta nada fuera de pantalla. */
+.anima .trazo.viva path {
+  animation-play-state: running;
+}
+
+/* La primera vez que aparece, el trazo se dibuja de punta a punta. */
+.anima .trazo.viva path {
+  stroke-dasharray: 1;
+  animation: trazo-tiembla 0.54s steps(1, end) infinite, trazo-dibuja 0.7s ease-out 1 backwards;
+}
+
+.anima .trazo.viva path:nth-child(2) {
+  animation-delay: -0.36s, 0s;
+}
+
+.anima .trazo.viva path:nth-child(3) {
+  animation-delay: -0.18s, 0s;
+}
+
+/* "Artistas" ya esta rodeado en la foto: se dibuja una vez y se queda quieto. */
+.anima .trazo-artistas path {
+  animation: none;
+  opacity: 0;
+}
+
+.anima .trazo-artistas path:first-child {
+  opacity: 1;
+}
+
+.anima .trazo-artistas.viva path {
+  stroke-dasharray: 1;
+}
+
+.anima .trazo-artistas.viva path:first-child {
+  animation: trazo-dibuja 0.9s ease-out 1 backwards;
+}
+
+/* La flecha, ademas, sube y baja a saltos. */
+.anima .trazo-chevron.viva {
+  animation: flecha-salta 1.08s steps(1, end) infinite;
+}
+
+@keyframes trazo-tiembla {
+  0% {
+    opacity: 1;
   }
 
-  .tool:hover .trazo path {
-    stroke-dasharray: 100 100;
+  33.33% {
+    opacity: 0;
   }
 
-  .tool:hover .lapiz {
+  100% {
     opacity: 0;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tool,
-  .trazo path,
-  .lapiz {
-    transition: none;
+@keyframes trazo-dibuja {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
-/* --- pantalla angosta ------------------------------------------------
-   Una debajo de la otra, con el dibujito al costado del nombre: tres
-   tarjetas altas no entran enteras y la tercera quedaría fuera de vista. */
-
-@media (max-width: 720px) {
-  .tools {
-    grid-template-columns: 1fr;
-    gap: var(--ds-space-4);
+@keyframes flecha-salta {
+  0% {
+    transform: translateY(0);
   }
 
-  .tool {
-    flex-direction: row;
-    align-items: center;
+  50% {
+    transform: translateY(5px);
   }
+}
 
-  .tool-art {
-    flex: none;
-    width: 42%;
-    align-self: stretch;
-    display: grid;
-    place-items: center;
-  }
+/* --- una tarjeta por herramienta ---------------------------------------- */
 
-  .tool-body {
-    padding: var(--ds-space-4) var(--ds-space-5);
+.herramienta {
+  padding: 0 12px;
+}
+
+.herramienta-numero {
+  margin: 0 0 10px;
+  font: var(--ds-text-meta);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ds-black);
+}
+
+.herramienta:first-of-type {
+  margin-top: 55px;
+}
+
+.herramienta + .herramienta {
+  margin-top: 78px;
+}
+
+.tarjeta {
+  position: relative;
+  display: block;
+  aspect-ratio: 366 / 525;
+  overflow: hidden;
+  color: var(--ds-background);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
+}
+
+.tarjeta:active {
+  transform: scale(var(--ds-press-wide));
+  transition-duration: var(--ds-dur-press);
+}
+
+.tarjeta:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 3px;
+}
+
+/* El marco queda quieto; la foto adentro se corre un poco con el scroll
+   (`--py`, de -18 a 18 px), por eso es 36 px mas alta que el marco. */
+.tarjeta-foto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.tarjeta-foto img {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: calc(100% + 36px);
+  object-fit: cover;
+  transform: translate3d(0, var(--py, 0px), 0);
+  will-change: transform;
+}
+
+.tarjeta-texto {
+  position: absolute;
+  right: 0;
+  bottom: 42px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 21px;
+}
+
+.tarjeta-texto h2 {
+  margin: 0;
+  font: 700 32px/40px var(--ds-font-display);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.probar {
+  position: relative;
+  display: inline-block;
+  font: 700 20px/1.25 var(--ds-font-display);
+}
+
+.trazo-boton {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.herramienta-desc {
+  margin: 11px 0 0;
+  font: 400 20px/1.3 var(--ds-font-display);
+  text-align: justify;
+  color: var(--ds-accent-dark);
+}
+
+/* --- el pie ----------------------------------------------------------- */
+
+.pie {
+  display: grid;
+  place-items: center;
+  padding: 78px var(--ds-space-5) 106px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
