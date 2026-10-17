@@ -144,7 +144,7 @@ body {
   overflow: visible;
   fill: none;
   stroke: currentColor;
-  stroke-width: 3;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
@@ -306,7 +306,7 @@ body {
 }
 
 /* El marco queda quieto; la foto adentro se corre un poco con el scroll
-   (`--py`, de -18 a 18 px), por eso es 36 px mas alta que el marco. */
+   (`--py`, de -54 a 54 px), por eso es 108 px mas alta que el marco. */
 .tarjeta-foto {
   position: absolute;
   inset: 0;
@@ -315,11 +315,11 @@ body {
 
 .tarjeta-foto img {
   position: absolute;
-  top: -18px;
+  top: -54px;
   left: 0;
   display: block;
   width: 100%;
-  height: calc(100% + 36px);
+  height: calc(100% + 108px);
   object-fit: cover;
   transform: translate3d(0, var(--py, 0px), 0);
   will-change: transform;
