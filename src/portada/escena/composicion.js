@@ -1,53 +1,37 @@
 // ─────────────────────────────────────────────────────────────
-//  La composición de la foto de referencia (flat-lay vertical): mismo
-//  encuadre, misma escala, mismos lugares y la misma luz, con los
-//  objetos que existen. Medidas tomadas de la foto con el largo del
-//  lápiz rojo (18,5 cm) como escala.
+//  La composición del hero: dos lápices sobre la foto, en píxeles de la
+//  foto (ver encuadre.js). El mundo 3D usa centímetros: px / PPCM.
 //
-//  Coordenadas en cm con el origen en el centro de la foto: x a la
-//  derecha, z hacia abajo. En pantallas más angostas que la foto se
-//  alinea el borde derecho (donde está la columna de útiles) y se
-//  recorta papel de la izquierda.
-//
-//  giro: grados alrededor de la vertical. −90: eje largo vertical con
-//  el extremo −x (la punta) arriba; 180: horizontal con la cola (goma
-//  o capuchón) a la izquierda.
+//  giro: grados alrededor de la vertical. −90 deja el lápiz parado con la
+//  punta arriba; cada uno se desvía un poco para que no queden paralelos.
 // ─────────────────────────────────────────────────────────────
 import * as THREE from 'three';
 
-export const ALTO_VISIBLE = 34;     // cm que entran en el alto de la pantalla
-export const BORDE_ABAJO = 22.6;    // cm del centro de la foto a su borde de abajo
-export const BORDE_DERECHO = 12.65; // cm del centro de la foto a su borde derecho
-
-// Luz de la foto: de la izquierda y un poco de arriba, a unos 49° de altura.
+// Luz de la escena (de la izquierda y un poco de arriba); sombras suaves
+// que se dibujan sobre la foto.
 export const LUZ = new THREE.Vector3(-0.88, 1.1, -0.36).normalize();
 
-// La luz de la foto es más dura que la del estudio de los dados: sombras
-// marrones muy oscuras pegadas a cada lápiz, que se abren hacia la derecha.
 export const AMBIENTE = {
-  fondo: 0xc5c7b1,           // el salvia de la foto, compensando la viñeta
-  sombra: [0.19, 0.15, 0.1],  // color de la sombra plena (factor del piso)
+  sombra: [0.19, 0.15, 0.1],
   oclusion: 0.75,
   tamLuz: 0.05,
   intensidad: 2.0,
 };
+export const SOMBRA_SOBRE_FOTO = { fuerza: 0.62, color: [0.09, 0.06, 0.04] };
 
-// La hoja crema de la tabla de dibujo (sólo el color del fondo, sin física).
-export const PAPEL = {
-  x1: 7.6,        // borde derecho
-  z0: -11.55,     // borde de arriba
-  r: 0.6,
-  color: 0xdad0b6,
-  pliegue: [2.8, -10.95, 0.16], // borde de la hoja de adelante: x fin, z, intensidad
-};
-
+// punta: dónde queda la punta en la foto (px). El centro sale del largo del objeto.
 export const COMPOSICION = [
-  // los dos verticales sobre el papel: los únicos que se mueven (ruedan)
-  { objeto: 'lapiz', variante: 'rojo', x: 4.09, z: 7.07, giro: -90, movil: true, rueda: 0.37 },
-  { objeto: 'portaminas', variante: 'petroleo', x: 5.45, z: 6.78, giro: -90, movil: true },
-  // la pila de abajo a la derecha, cortada por el borde (fija)
-  { objeto: 'lapiz-color', variante: 'celeste', x: 7.28 + 8.75, z: 15.8, giro: 180 },
-  { objeto: 'lapiz', variante: 'rojo', x: 7.31 + 9.25, z: 16.6, giro: 180 },
-  { objeto: 'lapiz', variante: 'verde', x: 7.42 + 9.25, z: 17.4, giro: 180 },
-  { objeto: 'lapiz-color', variante: 'mostaza', x: 7.77 + 8.75, z: 18.2, giro: 180 },
+  { objeto: 'lapiz', variante: 'rojo', x: 316, punta: 508, giro: -88.4, rueda: 0.37 },
+  { objeto: 'portaminas', variante: 'petroleo', x: 364, punta: 561, giro: -91.3 },
 ];
+
+// Lo que no se puede atravesar, en px de la foto: el borde del libro verde y
+// los útiles de abajo a la derecha (cajas invisibles, altura en cm).
+export const COLISIONES = [
+  { x0: 386, x1: 760, z0: 318, z1: 925, alto: 2.4 },
+  { x0: 412, x1: 760, z0: 925, z1: 1500, alto: 1.6 },
+];
+
+// Los límites del carril, en px de la foto. Los lápices pueden pisar el texto,
+// pero no salirse de la hoja: a la izquierda, arriba (el clip) y abajo.
+export const LIMITES = { izquierda: 150, derecha: 800, arriba: 330, abajo: 1260 };

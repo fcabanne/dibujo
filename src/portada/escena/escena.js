@@ -90,7 +90,7 @@ export class Piso {
   // fondo: color del papel (sRGB); tinte: color de la sombra, como factor
   // escala: largo de la escena por "lado de dado" (1 en la página de los
   // dados; con otra unidad, escala los radios de la oclusión y la penumbra)
-  constructor(renderer, { calidad = 1, fondo: fondoSrgb = FONDO_SRGB, tinte = [0.7, 0.665, 0.635], escala = 1, oclusion = 0.5, luz = LUZ } = {}) {
+  constructor(renderer, { soloSombra = null, calidad = 1, fondo: fondoSrgb = FONDO_SRGB, tinte = [0.7, 0.665, 0.635], escala = 1, oclusion = 0.5, luz = LUZ } = {}) {
     this.renderer = renderer;
     this.luz = luz.clone().normalize();
     const tamSombra = calidad > 1 ? 2048 : 1024;
@@ -136,6 +136,9 @@ export class Piso {
       uPliegue: { value: new THREE.Vector3(0, 0, 0) },
       uEscala: { value: escala },
       uOclusion: { value: oclusion },
+      // sólo la sombra, con fondo transparente (para apoyar objetos sobre una foto)
+      uSoloSombra: { value: soloSombra ? soloSombra.fuerza : 0 },
+      uColorSombra: { value: new THREE.Vector3(...(soloSombra ? soloSombra.color : [0, 0, 0])) },
     };
 
     // paso 1: mapa de luz del piso
@@ -281,6 +284,8 @@ export class Piso {
         uniform vec4 uPapel;
         uniform vec3 uColorPapel;
         uniform vec3 uPliegue;
+        uniform float uSoloSombra;
+        uniform vec3 uColorSombra;
         varying vec3 vP;
         float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float ruidoV(vec2 p) {
@@ -308,6 +313,11 @@ export class Piso {
         void main() {
           vec2 uv = vec2((vP.x - uMin.x) / uTam.x, 1.0 - (vP.z - uMin.y) / uTam.y);
           vec3 luz = texture2D(uLuzPiso, uv).rgb;
+          if (uSoloSombra > 0.0) {
+            float a = clamp(1.0 - dot(luz, vec3(0.3333)), 0.0, 1.0) * uSoloSombra;
+            gl_FragColor = vec4(uColorSombra, a);
+            return;
+          }
           vec3 base = uFondo;
           if (uPapelOn > 0.5) {
             vec2 p = vP.xz;
@@ -351,6 +361,7 @@ export class Piso {
           gl_FragColor.rgb += (hash(gl_FragCoord.xy + fract(vP.xz)) - 0.5) / 255.0;
         }`,
     });
+    if (soloSombra) { this.material.transparent = true; this.material.depthWrite = false; }
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
     this.mesh.rotation.x = -Math.PI / 2;
   }

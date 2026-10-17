@@ -4,49 +4,101 @@
 /* ------------------------------------------------------------------
    Portada: el bifurcador hacia las herramientas.
 
-   Un scroll por pantalla. Primero la escena de lapices en 3D con el saludo;
-   despues una pantalla por herramienta, en el orden en que se usan —la foto,
-   el calcado, el marco—. Cuando una herramienta toma el foco, su imagen se
-   oscurece un poco y aparece encima el texto con el boton para probarla.
+   Primero el hero: una foto de la mesa de trabajo con el texto encima y los
+   dos lapices en 3D que ruedan con la inclinacion del celu. Despues una
+   tarjeta por herramienta, en el orden en que se usan —la foto, el calcado,
+   el marco—: toda la imagen es el link.
 
-   El foco lo calcula `main.ts` y lo deja en `--foco` (0 a 1). Sin JavaScript
-   `--foco` queda en 1: todo se ve y los links funcionan.
+   Medidas del diseno (Figma "Mi web", 45:582), en un celular de 390 px.
    ------------------------------------------------------------------ */
 
 html {
-  scroll-snap-type: y proximity;
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  overscroll-behavior-y: none;
+  background: var(--ds-background);
 }
 
+/* Todavia no hay diseno de escritorio: la portada es una columna de celular. */
 .portada {
-  display: block;
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--ds-background);
 }
 
-/* --- primera pantalla: la escena ------------------------------------ */
+/* --- hero ------------------------------------------------------------ */
 
 .hero {
   position: relative;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  /* el verde salvia de la escena: se ve antes de que cargue */
-  background: #c5c7b1;
-  scroll-snap-align: start;
+  /* el gris verdoso de arriba de la foto, hasta que cargue */
+  background: #d3d6cb;
 }
 
+/* La foto y el texto viven en los pixeles de la foto (546 x 985) y se escalan
+   juntos: `main.ts` calcula --s, --tx y --ty (encuadre.js). Los valores de
+   abajo son los de un celular de 390 x 842 y valen sin JavaScript. */
+.hero-mundo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 546px;
+  height: 985px;
+  transform-origin: 0 0;
+  transform: translate(var(--tx, -80px), var(--ty, -143px)) scale(var(--s, 1));
+}
+
+.hero-foto {
+  display: block;
+  width: 546px;
+  height: 985px;
+}
+
+.hero-firma {
+  position: absolute;
+  top: 350px;
+  left: 104px;
+  font: var(--ds-text-meta);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-black);
+  text-decoration: none;
+}
+
+.hero-texto {
+  position: absolute;
+  top: 398px;
+  left: 104px;
+  width: 259px;
+  color: var(--ds-black);
+}
+
+.hero-texto h1 {
+  margin: 0;
+  font: 700 40px/1.05 var(--ds-font-display);
+  text-transform: uppercase;
+}
+
+.hero-texto p {
+  margin: 12px 0 0;
+  font: 400 20px/1.2 var(--ds-font-display);
+}
+
+/* Los lapices van encima del texto —pueden pisarlo—, y no atajan ningun toque:
+   el dedo es para hacer scroll. */
 .hero-lienzo {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
-  /* el dedo no empuja nada: el toque es para hacer scroll */
-  touch-action: pan-y;
+  pointer-events: none;
   opacity: 0;
   transition: opacity var(--ds-dur-slow) var(--ds-ease);
 }
@@ -55,64 +107,18 @@ body {
   opacity: 1;
 }
 
-.hero-texto {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-4);
-  padding: calc(var(--ds-space-7) + env(safe-area-inset-top)) var(--ds-space-6) 0;
-  max-width: 460px;
-  pointer-events: none;
-}
-
-.hero-texto h1 {
-  margin: 0;
-  font: var(--ds-text-title);
-  font-size: 40px;
-  line-height: 1.05;
-  color: var(--ds-black);
-}
-
-.hero-texto p {
-  margin: 0;
-  font-size: 20px;
-  line-height: 1.2;
-  color: var(--ds-black);
-}
-
-.hero-permiso {
-  position: absolute;
-  right: var(--ds-space-5);
-  bottom: calc(var(--ds-space-7) + env(safe-area-inset-bottom));
-}
-
-.hero-permiso[hidden] {
-  display: none;
-}
-
 .hero-bajar {
   position: absolute;
-  left: 50%;
   bottom: calc(var(--ds-space-5) + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 2;
   display: grid;
   place-items: center;
   width: var(--ds-control-min);
   height: var(--ds-control-min);
   margin-left: calc(var(--ds-control-min) / -2);
   color: var(--ds-black);
-}
-
-.hero-bajar svg {
-  width: var(--ds-icon);
-  height: var(--ds-icon);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  transition: opacity var(--ds-dur-slow) var(--ds-ease);
 }
 
 .hero-bajar:focus-visible {
@@ -121,164 +127,251 @@ body {
   border-radius: var(--ds-radius-control);
 }
 
-/* --- una pantalla por herramienta ----------------------------------- */
+/* En cuanto la persona empieza a bajar, la flecha ya cumplio. */
+.scrolleo .hero-bajar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- los trazos a mano ---------------------------------------------------
+   Tres versiones apenas distintas de cada trazo, una encima de la otra. Con la
+   animacion prendida (`html.anima`) se muestran de a una, a saltos, como en un
+   stop motion: el trazo "tiembla" y llama la atencion sin moverse de lugar.
+   Sin la animacion queda la primera version, quieta. */
+
+.trazo {
+  position: absolute;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.trazo path:not(:first-child) {
+  opacity: 0;
+}
+
+.palabra {
+  position: relative;
+  display: inline-block;
+}
+
+.trazo-artistas {
+  top: -4.2px;
+  left: -3.2px;
+  width: calc(100% + 6.4px);
+  height: 58.6px;
+}
+
+.trazo-chevron {
+  position: static;
+}
+
+.anima .trazo path {
+  opacity: 0;
+  animation: trazo-tiembla 0.54s steps(1, end) infinite;
+  animation-play-state: paused;
+}
+
+.anima .trazo path:nth-child(2) {
+  animation-delay: -0.36s;
+}
+
+.anima .trazo path:nth-child(3) {
+  animation-delay: -0.18s;
+}
+
+/* `main.ts` le pone "viva" al trazo mientras se ve: no gasta nada fuera de pantalla. */
+.anima .trazo.viva path {
+  animation-play-state: running;
+}
+
+/* La primera vez que aparece, el trazo se dibuja de punta a punta. */
+.anima .trazo.viva path {
+  stroke-dasharray: 1;
+  animation: trazo-tiembla 0.54s steps(1, end) infinite, trazo-dibuja 0.7s ease-out 1 backwards;
+}
+
+.anima .trazo.viva path:nth-child(2) {
+  animation-delay: -0.36s, 0s;
+}
+
+.anima .trazo.viva path:nth-child(3) {
+  animation-delay: -0.18s, 0s;
+}
+
+/* "Artistas" ya esta rodeado en la foto: se dibuja una vez y se queda quieto. */
+.anima .trazo-artistas path {
+  animation: none;
+  opacity: 0;
+}
+
+.anima .trazo-artistas path:first-child {
+  opacity: 1;
+}
+
+.anima .trazo-artistas.viva path {
+  stroke-dasharray: 1;
+}
+
+.anima .trazo-artistas.viva path:first-child {
+  animation: trazo-dibuja 0.9s ease-out 1 backwards;
+}
+
+/* La flecha, ademas, sube y baja a saltos. */
+.anima .trazo-chevron.viva {
+  animation: flecha-salta 1.08s steps(1, end) infinite;
+}
+
+@keyframes trazo-tiembla {
+  0% {
+    opacity: 1;
+  }
+
+  33.33% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes trazo-dibuja {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flecha-salta {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+/* --- una tarjeta por herramienta ---------------------------------------- */
 
 .herramienta {
-  --foco: 1;
-  position: relative;
-  display: grid;
-  align-items: end;
-  height: 100vh;
-  height: 100svh;
-  overflow: hidden;
-  scroll-snap-align: start;
-  background: var(--ds-accent-light);
-}
-
-/* Con JavaScript el foco arranca en 0 y lo mueve el scroll. */
-.js .herramienta {
-  --foco: 0;
-}
-
-.herramienta-arte,
-.herramienta-velo {
-  position: absolute;
-  inset: 0;
-}
-
-.herramienta-arte {
-  display: grid;
-  place-items: center;
-}
-
-.herramienta-arte svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  /* respira un poco mas cuando la herramienta toma el foco */
-  transform: scale(calc(1 + var(--foco) * 0.06));
-}
-
-/* La imagen de verdad llena la pantalla entera. */
-.herramienta-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scale(calc(1 + var(--foco) * 0.06));
-}
-
-/* El velo oscuro: de nada a medio negro segun el foco. */
-.herramienta-velo {
-  background: var(--ds-black);
-  opacity: calc(var(--foco) * 0.62);
-}
-
-.herramienta-texto {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--ds-space-4);
-  padding: var(--ds-space-6) var(--ds-space-6) calc(var(--ds-space-7) + env(safe-area-inset-bottom));
-  color: var(--ds-white);
-  opacity: clamp(0, calc((var(--foco) - 0.35) * 1.8), 1);
-  transform: translateY(calc((1 - var(--foco)) * 28px));
+  padding: 0 12px;
 }
 
 .herramienta-numero {
+  margin: 0 0 10px;
   font: var(--ds-text-meta);
-  text-transform: uppercase;
+  font-size: 14px;
   letter-spacing: 0.06em;
-  opacity: 0.85;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ds-black);
 }
 
-.herramienta-texto h2 {
-  margin: 0;
-  font: var(--ds-text-title);
-  font-size: 44px;
-  line-height: 1;
+.herramienta:first-of-type {
+  margin-top: 55px;
 }
 
-.herramienta-texto p {
-  margin: 0;
-  max-width: 28ch;
-  font-size: 22px;
-  line-height: 1.2;
+.herramienta + .herramienta {
+  margin-top: 78px;
 }
 
-.herramienta-texto .ds-button {
+.tarjeta {
+  position: relative;
+  display: block;
+  aspect-ratio: 366 / 525;
+  overflow: hidden;
+  color: var(--ds-background);
   text-decoration: none;
-  margin-top: var(--ds-space-2);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--ds-dur-slow) var(--ds-spring);
 }
 
-/* --- el pie --------------------------------------------------------- */
+.tarjeta:active {
+  transform: scale(var(--ds-press-wide));
+  transition-duration: var(--ds-dur-press);
+}
+
+.tarjeta:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 3px;
+}
+
+/* El marco queda quieto; la foto adentro se corre un poco con el scroll
+   (`--py`, de -18 a 18 px), por eso es 36 px mas alta que el marco. */
+.tarjeta-foto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.tarjeta-foto img {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: calc(100% + 36px);
+  object-fit: cover;
+  transform: translate3d(0, var(--py, 0px), 0);
+  will-change: transform;
+}
+
+.tarjeta-texto {
+  position: absolute;
+  right: 0;
+  bottom: 42px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 21px;
+}
+
+.tarjeta-texto h2 {
+  margin: 0;
+  font: 700 32px/40px var(--ds-font-display);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.probar {
+  position: relative;
+  display: inline-block;
+  font: 700 20px/1.25 var(--ds-font-display);
+}
+
+.trazo-boton {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.herramienta-desc {
+  margin: 11px 0 0;
+  font: 400 20px/1.3 var(--ds-font-display);
+  text-align: justify;
+  color: var(--ds-accent-dark);
+}
+
+/* --- el pie ----------------------------------------------------------- */
 
 .pie {
   display: grid;
   place-items: center;
-  min-height: 30svh;
-  padding: var(--ds-space-7) var(--ds-space-5);
-  scroll-snap-align: end;
-}
-
-.pie .portada-link {
-  padding: var(--ds-space-4);
-}
-
-/* --- los colores de las ilustraciones --------------------------------
-   Todo lo que no es la foto sale del sistema: el papel, el grafito, la
-   moldura, el lápiz. La foto tiene sus colores propios en el HTML. */
-
-.papel {
-  fill: var(--ds-white);
-}
-
-.grilla {
-  stroke: var(--ds-white);
-}
-
-.grafito {
-  stroke: var(--ds-black);
-}
-
-.moldura,
-.lapiz-mina {
-  fill: var(--ds-black);
-}
-
-.sombra {
-  fill: var(--ds-accent-secondary);
-  opacity: 0.5;
-}
-
-.bisel {
-  fill: var(--ds-white);
-  stroke: var(--ds-accent-light);
-}
-
-.lapiz-cuerpo {
-  fill: var(--ds-accent-dark);
-}
-
-.lapiz-madera {
-  fill: var(--ds-accent-light);
+  padding: 78px var(--ds-space-5) 106px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-}
-
-@media (min-width: 720px) {
-  .hero-texto {
-    padding-left: var(--ds-space-7);
-  }
-
-  .herramienta-texto {
-    padding-left: var(--ds-space-7);
-    padding-bottom: calc(var(--ds-space-7) * 1.5);
   }
 }

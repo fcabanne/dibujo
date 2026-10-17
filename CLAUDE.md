@@ -33,12 +33,12 @@ contexto seguro, así que abierta como `file://` no tendría con qué funcionar.
 ## Estructura
 
 ```
-index.html      portada: la escena de lápices y una pantalla por herramienta
+index.html      portada: el hero con los lápices en 3D y una tarjeta por herramienta
 marco/          probador de enmarcado
 referencia/     preparador de la foto de referencia
 mesa/           la mesa de luz
 src/
-  portada/      estilos de la portada y la escena de lápices (escena/)
+  portada/      estilos de la portada, las fotos (img/) y la escena de lápices (escena/)
   shared/
     ui/         el sistema de diseño: tokens, componentes, íconos, fuentes
     copy/       los textos de pantalla, un archivo por idioma
@@ -107,42 +107,58 @@ sin un clic del mouse no hay sonidos que contar.
 
 ## Cómo está armada la portada
 
-Un scroll por pantalla, en este orden (Instagram al final):
+Una sola columna de celular (máx. 430 px; todavía no hay diseño de escritorio), de
+arriba abajo —el diseño está en Figma "Mi web", nodo 45:582—:
 
-1. **La escena de lápices** (`src/portada/escena/`), en 3D con three.js: la foto de
-   referencia de Facu hecha escena. Arriba el saludo —"Hola artista!", una frase—. El
-   lápiz rojo y el portaminas ruedan al inclinar el celu y se mueven al sacudirlo; el
-   resto está fijo. El dedo no empuja nada, para que el toque sirva para hacer
-   scroll. En compu se inclinan con las flechas y se sacuden con la barra espaciadora.
-   Solo dibuja mientras esa pantalla se ve, y se carga después de que la página
-   aparece (`main.ts`). En iOS el sensor pide permiso: aparece el botón "Activar
-   movimiento". Sin WebGL queda el fondo y el título.
-2. **Una pantalla por herramienta**, en el orden en que se usan: Referencia, Mesa de
-   luz, Enmarcado. Cuando una toma el foco su imagen se oscurece un poco y aparece
-   encima el texto con "Probar ahora". El foco lo calcula `main.ts` con el scroll y lo
-   deja en la variable CSS `--foco` (0 a 1) de cada sección; sin JavaScript queda en 1
-   y todo se ve. **La imagen de cada herramienta es hoy un dibujito de placeholder**
-   (la pera de las tres tarjetas de antes): cuando haya imagen real va un
-   `<img class="herramienta-img">` en su lugar, y el resto queda igual.
+1. **El hero**: una foto de la mesa de trabajo (`img/hero.webp`) con el texto encima
+   —"Facu Cabanne →", "Herramientas para artistas" con "artistas" rodeado, y una
+   frase— y, arriba de todo, **dos lápices en 3D** (`src/portada/escena/`) que ruedan
+   al inclinar el celu y se mueven al sacudirlo. Pueden pisar el texto a propósito.
+   Chocan contra los útiles de la foto (cajas invisibles) y no se salen de la hoja.
+   El dedo no empuja nada: el toque es para hacer scroll. No hay botón de permiso:
+   el movimiento está prendido de entrada (en iPhone el sensor pide permiso y no lo
+   estamos pidiendo; por ahora no importa). Solo dibuja mientras el hero se ve.
+2. **Una tarjeta por herramienta** (Referencia, Mesa de luz, Enmarcado), en el orden
+   en que se usan. Toda la foto es el link; adentro lleva el título y "Probar →"
+   rodeado. La foto se corre un poco con el scroll (parallax, `--py`, ±18 px) dentro
+   de un marco quieto.
+3. **El pie**: "Dejame sugerencias →".
+
+**La foto y la escena 3D comparten encuadre** (`escena/encuadre.js`): la foto mide
+546 × 985 y se escala (`--s`, `--tx`, `--ty`, los calcula `main.ts`) para que el
+pedazo de 390 × 842 del diseño cubra la pantalla, pegado abajo. El texto vive en los
+píxeles de la foto y se escala con ella. La cámara y los colisionadores de la escena
+usan la misma cuenta (`PPCM` = 36,5 px de foto por cm), así que los lápices quedan
+alineados con la foto en cualquier pantalla. **Si se cambia la foto, hay que
+revisar `escena/composicion.js`** (posición de los lápices, cajas de choque y
+límites, todo en píxeles de la foto) y `encuadre.js`.
+
+**`img/hero.webp` es provisoria**: sale de `shared/hero@2x.jpg` con el texto y el
+trazo borrados a mano (parche de papel). Cuando haya la foto original, sin texto, va
+en su lugar (mismo tamaño, 1092 × 1970). Las fotos de `src/shared/*.jpg` son los
+originales; las de `img/*.webp` son las que se usan (WebP a 2x: la portada tiene que
+seguir siendo un solo `.html` y con los JPG pesaría varios MB).
+
+**Los trazos a mano** (`.trazo`: el círculo de "artistas", la flecha de bajar y los
+círculos de "Probar") son SVG con tres versiones del mismo trazo, apenas distintas
+(salen de los vectores de Figma con una deformación chica). Con `html.anima` se
+muestran de a una, a saltos (stop motion, CSS puro), solo mientras se ven (`.viva`,
+`main.ts`). La flecha además salta y desaparece al empezar a hacer scroll; "artistas"
+se dibuja una vez y queda quieto. Con `prefers-reduced-motion` quedan quietos. Para
+dibujar las variantes a mano: reemplazar los `d` de cada `<path>` (el primero es el
+que se ve si no hay animación).
 
 El texto de la portada está en el HTML, como siempre. **Gaegu no trae tildes, ñ ni
 ¿ ¡**, así que se escribe sin ellos.
 
 **Lo que viene de generalito.** `src/portada/escena/` es la página `herramientas` de
-https://github.com/fcabanne/generalito (carpeta `web/herramientas`), copiada acá: física
-propia (`fisica.js`, XPBD, sin librerías), los objetos 3D (`objetos/`: lápiz,
-portaminas, lápiz de color), la luz y el piso (`escenario.js`, `escena.js`), la
-composición medida de la foto (`composicion.js`, en cm) y `index.js`, que arma todo y
-devuelve `iniciarEscena(canvas, contenedor)`. Está en JavaScript sin tipos
-(`allowJs`). `three` va fijado en 0.186.0, la versión con la que se hizo. Si algo se
+https://github.com/fcabanne/generalito (carpeta `web/herramientas`), copiada acá y
+adaptada: física propia (`fisica.js`, XPBD, sin librerías), los dos objetos 3D
+(`objetos/`: lápiz y portaminas), la luz y las sombras (`escenario.js`, `escena.js`:
+con `soloSombra` el piso es transparente y solo dibuja la sombra, que cae sobre la
+foto) y `index.js`, que arma todo y devuelve `iniciarEscena(canvas, contenedor)`.
+Está en JavaScript sin tipos (`allowJs`). `three` va fijado en 0.186.0. Si algo se
 mejora en generalito hay que traerlo a mano: son copias, no un vínculo.
-
-**Los colores del dibujito salen de `--ds-*`**, como todo lo demás: papel, grafito,
-moldura, lápiz. La única excepción son los de la foto, escritos en el `<defs>`: es
-una foto y no interfaz, y tiene que leerse distinta del dibujo en grafito. Las tres
-ilustraciones son **la misma pera** en tres momentos (la foto con la grilla, calcada
-sobre el papel, colgada en la pared), dibujada una sola vez en un `<defs>` al
-principio del archivo.
 
 ## Código que comparten las herramientas
 

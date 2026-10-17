@@ -19,10 +19,12 @@ export const TECHO = 9;     // profundidad de la caja (cm): vidrio invisible arr
 export function crearEscenario(canvas, {
   fondo = PALETA.salvia, calidad = 1, captura = false, luz = LUZ,
   sombra = [0.6, 0.62, 0.57], oclusion = 0.55, tamLuz = 0.16, intensidad = 2.4,
+  transparente = false, soloSombra = null,
 } = {}) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
+    alpha: transparente,
     powerPreference: 'high-performance',
     preserveDrawingBuffer: captura,
   });
@@ -30,7 +32,7 @@ export function crearEscenario(canvas, {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1;
-  renderer.setClearColor(fondo, 1);
+  renderer.setClearColor(transparente ? 0x000000 : fondo, transparente ? 0 : 1);
 
   const escena = new THREE.Scene();
   // el cartón de relleno, más fuerte que en los dados: las herramientas se
@@ -52,6 +54,7 @@ export function crearEscenario(canvas, {
     escala: 0.9,
     oclusion,
     luz,
+    soloSombra,
   });
   piso.uniforms.uTamLuz.value = tamLuz;
   escena.add(piso.mesh);
@@ -64,22 +67,23 @@ export function crearEscenario(canvas, {
   // Cámara cenital que muestra `corto` cm en el lado corto de la pantalla
   // (medido a 1 cm del piso). Devuelve el rectángulo visible y las
   // paredes de la caja: los planos laterales del encuadre.
-  function encuadrar(corto, ancho = window.innerWidth, alto = window.innerHeight) {
+  // cx, cz: centro de la vista en el piso; `anchoMundo` se pasa directo con `{ ancho }`
+  function encuadrar(corto, ancho = window.innerWidth, alto = window.innerHeight, cx = 0, cz = 0, anchoCm = null) {
     renderer.setSize(ancho, alto, false);
     const aspecto = ancho / alto;
-    const anchoMundo = aspecto < 1 ? corto : corto * aspecto;
+    const anchoMundo = anchoCm ?? (aspecto < 1 ? corto : corto * aspecto);
     const tanV = TAN_H / aspecto;
     const h = 1 + (anchoMundo / 2) / TAN_H;
     camara.fov = THREE.MathUtils.radToDeg(2 * Math.atan(tanV));
     camara.aspect = aspecto;
     camara.near = Math.max(1, h - TECHO - 30);
     camara.far = h + 5;
-    camara.position.set(0, h, 0);
-    camara.lookAt(0, 0, 0);
+    camara.position.set(cx, h, cz);
+    camara.lookAt(cx, 0, cz);
     camara.updateProjectionMatrix();
     camara.updateMatrixWorld();
     const X0 = h * TAN_H, Z0 = h * tanV;
-    piso.encuadrar(-X0 - 1, X0 + 1, -Z0 - 1, Z0 + 1, TECHO + 10);
+    piso.encuadrar(cx - X0 - 1, cx + X0 + 1, cz - Z0 - 1, cz + Z0 + 1, TECHO + 10);
     const C = camara.position.clone();
     const adentro = new THREE.Vector3(0, 1, 0);
     const plano = (A, dir) => {
@@ -94,7 +98,7 @@ export function crearEscenario(canvas, {
       plano(new THREE.Vector3(0, 0, -Z0), ejeX),
       plano(new THREE.Vector3(0, 0, Z0), ejeX),
     ];
-    return { x0: -X0, x1: X0, z0: -Z0, z1: Z0, alturaCamara: h, paredes };
+    return { x0: cx - X0, x1: cx + X0, z0: cz - Z0, z1: cz + Z0, alturaCamara: h, paredes };
   }
 
   function dibujar() {
