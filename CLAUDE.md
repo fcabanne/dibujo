@@ -133,11 +133,10 @@ alineados con la foto en cualquier pantalla. **Si se cambia la foto, hay que
 revisar `escena/composicion.js`** (posición de los lápices, cajas de choque y
 límites, todo en píxeles de la foto) y `encuadre.js`.
 
-**`img/hero.webp` es provisoria**: sale de `shared/hero@2x.jpg` con el texto y el
-trazo borrados a mano (parche de papel). Cuando haya la foto original, sin texto, va
-en su lugar (mismo tamaño, 1092 × 1970). Las fotos de `src/shared/*.jpg` son los
-originales; las de `img/*.webp` son las que se usan (WebP a 2x: la portada tiene que
-seguir siendo un solo `.html` y con los JPG pesaría varios MB).
+**Las fotos**: `src/shared/*.jpg` son los originales (el hero, sin texto, de 1092 × 1970);
+las de `img/*.webp` son las que se usan (WebP a 2x: la portada tiene que seguir siendo
+un solo `.html`, y con los JPG pesaría varios MB). Si se cambia una foto, se vuelve a
+exportar a WebP (calidad 80).
 
 **Los trazos a mano** (`.trazo`: el círculo de "artistas", la flecha de bajar y los
 círculos de "Probar") son SVG con tres versiones del mismo trazo, apenas distintas
