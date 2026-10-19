@@ -74,6 +74,80 @@ const vigia = new IntersectionObserver(
 )
 for (const trazo of document.querySelectorAll('.trazo')) vigia.observe(trazo)
 
+// --- escritorio ---------------------------------------------------------
+// Solo con un ancho de escritorio y un mouse de verdad: el celular no pasa por acá.
+const escritorio = matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)')
+
+if (escritorio.matches) {
+  const articulos = [...document.querySelectorAll<HTMLElement>('.herramienta')]
+
+  // las tres tarjetas entran de a una (el escalonado lo hace el CSS con --orden)
+  articulos.forEach((a, i) => a.style.setProperty('--orden', String(i)))
+  const entrada = new IntersectionObserver(
+    (entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue
+        // entran todas juntas, escalonadas: con una que se vea alcanza
+        for (const a of articulos) a.classList.add('entra')
+        entrada.disconnect()
+      }
+    },
+    { threshold: 0.25 },
+  )
+  for (const a of articulos) entrada.observe(a)
+
+  // al pasar el mouse por una tarjeta, el circulo de "Probar" se vuelve a dibujar
+  for (const t of tarjetas) {
+    const circulo = t.querySelector('.trazo-boton')
+    t.addEventListener('pointerenter', () => {
+      if (!circulo || !circulo.classList.contains('viva')) return
+      circulo.classList.remove('viva')
+      void (circulo as SVGElement).getBoundingClientRect()
+      circulo.classList.add('viva')
+    })
+  }
+
+  // parallax de las fotos con el mouse: muy tenue, en horizontal y en vertical.
+  // La foto se corre hacia donde esta el puntero, con un resorte suave.
+  const MAX_X = 12
+  const MAX_Y = 9
+  let mx = innerWidth / 2
+  let my = innerHeight / 2
+  const actual = new Map<HTMLElement, { x: number; y: number }>()
+  let corriendo = false
+
+  function paso() {
+    let quieto = true
+    for (const t of tarjetas) {
+      const r = t.getBoundingClientRect()
+      const nx = Math.max(-1, Math.min(1, (mx - (r.left + r.width / 2)) / (innerWidth / 2)))
+      const ny = Math.max(-1, Math.min(1, (my - (r.top + r.height / 2)) / (innerHeight / 2)))
+      const a = actual.get(t) ?? { x: 0, y: 0 }
+      const x = a.x + (nx * MAX_X - a.x) * 0.08
+      const y = a.y + (ny * MAX_Y - a.y) * 0.08
+      if (Math.abs(x - a.x) > 0.02 || Math.abs(y - a.y) > 0.02) quieto = false
+      actual.set(t, { x, y })
+      t.style.setProperty('--mx', `${x.toFixed(2)}px`)
+      t.style.setProperty('--my', `${y.toFixed(2)}px`)
+    }
+    corriendo = !quieto
+    if (corriendo) requestAnimationFrame(paso)
+  }
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      if (reducido || e.pointerType !== 'mouse') return
+      mx = e.clientX
+      my = e.clientY
+      if (!corriendo) {
+        corriendo = true
+        requestAnimationFrame(paso)
+      }
+    },
+    { passive: true },
+  )
+}
+
 // --- la escena -----------------------------------------------------
 const lienzo = document.querySelector<HTMLCanvasElement>('#lienzo')
 

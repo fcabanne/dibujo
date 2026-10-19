@@ -107,8 +107,9 @@ sin un clic del mouse no hay sonidos que contar.
 
 ## Cómo está armada la portada
 
-Una sola columna de celular (máx. 430 px; todavía no hay diseño de escritorio), de
-arriba abajo —el diseño está en Figma "Mi web", nodo 45:582—:
+Una sola columna de celular (máx. 430 px) y, desde 900 px de ancho, la adaptación de
+escritorio (ver más abajo), de arriba abajo —el diseño del celular está en Figma "Mi web",
+nodo 45:582—:
 
 1. **El hero**: una foto de la mesa de trabajo (`img/hero.webp`) con el texto encima
    —"Facu Cabanne →", "Herramientas para artistas" con "artistas" rodeado, y una
@@ -132,6 +133,24 @@ usan la misma cuenta (`PPCM` = 36,5 px de foto por cm), así que los lápices qu
 alineados con la foto en cualquier pantalla. **Si se cambia la foto, hay que
 revisar `escena/composicion.js`** (posición de los lápices, cajas de choque y
 límites, todo en píxeles de la foto) y `encuadre.js`.
+
+**Escritorio (desde 900 px, `@media (min-width: 900px)` al final de `styles.css`)**: lo del
+celular no se toca; todo lo de escritorio vive en esa consulta o en `main.ts` detrás de
+`(min-width: 900px) and (hover: hover) and (pointer: fine)`.
+
+- El hero ocupa toda la pantalla. La foto queda pegada a la derecha (`encuadreHero` tiene
+  una rama para `W >= ESCRITORIO`) y a su izquierda sobra todo el lugar para los lápices.
+  Esa franja se rellena con CSS (`.hero-mundo::before`: pared, una banda oscura donde va
+  el clip y papel) hasta que haya una foto completa: **cuando se agrande la foto hacia la
+  izquierda hay que sacar ese relleno y revisar `encuadre.js` y `composicion.js`**.
+- **El mouse es un dedo que no aprieta** (`Entrada.mouse`): al pasar sobre el hero empuja a
+  los lápices en la dirección y con la fuerza con que se mueve. Un mouse quieto no hace nada.
+- Las tres tarjetas van una al lado de la otra (`.herramientas`, grilla de 3), con el texto
+  abajo, y entran escalonadas al verse (`.entra`, `--orden`).
+- Con el mouse, el círculo de "Probar" se vuelve a dibujar al pasar por la tarjeta, y la foto
+  se corre un poco hacia el puntero (`--mx`, `--my`, ±12 × ±9 px) además del parallax del
+  scroll; por eso la foto es más grande que el marco en las dos direcciones.
+- "Dejame sugerencias" va dentro del hero (abajo a la izquierda) y el pie desaparece.
 
 **Las fotos**: `src/shared/*.jpg` son los originales (el hero, sin texto, de 1092 × 1970);
 las de `img/*.webp` son las que se usan (WebP a 2x: la portada tiene que seguir siendo
