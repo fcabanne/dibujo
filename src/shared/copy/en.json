@@ -78,10 +78,7 @@
     "title": "Head",
     "type": "Head",
     "none": "None",
-    "loomis": "Loomis",
-    "looking": "Looking for the face...",
-    "noFace": "I couldn't find a face in this photo.",
-    "failed": "The face detector couldn't load."
+    "loomis": "Loomis"
   },
 
   "camera": {

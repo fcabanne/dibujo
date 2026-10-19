@@ -36,7 +36,9 @@ export function App() {
   const compact = useCompact()
   const noteTimer = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
-  const heads = useHeads(reference, state.head.mode !== 'none')
+  // Se buscan caras en cada foto, se use o no la cabeza: es lo que decide si la
+  // pestaña Cabeza aparece. Sin caras no hay nada que construir encima.
+  const heads = useHeads(reference, canDetect)
 
   // Estable: el diálogo se suscribe a `close` con ella, y una función nueva por
   // render lo haría re-suscribirse en cada cambio de estado.
@@ -185,7 +187,7 @@ export function App() {
         effectsSupported={effectsSupported}
         compact={compact}
         onDrawer={setDrawer}
-        heads={{ available: canDetect, status: heads.status }}
+        showHead={heads.status === 'ready'}
       />
 
       {/* Uno solo para toda la app: lo usan la pantalla de inicio y el botón de

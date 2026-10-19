@@ -32,7 +32,6 @@ import { PAPER_PRESETS, sheetName } from '../domain/paper'
 import { CustomColorOption, Hint, NAMED_COLORS, Row, Section } from './controls'
 import type { Action } from '../state/reducer'
 import type { AppState, EffectsMode, GridMode, HeadMode, PaperId } from '../types'
-import type { HeadStatus } from '../hooks/useHeads'
 
 interface Props {
   state: AppState
@@ -49,10 +48,11 @@ interface Props {
   /** Le pasa al lienzo el cajón, para que acomode la foto arriba de él. */
   onDrawer?: (node: HTMLElement | null) => void
   /**
-   * Lo que se sabe de las cabezas de la foto. `available` en falso —un archivo
-   * abierto con doble clic, sin de dónde bajar el detector— saca la pestaña.
+   * Si la foto tiene caras. La pestaña Cabeza aparece recién entonces: sin caras
+   * —o en un archivo abierto con doble clic, sin de dónde bajar el detector— no hay
+   * nada que construir, y una pestaña que solo puede decir "no encontré" sobra.
    */
-  heads: { available: boolean; status: HeadStatus }
+  showHead: boolean
 }
 
 /**
@@ -170,7 +170,7 @@ export function Panel({
   effectsSupported,
   compact,
   onDrawer,
-  heads,
+  showHead,
 }: Props) {
   const [thumb, setThumb] = useState<string | null>(null)
   const [openTab, setOpenTab] = useState<string | null>('grilla')
@@ -486,15 +486,6 @@ export function Panel({
   const isCustomHeadColor = !NAMED_COLORS.some(
     (color) => color.value === head.style.color.toLowerCase(),
   )
-  const headMessage =
-    heads.status === 'looking'
-      ? copy.head.looking
-      : heads.status === 'none'
-        ? copy.head.noFace
-        : heads.status === 'failed'
-          ? copy.head.failed
-          : null
-
   const headSection: PanelSection = {
     id: 'cabeza',
     title: copy.head.title,
@@ -543,10 +534,6 @@ export function Panel({
               onClick={() => setPicker('cabeza')}
             />
           </Row>
-
-          {/* Mientras busca, o si no encontró nada, se dice: sin esto la pestaña
-              parece no hacer nada. */}
-          {headMessage && <Hint>{headMessage}</Hint>}
 
           <Row label={copy.grid.color}>
             <Dropdown
@@ -709,7 +696,7 @@ export function Panel({
     photoSection,
     ...(SHOW_PAPER ? [paperSection] : []),
     gridSection,
-    ...(heads.available ? [headSection] : []),
+    ...(showHead ? [headSection] : []),
     adjustSection,
   ]
 
@@ -717,6 +704,12 @@ export function Panel({
   // de una pestaña a otra, y no el fondo de cada botón prendiéndose y
   // apagándose: así se ve de dónde a dónde se fue. Con todo cerrado se
   // achica en el lugar de la última pestaña, en vez de volver al principio.
+  // La pestaña Cabeza puede irse con la foto que tenía caras: si estaba abierta,
+  // se vuelve a la grilla en vez de quedar con un cajón vacío.
+  useEffect(() => {
+    if (openTab === 'cabeza' && !showHead) setOpenTab('grilla')
+  }, [openTab, showHead])
+
   const thumbIndex = Math.max(
     0,
     sections.findIndex((section) => section.id === (openTab ?? lastTab.current)),

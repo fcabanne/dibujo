@@ -813,10 +813,14 @@ pasa por `paintScene`, así que sale en la pantalla, en el export y en la mesa d
 Va encima de la grilla, y **con su mismo trazo**: liso, sin halo, y lo que queda del
 otro lado de la bola como la subdivisión, a mitad de opacidad y de grosor (`drawLoomis`).
 
-- **El detector se baja recién al elegir Loomis** (`useHeads`): unos quince megas que
-  quien solo quiere la grilla no paga. Corre una vez por foto sobre la copia liviana, y
-  lo encontrado se queda. En la versión suelta (`file://`) no hay de dónde bajarlo y la
-  pestaña no aparece (`canDetect`).
+- **La pestaña aparece solo si la foto tiene caras** (`showHead`). Para saberlo, se
+  buscan caras en cada foto apenas entra (`useHeads`), se use o no la cabeza: el
+  detector —unos quince megas— se baja en segundo plano con la primera foto. Antes se
+  bajaba recién al elegir Loomis, y una foto sin caras dejaba una pestaña que solo
+  podía decir "no encontré". Corre una vez por foto sobre la copia liviana, y lo
+  encontrado se queda. Si la pestaña abierta se va con la foto, se vuelve a la grilla.
+  En la versión suelta (`file://`) no hay de dónde bajarlo y la pestaña no aparece
+  (`canDetect`).
 - **Las cabezas se resuelven en los píxeles de la copia liviana** (`HeadScene`) y se
   pintan en cualquier rectángulo con una escala uniforme: como la grilla en fracciones,
   una sola cuenta para todos los destinos.
