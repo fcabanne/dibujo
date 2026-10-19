@@ -362,6 +362,11 @@ body {
   color: var(--ds-accent-dark);
 }
 
+/* El link de sugerencias dentro del hero es solo de escritorio. */
+.hero-sugerencias {
+  display: none;
+}
+
 /* --- el pie ----------------------------------------------------------- */
 
 .pie {
@@ -373,5 +378,102 @@ body {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Escritorio (desde 900 px). Lo de arriba es el celular y no se toca.
+
+   El hero ocupa toda la pantalla, con la foto pegada a la derecha y todo el
+   resto para que se muevan los lapices (y reaccionen al mouse). Despues, las
+   tres tarjetas una al lado de la otra, con su texto abajo, que entran de a una.
+   ------------------------------------------------------------------ */
+
+@media (min-width: 900px) {
+  .portada {
+    max-width: none;
+  }
+
+  /* A la izquierda de la foto sobra lugar: se prolonga la pared y el papel hasta que
+     haya una foto completa (colores del borde izquierdo de la foto). */
+  .hero-mundo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: 4000px;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      #d8d9cb 0,
+      #d8d9cb 236px,
+      #8b8d84 236px,
+      #8b8d84 241px,
+      #343a32 241px,
+      #343a32 308px,
+      #e9e3d1 312px
+    );
+  }
+
+  .hero {
+    background: #e9e3d1;
+  }
+
+  /* "Dejame sugerencias" va en la composicion del hero, abajo a la izquierda. */
+  .hero-sugerencias {
+    position: absolute;
+    bottom: calc(var(--ds-space-7) - 8px);
+    left: var(--ds-space-7);
+    z-index: 2;
+    display: block;
+    padding: var(--ds-space-4);
+  }
+
+  .pie {
+    display: none;
+  }
+
+  /* las tres tarjetas, una al lado de la otra */
+  .herramientas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 56px;
+    align-items: start;
+    min-height: 100vh;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 120px 64px;
+  }
+
+  .herramienta,
+  .herramienta:first-of-type,
+  .herramienta + .herramienta {
+    margin-top: 0;
+    padding: 0;
+  }
+
+  /* entran de a una, suaves: `main.ts` les pone "entra" al verse */
+  .anima .herramienta {
+    opacity: 0;
+    transform: translateY(56px);
+    transition:
+      opacity 0.9s var(--ds-ease),
+      transform 1.1s var(--ds-ease);
+    transition-delay: calc(var(--orden, 0) * 140ms);
+  }
+
+  .anima .herramienta.entra {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* con el mouse, la foto se corre un poco mas hacia donde esta el puntero (--mx, --my),
+     y sobra mas foto para que no asome el borde */
+  .tarjeta-foto img {
+    top: -70px;
+    left: -30px;
+    width: calc(100% + 60px);
+    height: calc(100% + 140px);
+    transform: translate3d(var(--mx, 0px), calc(var(--py, 0px) + var(--my, 0px)), 0);
   }
 }

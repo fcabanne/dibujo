@@ -161,6 +161,14 @@ export async function iniciarEscena(canvas, contenedor) {
   window.addEventListener('keydown', alTeclaAbajo);
   window.addEventListener('keyup', alTeclaArriba);
   window.addEventListener('pointerdown', alPrimerToque, { once: true });
+  // escritorio: el mouse que pasa por encima del hero empuja a los lápices
+  const conMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  function alMover(e) { if (e.pointerType === 'mouse') entrada.mouse(e.clientX, e.clientY); }
+  function alSalir() { entrada.mouseSalio(); }
+  if (conMouse) {
+    contenedor.addEventListener('pointermove', alMover);
+    contenedor.addEventListener('pointerleave', alSalir);
+  }
 
   const observador = new ResizeObserver(() => { armar(); sucio = 3; if (activo) dibujar(); });
   observador.observe(contenedor);
@@ -189,6 +197,8 @@ export async function iniciarEscena(canvas, contenedor) {
       window.removeEventListener('keydown', alTeclaAbajo);
       window.removeEventListener('keyup', alTeclaArriba);
       window.removeEventListener('pointerdown', alPrimerToque);
+      contenedor.removeEventListener('pointermove', alMover);
+      contenedor.removeEventListener('pointerleave', alSalir);
       esc.renderer.dispose();
     },
   };

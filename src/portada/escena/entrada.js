@@ -68,6 +68,16 @@ export class Entrada {
     p.x = e.clientX; p.y = e.clientY;
   }
 
+  // Escritorio: el mouse que pasa por encima es un dedo que no aprieta. Empuja a
+  // los lápices en la dirección y con la fuerza con que se mueve.
+  mouse(x, y) {
+    const p = this.punteros.get('mouse');
+    if (!p) this.punteros.set('mouse', { x, y, px: x, py: y, mouse: true });
+    else { p.x = x; p.y = y; }
+  }
+
+  mouseSalio() { this.punteros.delete('mouse'); }
+
   _up(e, cancelado = false) {
     const p = this.punteros.get(e.pointerId);
     if (!p) return;
@@ -173,9 +183,14 @@ export class Entrada {
     const dedos = [];
     const o = this.camara.position;
     for (const p of this.punteros.values()) {
-      const d0 = this._direccion(p.px, p.py, [0, 0, 0]);
-      const d1 = this._direccion(p.x, p.y, [0, 0, 0]);
-      dedos.push({ o: [o.x, o.y, o.z], d0, d1 });
+      // un mouse quieto no hace nada (si no, frenaría a un lápiz que rueda)
+      if (!p.mouse || p.x !== p.px || p.y !== p.py) {
+        const d0 = this._direccion(p.px, p.py, [0, 0, 0]);
+        const d1 = this._direccion(p.x, p.y, [0, 0, 0]);
+        dedos.push(p.mouse
+          ? { o: [o.x, o.y, o.z], d0, d1, margen: 0.5, agarre: 0.6, fuerza: 40000 }
+          : { o: [o.x, o.y, o.z], d0, d1 });
+      }
       p.px = p.x; p.py = p.y;
     }
     m.dedos = dedos;
