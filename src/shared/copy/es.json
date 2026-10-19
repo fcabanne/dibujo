@@ -78,10 +78,7 @@
     "title": "Cabeza",
     "type": "Cabeza",
     "none": "Ninguna",
-    "loomis": "Loomis",
-    "looking": "Buscando la cara...",
-    "noFace": "No encontre ninguna cara en esta foto.",
-    "failed": "No se pudo cargar el detector de caras."
+    "loomis": "Loomis"
   },
 
   "camera": {

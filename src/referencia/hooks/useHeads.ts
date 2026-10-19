@@ -18,10 +18,11 @@ interface Found {
 /**
  * Las cabezas de la referencia.
  *
- * El detector se baja y corre recién cuando se pide una cabeza (`wanted`): son unos
- * quince megas que quien solo quiere la grilla no tiene por qué pagar. Corre una vez
- * por foto, sobre la copia liviana —la misma que se ve—, y lo encontrado se queda:
- * apagar y prender la cabeza no vuelve a buscar.
+ * Se buscan caras en cada foto, apenas entra (`wanted`), se use o no la cabeza: lo
+ * que se encuentra decide si la pestaña Cabeza aparece. Son unos quince megas de
+ * detector que se bajan en segundo plano con la primera foto y quedan guardados.
+ * Corre una vez por foto, sobre la copia liviana —la misma que se ve—, y lo
+ * encontrado se queda.
  *
  * La lente sale de la que anotó la cámara en el EXIF del original o, si no anotó,
  * de la estimada mirando las caras. No se elige a mano: con la foto bien detectada
