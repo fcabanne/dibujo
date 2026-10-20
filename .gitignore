@@ -30,6 +30,10 @@ public/caras/wasm
 /obras/
 /dibujos/
 
+# Excepción: las fotos de la portada (WebP) son del sitio, no obra personal, y sin ellas
+# el build sale con las imágenes rotas.
+!src/portada/img/*.webp
+
 # Proyectos guardados de la app: son tuyos, no del repo.
 *.cuadro
 
