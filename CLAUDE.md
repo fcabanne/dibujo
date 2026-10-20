@@ -153,7 +153,7 @@ celular no se toca; todo lo de escritorio vive en esa consulta o en `main.ts` de
 - "Dejame sugerencias" va dentro del hero (abajo a la izquierda) y el pie desaparece.
 
 **Las fotos**: `src/shared/*.jpg` son los originales (el hero, sin texto, de 1092 × 1970);
-las de `img/*.webp` son las que se usan (WebP a 2x: la portada tiene que seguir siendo
+las de `img/*.webp` son las que se usan **y van commiteadas** (`.gitignore` ignora los `.webp`, con una excepción para esa carpeta; sin ellas, un build desde otro checkout sale con las imágenes rotas) (WebP a 2x: la portada tiene que seguir siendo
 un solo `.html`, y con los JPG pesaría varios MB). Si se cambia una foto, se vuelve a
 exportar a WebP (calidad 80).
 
