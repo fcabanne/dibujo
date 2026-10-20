@@ -172,11 +172,10 @@
     "noCamera": "No camera was found.",
     "retry": "Try again",
     "desktop": {
-      "title": "This one is for your phone",
-      "intro": "The light table is a phone on a tripod looking at your paper, with the photo laid over what the camera sees. On a computer it has nothing to work with.",
-      "scan": "Scan this code with your phone to open it there.",
+      "title": "This tool is for phones",
+      "scan": "Scan the QR with your phone's camera.",
       "qr": "QR code that opens the light table",
-      "link": "Or type this address:"
+      "link": "You can also type this URL:"
     },
     "pageTitle": "Light table - trace what the camera sees"
   },
