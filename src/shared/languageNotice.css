@@ -1,0 +1,58 @@
+/* El aviso de idioma de las herramientas: una pastilla arriba y al medio, encima de todo.
+   Al medio y no a la derecha porque ahí vive el botón de descargar. */
+.lang-notice {
+  position: fixed;
+  top: calc(var(--ds-space-4) + env(safe-area-inset-top, 0px));
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - var(--ds-space-5) * 2);
+  margin: 0 auto;
+  padding: var(--ds-space-2) var(--ds-space-2) var(--ds-space-2) var(--ds-space-5);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-background);
+  box-shadow: 0 6px 18px rgb(16 16 16 / 0.18);
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-meta);
+}
+
+.lang-notice button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.lang-notice .lang-notice-close {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-field);
+  height: var(--ds-control-field);
+  border-radius: var(--ds-radius-pill);
+  font-size: 20px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.lang-notice button:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
+}
+
+@media (hover: hover) {
+  .lang-notice .lang-notice-close:hover {
+    background: var(--ds-accent-light);
+  }
+}

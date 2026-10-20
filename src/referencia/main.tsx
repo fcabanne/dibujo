@@ -4,6 +4,7 @@ import { copy, language } from '../shared/copy'
 // El sistema de diseño primero: sus estilos son la base sobre la que escribe la
 // hoja de esta herramienta, y el orden del CSS es el orden de estos imports.
 import '../shared/ui'
+import { LanguageNotice } from '../shared/LanguageNotice'
 import { App } from './App'
 import './styles.css'
 
@@ -23,5 +24,6 @@ document.addEventListener('touchstart', () => {}, { passive: true })
 createRoot(root).render(
   <StrictMode>
     <App />
+    <LanguageNotice />
   </StrictMode>,
 )

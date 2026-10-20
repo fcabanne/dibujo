@@ -62,8 +62,10 @@ quien no tiene el castellano a mano se entera con **un aviso bilingüe fijo** en
 portada ("Ver en castellano · View in English"), que no depende de ninguna detección: se
 muestra hasta que se elige un idioma o se lo cierra, y después no vuelve.
 
-**Dónde se elige:** solo en la portada: el selector (`ES | EN`, arriba a la derecha) y el
-aviso. Las herramientas no tienen selector: leen lo que se eligió ahí.
+**Dónde se elige:** el selector (`ES | EN`, arriba a la derecha) está solo en la portada. El
+aviso está también en cada herramienta (`shared/LanguageNotice.tsx`, arriba y al medio), para
+quien entra directo a un link sin pasar por la portada; elegir o cerrar en cualquiera
+vale para todo el sitio. Las herramientas no tienen selector.
 
 **Cambiar de idioma recarga la página** (`setLanguage`): los textos se leen una vez al
 cargar y `copy` es una constante, así que recargar es lo que hace que todo salga del

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LanguageNotice } from '../shared/LanguageNotice'
 import { App } from './App'
 import './styles.css'
 // Después de la del escritorio: la del celular pisa lo poco que comparten, como la
@@ -12,5 +13,6 @@ if (!root) throw new Error('Falta el nodo #root')
 createRoot(root).render(
   <StrictMode>
     <App />
+    <LanguageNotice />
   </StrictMode>,
 )

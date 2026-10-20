@@ -110,11 +110,13 @@ sin un clic del mouse no hay sonidos que contar.
 Castellano por defecto, inglés elegible. **El navegador no decide**: dos intentos de
 deducirlo de `navigator.languages` le mostraron inglés a usuarios argentinos. Se elige con
 el selector `ES | EN` de la portada (arriba a la derecha) —las herramientas no tienen
-selector propio— y queda guardado en `localStorage` (`dibujo:lang`) para todo el sitio.
+selector propio, solo el aviso— y queda guardado en `localStorage` (`dibujo:lang`) para todo el sitio.
 Cambiar recarga la página. `?lang=` mira sin guardar.
 
-Para quien llega sin el castellano a mano, la portada muestra un **aviso bilingüe fijo**
-("Ver en castellano · View in English") hasta que se elige o se cierra. No depende de ninguna
+Para quien llega sin el castellano a mano, la portada y cada herramienta (`LanguageNotice`,
+para el que entra directo a un link) muestran un **aviso bilingüe fijo**
+("Ver en castellano · View in English") hasta que se elige o se cierra, en cualquiera de
+las páginas. No depende de ninguna
 detección, así que no puede equivocarse. Alemán no existe: quien llega con otro idioma ve
 castellano y el aviso, y elige inglés.
 
