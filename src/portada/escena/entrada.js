@@ -22,11 +22,10 @@ const _p = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 
 export class Entrada {
-  constructor({ canvas, camara, mundo, sonido, onPrimera }) {
+  constructor({ canvas, camara, mundo, onPrimera }) {
     this.canvas = canvas;
     this.camara = camara;
     this.mundo = mundo;
-    this.sonido = sonido;
     this.onPrimera = onPrimera;
     this.punteros = new Map();
     this.ray = new THREE.Raycaster();
@@ -36,7 +35,7 @@ export class Entrada {
     this.grav = null;
     this.sensor = false;
     this.simulada = null;
-    this.intensidad = 0;   // envolvente de la sacudida, para el sonido y la vibración
+    this.intensidad = 0;   // envolvente de la sacudida, para la vibración
     this.lateral = 0;      // inclinación izquierda/derecha filtrada (grados, + baja la derecha)
     this.lateralCrudo = null;
     this.inclinacionSimulada = null; // grados (teclado y pruebas); null = la del sensor
@@ -52,7 +51,6 @@ export class Entrada {
 
   // ── punteros ──
   _down(e) {
-    this.sonido?.desbloquear();
     this.onPrimera?.();
     if (!CON_DEDO) return; // sin dedo: el toque queda libre para hacer scroll
     e.preventDefault();

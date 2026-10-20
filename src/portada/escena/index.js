@@ -12,11 +12,10 @@ import * as THREE from 'three';
 import { crearEscenario, TECHO } from './escenario.js';
 import { Mundo } from './fisica.js';
 import { Entrada } from './entrada.js';
-import { Sonido } from './sonido.js';
 import * as lapiz from './objetos/lapiz.js';
 import * as portaminas from './objetos/portaminas.js';
-import { COMPOSICION, COLISIONES, LIMITES, LUZ, AMBIENTE, SOMBRA_SOBRE_FOTO } from './composicion.js';
-import { encuadreHero, PPCM } from './encuadre.js';
+import { COMPOSICION, COMPOSICION_ESCRITORIO, COLISIONES, LIMITES, LUZ, AMBIENTE, SOMBRA_SOBRE_FOTO } from './composicion.js';
+import { encuadreHero, PPCM, ESCRITORIO } from './encuadre.js';
 
 const OBJETOS = { lapiz, portaminas };
 const px = (v) => v / PPCM; // px de la foto → cm
@@ -24,6 +23,9 @@ const px = (v) => v / PPCM; // px de la foto → cm
 export async function iniciarEscena(canvas, contenedor) {
   const movil = matchMedia('(pointer: coarse)').matches;
   const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const conMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  // el hero de escritorio: la pared de la izquierda queda libre, hasta arriba de todo
+  const esEscritorio = (W) => conMouse && W >= ESCRITORIO;
 
   const esc = crearEscenario(canvas, {
     ...AMBIENTE,
@@ -33,13 +35,13 @@ export async function iniciarEscena(canvas, contenedor) {
     soloSombra: SOMBRA_SOBRE_FOTO,
   });
   const mundo = new Mundo();
-  const sonido = new Sonido();
   const items = []; // { c: cuerpo de la física, malla, def }
 
   // ── encuadre y mundo ──
   function armar() {
     const W = contenedor.clientWidth || 390, H = contenedor.clientHeight || 844;
     const e = encuadreHero(W, H);
+    const libre = esEscritorio(W);
     // centro de la pantalla en la foto, en cm
     const cx = px((W / 2 - e.tx) / e.s), cz = px((H / 2 - e.ty) / e.s);
     esc.encuadrar(0, W, H, cx, cz, W / (e.s * PPCM));
@@ -50,8 +52,8 @@ export async function iniciarEscena(canvas, contenedor) {
       // a la izquierda, el borde de la pantalla: los lápices pueden llegar hasta ahí
       { n: [1, 0, 0], d: px(-e.tx / e.s), tipo: 'pared', material: 'vidrio' },
       { n: [-1, 0, 0], d: -px(LIMITES.derecha), tipo: 'pared', material: 'vidrio' },
-      { n: [0, 0, 1], d: px(LIMITES.arriba), tipo: 'pared', material: 'vidrio' },
-      { n: [0, 0, -1], d: -px(LIMITES.abajo), tipo: 'pared', material: 'vidrio' },
+      { n: [0, 0, 1], d: px(libre ? -e.ty / e.s : LIMITES.arriba), tipo: 'pared', material: 'vidrio' },
+      { n: [0, 0, -1], d: -px(libre ? (H - e.ty) / e.s : LIMITES.abajo), tipo: 'pared', material: 'vidrio' },
     ];
   }
 
@@ -68,7 +70,10 @@ export async function iniciarEscena(canvas, contenedor) {
   }
 
   function cargarLapices() {
-    for (const def of COMPOSICION) {
+    const W = contenedor.clientWidth || 390, H = contenedor.clientHeight || 844;
+    const e = encuadreHero(W, H);
+    const escritorio = esEscritorio(W);
+    for (const def of escritorio ? COMPOSICION_ESCRITORIO : COMPOSICION) {
       const mod = OBJETOS[def.objeto];
       const variante = mod.variantes.includes(def.variante) ? def.variante : mod.variantes[0];
       const creado = mod.crear(variante);
@@ -84,7 +89,10 @@ export async function iniciarEscena(canvas, contenedor) {
       // un poco arriba: se asientan solos
       const c = mundo.agregar({
         ...cuerpo,
-        x: px(def.x), y: cuerpo.medias[1] + cuerpo.radio + (reducido ? 0 : 0.15), z: px(def.punta) + mitad,
+        // en escritorio se da el centro como fracción de la pantalla; en el celular, la punta en la foto
+        x: px(escritorio ? (def.fx * W - e.tx) / e.s : def.x),
+        y: cuerpo.medias[1] + cuerpo.radio + (reducido ? 0 : 0.15),
+        z: px(escritorio ? (def.fz * H - e.ty) / e.s : def.punta) + (escritorio ? 0 : mitad),
         qx: q.x, qy: q.y, qz: q.z, qw: q.w,
       });
       items.push({ c, malla: creado.malla, def: { ...def, variante }, cuerpo });
@@ -99,7 +107,7 @@ export async function iniciarEscena(canvas, contenedor) {
   let cuadro = 0;
   let ultimaVibracion = 0;
 
-  const entrada = new Entrada({ canvas, camara: esc.camara, mundo, sonido });
+  const entrada = new Entrada({ canvas, camara: esc.camara, mundo });
   entrada.escucharSensor(); // inclinación y sacudida, prendidas desde el principio
 
   function simular(dt) {
@@ -107,7 +115,6 @@ export async function iniciarEscena(canvas, contenedor) {
     mundo.paso(dt);
     for (const { c } of items) {
       if (c.golpe > 0) {
-        sonido.golpe(c.id, c.golpe, c.material, c.golpeContra, 0);
         if (c.golpe > 120 && navigator.vibrate && entrada.intensidad > 4) {
           const t = performance.now();
           if (t - ultimaVibracion > 90) { ultimaVibracion = t; navigator.vibrate(Math.min(12, 3 + c.golpe * 0.02)); }
@@ -156,13 +163,9 @@ export async function iniciarEscena(canvas, contenedor) {
   function alTeclaArriba(e) {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') entrada.simularInclinacion(null);
   }
-  // el audio nace con el primer toque
-  function alPrimerToque() { sonido.desbloquear(); }
   window.addEventListener('keydown', alTeclaAbajo);
   window.addEventListener('keyup', alTeclaArriba);
-  window.addEventListener('pointerdown', alPrimerToque, { once: true });
   // escritorio: el mouse que pasa por encima del hero empuja a los lápices
-  const conMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
   function alMover(e) { if (e.pointerType === 'mouse') entrada.mouse(e.clientX, e.clientY); }
   function alSalir() { entrada.mouseSalio(); }
   if (conMouse) {
@@ -180,8 +183,8 @@ export async function iniciarEscena(canvas, contenedor) {
   dibujar();
 
   return {
-    entrada, sonido, mundo, esc, items,
-    sacudir() { sonido.desbloquear(); entrada.simularSacudida(); },
+    entrada, mundo, esc, items,
+    sacudir() { entrada.simularSacudida(); },
     // dibuja sólo mientras el hero se ve
     activar(si) {
       if (si === activo) return;
@@ -196,7 +199,6 @@ export async function iniciarEscena(canvas, contenedor) {
       observador.disconnect();
       window.removeEventListener('keydown', alTeclaAbajo);
       window.removeEventListener('keyup', alTeclaArriba);
-      window.removeEventListener('pointerdown', alPrimerToque);
       contenedor.removeEventListener('pointermove', alMover);
       contenedor.removeEventListener('pointerleave', alSalir);
       esc.renderer.dispose();

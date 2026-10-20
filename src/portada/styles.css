@@ -36,17 +36,17 @@ body {
   height: 100svh;
   overflow: hidden;
   /* el gris verdoso de arriba de la foto, hasta que cargue */
-  background: #d3d6cb;
+  background: #d6d9c8;
 }
 
-/* La foto y el texto viven en los pixeles de la foto (546 x 985) y se escalan
+/* La foto y el texto viven en los pixeles de la foto (823 x 985) y se escalan
    juntos: `main.ts` calcula --s, --tx y --ty (encuadre.js). Los valores de
    abajo son los de un celular de 390 x 842 y valen sin JavaScript. */
 .hero-mundo {
   position: absolute;
   top: 0;
   left: 0;
-  width: 546px;
+  width: 823px;
   height: 985px;
   transform-origin: 0 0;
   transform: translate(var(--tx, -80px), var(--ty, -143px)) scale(var(--s, 1));
@@ -54,14 +54,14 @@ body {
 
 .hero-foto {
   display: block;
-  width: 546px;
+  width: 823px;
   height: 985px;
 }
 
 .hero-firma {
   position: absolute;
   top: 350px;
-  left: 104px;
+  left: 381px;
   font: var(--ds-text-meta);
   font-size: 14px;
   letter-spacing: 0.06em;
@@ -73,7 +73,7 @@ body {
 .hero-texto {
   position: absolute;
   top: 398px;
-  left: 104px;
+  left: 381px;
   width: 259px;
   color: var(--ds-black);
 }
@@ -287,7 +287,7 @@ body {
 .tarjeta {
   position: relative;
   display: block;
-  aspect-ratio: 366 / 525;
+  aspect-ratio: 366 / 460;
   overflow: hidden;
   color: var(--ds-background);
   text-decoration: none;
@@ -394,8 +394,8 @@ body {
     max-width: none;
   }
 
-  /* A la izquierda de la foto sobra lugar: se prolonga la pared y el papel hasta que
-     haya una foto completa (colores del borde izquierdo de la foto). */
+  /* A la izquierda de la foto sobra lugar: se prolonga la pared (el color liso del borde
+     izquierdo de la foto). */
   .hero-mundo::before {
     content: '';
     position: absolute;
@@ -403,20 +403,18 @@ body {
     right: 100%;
     width: 4000px;
     height: 100%;
-    background: linear-gradient(
-      to bottom,
-      #d8d9cb 0,
-      #d8d9cb 236px,
-      #8b8d84 236px,
-      #8b8d84 241px,
-      #343a32 241px,
-      #343a32 308px,
-      #e9e3d1 312px
-    );
+    background: #d6d9c8;
   }
 
   .hero {
-    background: #e9e3d1;
+    background: #d6d9c8;
+  }
+
+  /* La volanta, el titulo y la bajada arrancan en la misma linea que "Dejame sugerencias":
+     el texto vive en los pixeles de la foto, asi que se pasa esa x de pantalla a px de foto. */
+  .hero-firma,
+  .hero-texto {
+    left: calc((var(--ds-space-7) + var(--ds-space-4) - var(--tx, 0px)) / var(--s, 1));
   }
 
   /* "Dejame sugerencias" va en la composicion del hero, abajo a la izquierda. */

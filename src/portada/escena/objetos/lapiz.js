@@ -658,7 +658,7 @@ function obtenerTexturaEstampado() {
     for (const ch of texto) { ctx.fillText(ch, x, linea); x += ctx.measureText(ch).width + espacio; }
     return x;
   };
-  let x = escribir('GENERALITO', 5, 41, 5.2);
+  let x = escribir('CABANNE', 5, 41, 5.2);
   // rombo separador
   ctx.beginPath();
   const cx = x + 16, cy = linea - 14;

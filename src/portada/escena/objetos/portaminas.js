@@ -482,7 +482,7 @@ function texturasMoleteado() {
 // Cuerpo: dos lienzos pintados con las mismas pasadas (mismo azar):
 // · color: anodizado petróleo con variación a lo largo y vetas finas
 //   alrededor, desgaste claro en las aristas cerca de las puntas e
-//   impresión "0.5 mm · GENERALITO" (como el lápiz) con la tinta algo
+//   impresión "0.5 mm · CABANNE" (como el lápiz) con la tinta algo
 //   gastada; rayones finos de uso y huellas más lisas cerca del agarre;
 // · ORM: rugosidad (G) cepillada; la tinta no es metálica (B = 0).
 // u (x del lienzo) va a lo largo del cuerpo; v (alrededor) va hacia
@@ -578,7 +578,7 @@ function texturasCuerpo() {
     let d = 0.42;
     d += texto('0.5', d, 0.15, 600, 1) + 0.05;
     const fin = d + texto('mm', d, 0.085, 500, 1);
-    const fin2 = 1.55 + texto('GENERALITO', 1.55, 0.075, 500, 4);
+    const fin2 = 1.55 + texto('CABANNE', 1.55, 0.075, 500, 4);
     // tinta gastada: puntitos del color de fondo sobre la impresión
     g.fillStyle = color ? rgb(base) : 'rgb(255,97,255)';
     const alto = 0.17 * pxV;
