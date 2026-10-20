@@ -114,19 +114,20 @@ nodo 45:582—:
 1. **El hero**: una foto de la mesa de trabajo (`img/hero.webp`) con el texto encima
    —"Facu Cabanne →", "Herramientas para artistas" con "artistas" rodeado, y una
    frase— y, arriba de todo, **dos lápices en 3D** (`src/portada/escena/`) que ruedan
-   al inclinar el celu y se mueven al sacudirlo. Pueden pisar el texto a propósito.
+   al inclinar el celu y se mueven al sacudirlo. Pueden pisar el texto a propósito. **No suenan**: la escena no tiene sonido ni forma de prenderlo (se sacó a propósito).
+   Los lápices dicen "CABANNE" en vez de "GENERALITO" (`objetos/`).
    Chocan contra los útiles de la foto (cajas invisibles) y no se salen de la hoja.
    El dedo no empuja nada: el toque es para hacer scroll. No hay botón de permiso:
    el movimiento está prendido de entrada (en iPhone el sensor pide permiso y no lo
    estamos pidiendo; por ahora no importa). Solo dibuja mientras el hero se ve.
 2. **Una tarjeta por herramienta** (Referencia, Mesa de luz, Enmarcado), en el orden
    en que se usan. Toda la foto es el link; adentro lleva el título y "Probar →"
-   rodeado. La foto se corre un poco con el scroll (parallax, `--py`, ±54 px) dentro
-   de un marco quieto.
+   rodeado. La foto (366 × 460, `.tarjeta { aspect-ratio }`) se corre un poco con el scroll
+   (parallax, `--py`, ±54 px) dentro de un marco quieto.
 3. **El pie**: "Dejame sugerencias →".
 
 **La foto y la escena 3D comparten encuadre** (`escena/encuadre.js`): la foto mide
-546 × 985 y se escala (`--s`, `--tx`, `--ty`, los calcula `main.ts`) para que el
+823 × 985 y se escala (`--s`, `--tx`, `--ty`, los calcula `main.ts`) para que el
 pedazo de 390 × 842 del diseño cubra la pantalla, pegado abajo. El texto vive en los
 píxeles de la foto y se escala con ella. La cámara y los colisionadores de la escena
 usan la misma cuenta (`PPCM` = 36,5 px de foto por cm), así que los lápices quedan
@@ -140,9 +141,14 @@ celular no se toca; todo lo de escritorio vive en esa consulta o en `main.ts` de
 
 - El hero ocupa toda la pantalla. La foto queda pegada a la derecha (`encuadreHero` tiene
   una rama para `W >= ESCRITORIO`) y a su izquierda sobra todo el lugar para los lápices.
-  Esa franja se rellena con CSS (`.hero-mundo::before`: pared, una banda oscura donde va
-  el clip y papel) hasta que haya una foto completa: **cuando se agrande la foto hacia la
-  izquierda hay que sacar ese relleno y revisar `encuadre.js` y `composicion.js`**.
+  Esa franja se rellena con CSS (`.hero-mundo::before`): el color liso de la pared, el mismo
+  del borde izquierdo de la foto (#d6d9c8). **Si cambia ese borde, hay que cambiar el relleno.**
+- La volanta, el título y la bajada arrancan en la misma línea que "Dejame sugerencias": el
+  texto vive en píxeles de la foto, así que su `left` se calcula de la x de pantalla con
+  `--tx` y `--s`.
+- **Los lápices andan sueltos** (`COMPOSICION_ESCRITORIO`): cada uno con su ángulo, por el
+  centro y la izquierda. El centro se da como fracción de la pantalla (`fx`, `fz`), no en
+  píxeles de la foto, y arriba y abajo no hay tope: la pared de la izquierda está libre.
 - **El mouse es un dedo que no aprieta** (`Entrada.mouse`): al pasar sobre el hero empuja a
   los lápices en la dirección y con la fuerza con que se mueve. Un mouse quieto no hace nada.
 - Las tres tarjetas van una al lado de la otra (`.herramientas`, grilla de 3), con el texto
@@ -152,10 +158,13 @@ celular no se toca; todo lo de escritorio vive en esa consulta o en `main.ts` de
   scroll; por eso la foto es más grande que el marco en las dos direcciones.
 - "Dejame sugerencias" va dentro del hero (abajo a la izquierda) y el pie desaparece.
 
-**Las fotos**: `src/shared/*.jpg` son los originales (el hero, sin texto, de 1092 × 1970);
+**Las fotos**: `src/shared/*.jpg` son los originales (el hero, sin texto, de 1646 × 1970 en 2x);
 las de `img/*.webp` son las que se usan **y van commiteadas** (`.gitignore` ignora los `.webp`, con una excepción para esa carpeta; sin ellas, un build desde otro checkout sale con las imágenes rotas) (WebP a 2x: la portada tiene que seguir siendo
 un solo `.html`, y con los JPG pesaría varios MB). Si se cambia una foto, se vuelve a
-exportar a WebP (calidad 80).
+exportar a WebP (calidad 80). **El hero original trae los lápices dibujados en la foto**: antes de
+exportarlo hay que borrarlos (se parcha con papel de la versión anterior, sin los lápices), porque
+los lápices de verdad son los 3D. Al ensancharse la foto, todo lo que está en píxeles de la foto
+(`composicion.js`, `encuadre.js`, el texto) corre lo que se agregó a la izquierda.
 
 **Los trazos a mano** (`.trazo`: el círculo de "artistas", la flecha de bajar y los
 círculos de "Probar") son SVG de 1,5 px de grosor, con tres versiones del mismo trazo, apenas distintas

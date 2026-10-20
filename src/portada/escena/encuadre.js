@@ -3,13 +3,13 @@
 //  (la foto y el texto) y la escena 3D (la cámara y los colisionadores):
 //  los dos tienen que coincidir al píxel, en cualquier pantalla.
 //
-//  La foto mide 546 × 985. El diseño (Figma) muestra el pedazo de 390 × 842
-//  que va de x = 80 a 470 y termina abajo de todo; el resto es "aire" que se
+//  La foto mide 823 × 985. El diseño (Figma) muestra el pedazo de 390 × 842
+//  que va de x = 357 a 747 y termina abajo de todo; el resto es "aire" que se
 //  ve en pantallas más anchas o más altas. Se escala (`s`) lo justo para que
 //  ese pedazo cubra la pantalla, centrado y pegado abajo.
 // ─────────────────────────────────────────────────────────────
-export const FOTO = { ancho: 546, alto: 985 };
-const DISENO = { ancho: 390, alto: 842, centroX: 275 };
+export const FOTO = { ancho: 823, alto: 985 };
+const DISENO = { ancho: 390, alto: 842, centroX: 552 };
 
 // Px de la foto por centímetro del mundo 3D: la escala del lápiz rojo (18,5 cm)
 // en el diseño, que coincide con la de los lápices que asoman abajo a la derecha.
