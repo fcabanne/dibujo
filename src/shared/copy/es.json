@@ -171,11 +171,10 @@
     "noCamera": "No se encontro ninguna camara.",
     "retry": "Reintentar",
     "desktop": {
-      "title": "Esta va en el celu",
-      "intro": "La mesa de luz es un celular en un tripode mirando tu papel, con la foto encima de lo que ve la camara. En la compu no tiene con que funcionar.",
-      "scan": "Escanea este codigo con el celu para abrirla ahi.",
+      "title": "Esta herramienta es para celulares",
+      "scan": "Escanea el QR con la camara de tu celular.",
       "qr": "Codigo QR que abre la mesa de luz",
-      "link": "O escribi esta direccion:"
+      "link": "Tambien podes escribir esta url:"
     }
   },
 

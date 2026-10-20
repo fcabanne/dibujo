@@ -262,7 +262,6 @@ function DesktopNotice() {
       <div className="welcome">
         <div className="welcome-text">
           <h2>{copy.mesa.desktop.title}</h2>
-          <p>{copy.mesa.desktop.intro}</p>
           <p>{copy.mesa.desktop.scan}</p>
         </div>
         <QrCode value={url} label={copy.mesa.desktop.qr} />
