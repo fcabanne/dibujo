@@ -327,6 +327,8 @@
     "dismiss": "Cerrar",
     "es": "Castellano",
     "en": "English",
+    "shortEs": "ES",
+    "shortEn": "EN",
     "inviteEs": "Ver en castellano",
     "inviteEn": "View in English"
   },

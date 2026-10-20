@@ -62,9 +62,8 @@ quien no tiene el castellano a mano se entera con **un aviso bilingüe fijo** en
 portada ("Ver en castellano · View in English"), que no depende de ninguna detección: se
 muestra hasta que se elige un idioma o se lo cierra, y después no vuelve.
 
-**Dónde se elige:** la portada tiene el selector (`Castellano | English`, arriba a la
-derecha) y el aviso. Las pantallas de inicio de las tres herramientas tienen un link al
-otro idioma (`shared/LanguageSwitch.tsx`), entre volver y "Dejame sugerencias".
+**Dónde se elige:** solo en la portada: el selector (`ES | EN`, arriba a la derecha) y el
+aviso. Las herramientas no tienen selector: leen lo que se eligió ahí.
 
 **Cambiar de idioma recarga la página** (`setLanguage`): los textos se leen una vez al
 cargar y `copy` es una constante, así que recargar es lo que hace que todo salga del
@@ -91,7 +90,8 @@ sin JavaScript); en el navegador, `translateDocument` los pone en el idioma eleg
 
 1. Copiar `es.json` a `<id>.json` y traducirlo. Si falta una clave, no compila.
 2. Registrarlo en `LOCALES` de `index.ts` y sumar su nombre (`lang.<id>`) en todos los archivos.
-3. `LanguageSwitch` pasa hoy entre dos idiomas: con tres hay que pasar a un menú.
+3. El selector de la portada (`.idioma` en `index.html`) lleva un botón por idioma: sumar el suyo
+   (`lang.short<Id>` para el texto corto, `lang.<id>` para el nombre completo).
 
 ## Qué no está acá
 

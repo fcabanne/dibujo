@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { copy, fill, formatNumber } from '../../shared/copy'
 import type { Reference } from '../../shared/referenceImage'
-import { LanguageSwitch } from '../../shared/LanguageSwitch'
 import { openInstagram } from '../../shared/suggestions'
 import {
   BackIcon,
@@ -781,7 +780,6 @@ export function Panel({
           </IconButton>
         </nav>
         <h1 className="ds-sr">{copy.app.name}</h1>
-        <LanguageSwitch />
         <a className="ds-link" href={copy.welcome.suggestionsUrl} onClick={openSuggestions}>
           {copy.welcome.suggestions}
         </a>

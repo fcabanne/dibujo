@@ -3,7 +3,6 @@ import { copy, fill } from '../shared/copy'
 import { loadArtworkFile } from '../shared/imageFile'
 import { loadArtwork, saveArtwork } from '../shared/imageStore'
 import { useDesktop } from '../shared/desktop'
-import { LanguageSwitch } from '../shared/LanguageSwitch'
 import { openInstagram } from '../shared/suggestions'
 import {
   BackIcon,
@@ -203,7 +202,6 @@ function LightTable() {
                   <BackIcon />
                 </IconButton>
               </nav>
-              <LanguageSwitch />
               <a
                 className="ds-link"
                 href={copy.welcome.suggestionsUrl}
@@ -280,7 +278,6 @@ function DesktopNotice() {
             <BackIcon />
           </IconButton>
         </nav>
-        <LanguageSwitch />
         <a
           className="ds-link"
           href={copy.welcome.suggestionsUrl}

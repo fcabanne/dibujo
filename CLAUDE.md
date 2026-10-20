@@ -109,8 +109,8 @@ sin un clic del mouse no hay sonidos que contar.
 
 Castellano por defecto, inglés elegible. **El navegador no decide**: dos intentos de
 deducirlo de `navigator.languages` le mostraron inglés a usuarios argentinos. Se elige con
-el selector de la portada (arriba a la derecha) o con el link de la pantalla de inicio de
-cada herramienta, y queda guardado en `localStorage` (`dibujo:lang`) para todo el sitio.
+el selector `ES | EN` de la portada (arriba a la derecha) —las herramientas no tienen
+selector propio— y queda guardado en `localStorage` (`dibujo:lang`) para todo el sitio.
 Cambiar recarga la página. `?lang=` mira sin guardar.
 
 Para quien llega sin el castellano a mano, la portada muestra un **aviso bilingüe fijo**
@@ -245,9 +245,6 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   también salen de ahí (el separador decimal es idioma). Si a una traducción le falta una
   clave, no compila. Incluye los nombres de colores, acabados y perfiles de Enmarcado
   (`marco.options`). Ver `src/shared/copy/LEEME.md`.
-- `src/shared/LanguageSwitch.tsx` — el link al otro idioma de las pantallas de inicio. El
-  idioma se elige en la portada (selector y aviso) o ahí, y queda guardado para todo el
-  sitio: ver "El idioma".
 
 ## Cómo está armado el probador de enmarcado
 
