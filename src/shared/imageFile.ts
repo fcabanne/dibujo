@@ -1,3 +1,5 @@
+import { copy } from './copy'
+
 /** Lado mayor al que reescalamos toda obra cargada. */
 const MAX_SIDE = 2000
 
@@ -14,7 +16,7 @@ export interface LoadedArtwork {
 export function loadArtworkFile(file: File): Promise<LoadedArtwork> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
-      reject(new Error('El archivo no es una imagen'))
+      reject(new Error(copy.notices.notAnImage))
       return
     }
 
@@ -25,7 +27,7 @@ export function loadArtworkFile(file: File): Promise<LoadedArtwork> {
       URL.revokeObjectURL(url)
       const { naturalWidth: w, naturalHeight: h } = img
       if (!w || !h) {
-        reject(new Error('No se pudo leer la imagen'))
+        reject(new Error(copy.notices.unreadable))
         return
       }
 
@@ -35,7 +37,7 @@ export function loadArtworkFile(file: File): Promise<LoadedArtwork> {
       canvas.height = Math.round(h * scale)
       const ctx = canvas.getContext('2d')
       if (!ctx) {
-        reject(new Error('No se pudo procesar la imagen'))
+        reject(new Error(copy.notices.unprocessable))
         return
       }
       ctx.imageSmoothingQuality = 'high'
@@ -51,7 +53,7 @@ export function loadArtworkFile(file: File): Promise<LoadedArtwork> {
 
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('No se pudo abrir la imagen'))
+      reject(new Error(copy.notices.unopenable))
     }
 
     img.src = url

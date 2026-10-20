@@ -59,7 +59,7 @@
     "divisions": "Amount",
     "fewer": "Fewer",
     "more": "More",
-    "color": "Colour",
+    "color": "Color",
     "customColor": "Other",
     "colors": {
       "white": "White",
@@ -91,7 +91,8 @@
     "insecure": "The camera needs the published site: browsers don't lend it to a file opened with a double click.",
     "denied": "The camera is blocked for this site. Allow it from the lock in the address bar.",
     "noCamera": "No camera was found.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "fileName": "camera"
   },
 
   "adjust": {
@@ -176,7 +177,8 @@
       "scan": "Scan this code with your phone to open it there.",
       "qr": "QR code that opens the light table",
       "link": "Or type this address:"
-    }
+    },
+    "pageTitle": "Light table - trace what the camera sees"
   },
 
   "marco": {
@@ -224,6 +226,124 @@
     "loadFailed": "Couldn't load the image",
     "download": "Download",
     "downloadFailed": "Couldn't download",
-    "fileName": "framed"
+    "fileName": "framed",
+    "pageTitle": "Framing - try frames on your drawing",
+    "dropHint": "Drop your drawing here",
+    "defaultTitle": "Masterpiece",
+    "measure": {
+      "art": "Artwork",
+      "mat": "Mat",
+      "matSide": "{size} per side",
+      "glass": "Glass",
+      "frame": "Frame",
+      "molding": "Molding",
+      "pair": "{w} x {h}"
+    },
+    "options": {
+      "frameColors": {
+        "blanco": "White",
+        "crudo": "Ecru",
+        "pino": "Pine",
+        "dorado": "Gold",
+        "roble": "Oak",
+        "plata": "Silver",
+        "caoba": "Mahogany",
+        "nogal": "Walnut",
+        "verde": "British green",
+        "negro": "Black"
+      },
+      "moldingTypes": {
+        "veteado": "Grained",
+        "madera-lisa": "Plain wood",
+        "mate": "Matte",
+        "satinado": "Satin",
+        "laca": "Lacquer",
+        "cepillado": "Brushed",
+        "pulido": "Polished"
+      },
+      "moldingFamilies": {
+        "madera": "Wood",
+        "pintado": "Painted",
+        "metal": "Metal"
+      },
+      "matColors": {
+        "blanco": "Pure white",
+        "hueso": "Bone",
+        "crudo": "Ecru",
+        "gris-claro": "Light gray",
+        "arena": "Sand",
+        "topo": "Taupe",
+        "oliva": "Olive",
+        "borgona": "Burgundy",
+        "carbon": "Charcoal",
+        "negro": "Black"
+      },
+      "wallColors": {
+        "blanco-roto": "Off-white",
+        "arena": "Sand",
+        "perla": "Pearl gray",
+        "salvia": "Sage green",
+        "humo": "Smoke blue",
+        "terracota": "Terracotta",
+        "topo": "Taupe",
+        "tinta": "Ink blue",
+        "carbon": "Charcoal"
+      },
+      "wallPatterns": {
+        "plain": "Smooth",
+        "plaster": "Plaster",
+        "stucco": "Stipple",
+        "linen": "Linen"
+      },
+      "glass": {
+        "none": {
+          "label": "No glass",
+          "hint": "bare artwork"
+        },
+        "clear": {
+          "label": "Clear",
+          "hint": "reflective"
+        },
+        "antireflective": {
+          "label": "Anti-reflective",
+          "hint": "no glare"
+        },
+        "matte": {
+          "label": "Matte",
+          "hint": "diffuses"
+        }
+      },
+      "profiles": {
+        "flat": "Flat",
+        "bevel": "Beveled",
+        "scoop": "Scoop",
+        "round": "Rounded",
+        "step": "Stepped"
+      }
+    }
+  },
+
+  "lang": {
+    "label": "Language",
+    "dismiss": "Close",
+    "es": "Castellano",
+    "en": "English",
+    "inviteEs": "Ver en castellano",
+    "inviteEn": "View in English"
+  },
+
+  "portada": {
+    "title": "Drawing - tools",
+    "signature": "Facu Cabanne →",
+    "heroA": "Tools",
+    "heroB": "for",
+    "heroWord": "artists",
+    "intro": "Hello artist! These tools help speed up the artistic process, from the reference photo to the finished piece on the wall.",
+    "scroll": "See the tools",
+    "try": "Try it →",
+    "counter": "{n} of {total}",
+    "referenciaDesc": "With this tool you can prepare your reference photo by adding a grid, the structure of the head and even a few color and effect adjustments. It will help you understand its structure better before you start drawing.",
+    "mesaDesc": "Using your phone's camera as a projector, you can see your reference image as a transparency. It makes it easier to transfer the image onto your blank sheet, almost as if you were tracing it.",
+    "marcoDesc": "See your artwork as if it were hanging on a wall. Try different frame types, colors, materials, finishes and combinations. Use the final image to present your work or to take to the framer."
   }
 }

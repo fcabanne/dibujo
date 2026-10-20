@@ -1,3 +1,4 @@
+import { copy } from '../../shared/copy'
 import type {
   FrameFinish,
   FrameMaterial,
@@ -17,16 +18,16 @@ export interface FramePreset {
  * eligen aparte, en MOLDING_TYPES, para no mezclar dos decisiones en un swatch.
  */
 export const FRAME_PRESETS: FramePreset[] = [
-  { id: 'blanco', label: 'Blanco', color: '#f2efe9' },
-  { id: 'crudo', label: 'Crudo', color: '#d9cdb8' },
-  { id: 'pino', label: 'Pino', color: '#c99a5f' },
-  { id: 'dorado', label: 'Dorado', color: '#c9a233' },
-  { id: 'roble', label: 'Roble', color: '#a97c47' },
-  { id: 'plata', label: 'Plata', color: '#b9bcc0' },
-  { id: 'caoba', label: 'Caoba', color: '#7a3320' },
-  { id: 'nogal', label: 'Nogal', color: '#6b4326' },
-  { id: 'verde', label: 'Verde ingles', color: '#2f4438' },
-  { id: 'negro', label: 'Negro', color: '#191919' },
+  { id: 'blanco', label: copy.marco.options.frameColors.blanco, color: '#f2efe9' },
+  { id: 'crudo', label: copy.marco.options.frameColors.crudo, color: '#d9cdb8' },
+  { id: 'pino', label: copy.marco.options.frameColors.pino, color: '#c99a5f' },
+  { id: 'dorado', label: copy.marco.options.frameColors.dorado, color: '#c9a233' },
+  { id: 'roble', label: copy.marco.options.frameColors.roble, color: '#a97c47' },
+  { id: 'plata', label: copy.marco.options.frameColors.plata, color: '#b9bcc0' },
+  { id: 'caoba', label: copy.marco.options.frameColors.caoba, color: '#7a3320' },
+  { id: 'nogal', label: copy.marco.options.frameColors.nogal, color: '#6b4326' },
+  { id: 'verde', label: copy.marco.options.frameColors.verde, color: '#2f4438' },
+  { id: 'negro', label: copy.marco.options.frameColors.negro, color: '#191919' },
 ]
 
 
@@ -42,13 +43,13 @@ export interface MoldingType {
 }
 
 export const MOLDING_TYPES: MoldingType[] = [
-  { id: 'veteado', label: 'Veteado', material: 'wood', finish: 'grained' },
-  { id: 'madera-lisa', label: 'Madera lisa', material: 'wood', finish: 'satin' },
-  { id: 'mate', label: 'Mate', material: 'painted', finish: 'matte' },
-  { id: 'satinado', label: 'Satinado', material: 'painted', finish: 'satin' },
-  { id: 'laca', label: 'Laca', material: 'painted', finish: 'gloss' },
-  { id: 'cepillado', label: 'Cepillado', material: 'metal', finish: 'satin' },
-  { id: 'pulido', label: 'Pulido', material: 'metal', finish: 'gloss' },
+  { id: 'veteado', label: copy.marco.options.moldingTypes.veteado, material: 'wood', finish: 'grained' },
+  { id: 'madera-lisa', label: copy.marco.options.moldingTypes['madera-lisa'], material: 'wood', finish: 'satin' },
+  { id: 'mate', label: copy.marco.options.moldingTypes.mate, material: 'painted', finish: 'matte' },
+  { id: 'satinado', label: copy.marco.options.moldingTypes.satinado, material: 'painted', finish: 'satin' },
+  { id: 'laca', label: copy.marco.options.moldingTypes.laca, material: 'painted', finish: 'gloss' },
+  { id: 'cepillado', label: copy.marco.options.moldingTypes.cepillado, material: 'metal', finish: 'satin' },
+  { id: 'pulido', label: copy.marco.options.moldingTypes.pulido, material: 'metal', finish: 'gloss' },
 ]
 
 /**
@@ -62,9 +63,9 @@ export const MOLDING_TYPES: MoldingType[] = [
  * misma familia —"Laca", armado en escritorio— se reconoce como "Pintado".
  */
 export const MOLDING_FAMILIES: MoldingType[] = [
-  { id: 'madera', label: 'Madera', material: 'wood', finish: 'grained' },
-  { id: 'pintado', label: 'Pintado', material: 'painted', finish: 'satin' },
-  { id: 'metal', label: 'Metal', material: 'metal', finish: 'satin' },
+  { id: 'madera', label: copy.marco.options.moldingFamilies.madera, material: 'wood', finish: 'grained' },
+  { id: 'pintado', label: copy.marco.options.moldingFamilies.pintado, material: 'painted', finish: 'satin' },
+  { id: 'metal', label: copy.marco.options.moldingFamilies.metal, material: 'metal', finish: 'satin' },
 ]
 
 export interface MatPreset {
@@ -75,16 +76,16 @@ export interface MatPreset {
 
 /** Los passe-partout viven en los crudos; de claro a oscuro. */
 export const MAT_PRESETS: MatPreset[] = [
-  { id: 'blanco', label: 'Blanco puro', color: '#f6f4ef' },
-  { id: 'hueso', label: 'Hueso', color: '#ece5d6' },
-  { id: 'crudo', label: 'Crudo', color: '#ded3bd' },
-  { id: 'gris-claro', label: 'Gris claro', color: '#d4d2cd' },
-  { id: 'arena', label: 'Arena', color: '#cbbb9c' },
-  { id: 'topo', label: 'Topo', color: '#9c948a' },
-  { id: 'oliva', label: 'Oliva', color: '#7b7d5f' },
-  { id: 'borgona', label: 'Bordo', color: '#6d3a3f' },
-  { id: 'carbon', label: 'Carbon', color: '#3a3a3c' },
-  { id: 'negro', label: 'Negro', color: '#1c1c1e' },
+  { id: 'blanco', label: copy.marco.options.matColors.blanco, color: '#f6f4ef' },
+  { id: 'hueso', label: copy.marco.options.matColors.hueso, color: '#ece5d6' },
+  { id: 'crudo', label: copy.marco.options.matColors.crudo, color: '#ded3bd' },
+  { id: 'gris-claro', label: copy.marco.options.matColors['gris-claro'], color: '#d4d2cd' },
+  { id: 'arena', label: copy.marco.options.matColors.arena, color: '#cbbb9c' },
+  { id: 'topo', label: copy.marco.options.matColors.topo, color: '#9c948a' },
+  { id: 'oliva', label: copy.marco.options.matColors.oliva, color: '#7b7d5f' },
+  { id: 'borgona', label: copy.marco.options.matColors.borgona, color: '#6d3a3f' },
+  { id: 'carbon', label: copy.marco.options.matColors.carbon, color: '#3a3a3c' },
+  { id: 'negro', label: copy.marco.options.matColors.negro, color: '#1c1c1e' },
 ]
 
 export interface WallPreset {
@@ -95,29 +96,29 @@ export interface WallPreset {
 
 /** Colores de pared, de claro a oscuro. */
 export const WALL_PRESETS: WallPreset[] = [
-  { id: 'blanco-roto', label: 'Blanco roto', color: '#eae6de' },
-  { id: 'arena', label: 'Arena', color: '#d8c8ad' },
-  { id: 'perla', label: 'Gris perla', color: '#cfcdc8' },
-  { id: 'salvia', label: 'Verde salvia', color: '#9fa98f' },
-  { id: 'humo', label: 'Azul humo', color: '#8d9aa6' },
-  { id: 'terracota', label: 'Terracota', color: '#b4735a' },
-  { id: 'topo', label: 'Topo', color: '#8d8377' },
-  { id: 'tinta', label: 'Azul tinta', color: '#2f3a4a' },
-  { id: 'carbon', label: 'Carbon', color: '#3d3f42' },
+  { id: 'blanco-roto', label: copy.marco.options.wallColors['blanco-roto'], color: '#eae6de' },
+  { id: 'arena', label: copy.marco.options.wallColors.arena, color: '#d8c8ad' },
+  { id: 'perla', label: copy.marco.options.wallColors.perla, color: '#cfcdc8' },
+  { id: 'salvia', label: copy.marco.options.wallColors.salvia, color: '#9fa98f' },
+  { id: 'humo', label: copy.marco.options.wallColors.humo, color: '#8d9aa6' },
+  { id: 'terracota', label: copy.marco.options.wallColors.terracota, color: '#b4735a' },
+  { id: 'topo', label: copy.marco.options.wallColors.topo, color: '#8d8377' },
+  { id: 'tinta', label: copy.marco.options.wallColors.tinta, color: '#2f3a4a' },
+  { id: 'carbon', label: copy.marco.options.wallColors.carbon, color: '#3d3f42' },
 ]
 
 export const WALL_PATTERNS: { id: WallPattern; label: string }[] = [
-  { id: 'plain', label: 'Liso' },
-  { id: 'plaster', label: 'Yeso' },
-  { id: 'stucco', label: 'Gotele' },
-  { id: 'linen', label: 'Lino' },
+  { id: 'plain', label: copy.marco.options.wallPatterns.plain },
+  { id: 'plaster', label: copy.marco.options.wallPatterns.plaster },
+  { id: 'stucco', label: copy.marco.options.wallPatterns.stucco },
+  { id: 'linen', label: copy.marco.options.wallPatterns.linen },
 ]
 
 export const GLASS_TYPES: { id: GlassType; label: string; hint: string }[] = [
-  { id: 'none', label: 'Sin vidrio', hint: 'obra al aire' },
-  { id: 'clear', label: 'Cristal', hint: 'refleja' },
-  { id: 'antireflective', label: 'Antirreflejo', hint: 'sin brillo' },
-  { id: 'matte', label: 'Mate', hint: 'difumina' },
+  { id: 'none', label: copy.marco.options.glass.none.label, hint: copy.marco.options.glass.none.hint },
+  { id: 'clear', label: copy.marco.options.glass.clear.label, hint: copy.marco.options.glass.clear.hint },
+  { id: 'antireflective', label: copy.marco.options.glass.antireflective.label, hint: copy.marco.options.glass.antireflective.hint },
+  { id: 'matte', label: copy.marco.options.glass.matte.label, hint: copy.marco.options.glass.matte.hint },
 ]
 
 export interface ProfilePreset {
@@ -127,9 +128,9 @@ export interface ProfilePreset {
 
 /** Las secciones de moldura más habituales en una casa de cuadros. */
 export const FRAME_PROFILES: ProfilePreset[] = [
-  { id: 'flat', label: 'Plana' },
-  { id: 'bevel', label: 'Biselada' },
-  { id: 'scoop', label: 'Caveta' },
-  { id: 'round', label: 'Bombe' },
-  { id: 'step', label: 'Escalonada' },
+  { id: 'flat', label: copy.marco.options.profiles.flat },
+  { id: 'bevel', label: copy.marco.options.profiles.bevel },
+  { id: 'scoop', label: copy.marco.options.profiles.scoop },
+  { id: 'round', label: copy.marco.options.profiles.round },
+  { id: 'step', label: copy.marco.options.profiles.step },
 ]

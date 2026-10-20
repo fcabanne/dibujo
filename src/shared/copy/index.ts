@@ -19,27 +19,39 @@ const LOCALES: Record<string, Copy> = { es, en }
 /** El idioma del sitio. Todo se escribe primero acá. */
 const DEFAULT_LANGUAGE = 'es'
 
+/** Dónde queda guardada la elección. Una clave para todo el sitio: las herramientas viven en el mismo origen. */
+const STORAGE_KEY = 'dibujo:lang'
+
+/** Los idiomas que hay, en el orden en que se ofrecen. */
+export const LANGUAGES = Object.keys(LOCALES)
+
+function storedLanguage(): string | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    return stored && stored in LOCALES ? stored : null
+  } catch {
+    // Modo privado o datos bloqueados: sin elección guardada, y no pasa nada.
+    return null
+  }
+}
+
 /**
- * Esto está en castellano. Punto.
+ * Qué idioma se muestra, en este orden:
  *
- * Hubo dos intentos de deducirlo del navegador y los dos dieron inglés a un
- * usuario argentino, porque `navigator.languages` no dice dónde estás ni qué
- * querés leer: dice cómo está configurado el sistema operativo. Un teléfono en
- * inglés no significa que su dueño prefiera leer esto en inglés — este sitio es
- * de un dibujante argentino y su idioma es el castellano.
+ * 1. `?lang=` — una mirada de esa visita, no se guarda (ver `LEEME.md`).
+ * 2. Lo que la persona eligió con el selector.
+ * 3. Castellano.
  *
- * Elegir idioma automáticamente es un problema que tiene buenas soluciones, y
- * ninguna es mirar una lista y creerle. Cuando se encare de verdad —con algo
- * que se pueda elegir y que quede elegido, dibujado en Figma— se hace bien.
- * Hasta entonces, una constante que no puede equivocarse.
- *
- * La traducción al inglés no se tira: está completa y se revisa con `?lang=en`.
- * Lo que no hace es aparecer sola.
+ * **El navegador no entra a la cuenta.** Hubo dos intentos de deducirlo de
+ * `navigator.languages` y los dos le mostraron inglés a un usuario argentino: esa
+ * lista dice cómo está configurado el sistema operativo, no qué querés leer. Quien
+ * no tiene el castellano a mano se entera por el aviso de la portada, que no
+ * depende de ninguna detección.
  */
 function resolveLanguage(): string {
   const requested = new URLSearchParams(window.location.search).get('lang')
   if (requested && requested in LOCALES) return requested
-  return DEFAULT_LANGUAGE
+  return storedLanguage() ?? DEFAULT_LANGUAGE
 }
 
 export const language = resolveLanguage()
@@ -47,14 +59,43 @@ export const language = resolveLanguage()
 /** Los textos del idioma elegido. Se usa directo: `copy.grid.title`. */
 export const copy: Copy = LOCALES[language]
 
-// Durante un día el idioma se guardó acá. Fue un error —alcanzaba con abrir un
-// link con `?lang=` para quedarse con ese idioma puesto, sin forma de volver— y
-// esta línea limpia lo que aquella versión dejó escrito. Borrable cuando ya no
-// queden navegadores con la clave.
-try {
-  window.localStorage.removeItem('dibujo:idioma')
-} catch {
-  // Modo privado: no había nada que limpiar.
+/** ¿Ya eligió idioma alguna vez? Mientras no, la portada ofrece el cambio. */
+export const hasChosenLanguage = storedLanguage() !== null
+
+// Para el lector de pantalla y el traductor del navegador: la página dice en qué idioma está.
+document.documentElement.lang = language
+
+/**
+ * Elige un idioma y lo recuerda. Recarga la página: los textos se leen una vez al
+ * cargar (`copy` es una constante), y recargar es la forma de que todo —el DOM, los
+ * títulos, los nombres de las muestras— salga del mismo idioma sin tener que
+ * repintar cada componente.
+ *
+ * Saca el `?lang=` de la dirección: si no, esa mirada le ganaría a la elección.
+ */
+export function setLanguage(next: string): void {
+  if (!(next in LOCALES)) return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, next)
+  } catch {
+    // Sin dónde guardar, vale solo esta visita (por `?lang=`).
+    const url = new URL(window.location.href)
+    url.searchParams.set('lang', next)
+    window.location.replace(url)
+    return
+  }
+  const url = new URL(window.location.href)
+  url.searchParams.delete('lang')
+  window.location.replace(url)
+}
+
+/** Deja asentado que ya se eligió (o se descartó el aviso) sin cambiar de idioma. */
+export function keepLanguage(): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, language)
+  } catch {
+    // Sin dónde guardar, el aviso vuelve la próxima vez. Es lo menos malo.
+  }
 }
 
 /**
@@ -85,3 +126,38 @@ export function formatNumber(value: number, options?: Intl.NumberFormatOptions):
 export function formatDecimal(value: number): string {
   return formatNumber(value, { maximumFractionDigits: 1 })
 }
+
+/** Un texto por su camino (`'portada.title'`), para lo que no es un componente: el HTML. */
+function lookup(path: string): string | undefined {
+  const value = path.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], copy)
+  return typeof value === 'string' ? value : undefined
+}
+
+const TRANSLATED_ATTRIBUTES = ['aria-label', 'alt', 'title']
+
+/**
+ * Pone en el idioma elegido los textos que viven en el HTML (ver `scripts/htmlCopy.mjs`,
+ * que hace lo mismo al compilar con el castellano):
+ *
+ * - `data-t="clave"` — el contenido del elemento.
+ * - `data-t-aria-label="clave"` (también `alt` y `title`) — ese atributo.
+ * - `data-t-vars='{"n":1}'` — los valores de las llaves `{n}` de la frase.
+ */
+export function translateDocument(root: ParentNode = document): void {
+  const valuesOf = (el: Element): Record<string, string | number> => {
+    const raw = el.getAttribute('data-t-vars')
+    return raw ? JSON.parse(raw) : {}
+  }
+  for (const el of root.querySelectorAll('[data-t]')) {
+    const text = lookup(el.getAttribute('data-t') ?? '')
+    if (text !== undefined) el.textContent = fill(text, valuesOf(el))
+  }
+  for (const attr of TRANSLATED_ATTRIBUTES) {
+    for (const el of root.querySelectorAll(`[data-t-${attr}]`)) {
+      const text = lookup(el.getAttribute(`data-t-${attr}`) ?? '')
+      if (text !== undefined) el.setAttribute(attr, fill(text, valuesOf(el)))
+    }
+  }
+}
+
+translateDocument()

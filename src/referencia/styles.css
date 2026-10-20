@@ -624,7 +624,7 @@ body {
   right: var(--ds-space-3);
   font: var(--ds-text-meta);
   color: var(--ds-accent-dark);
-  content: 'cm';
+  content: attr(data-unit);
   pointer-events: none;
   transform: translateY(-50%);
 }

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react'
 import { copy } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
+import { LanguageSwitch } from '../../shared/LanguageSwitch'
 import { openInstagram } from '../../shared/suggestions'
 import { BackIcon, Button, IconButton, UploadIcon } from '../../shared/ui'
 
@@ -71,6 +72,7 @@ export function Welcome({ onArtwork }: Props) {
             <BackIcon />
           </IconButton>
         </nav>
+        <LanguageSwitch />
         <a
           className="ds-link"
           href={copy.welcome.suggestionsUrl}

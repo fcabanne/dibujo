@@ -362,6 +362,96 @@ body {
   color: var(--ds-accent-dark);
 }
 
+/* --- idioma ------------------------------------------------------------
+   Un selector chico arriba a la derecha, siempre, y un aviso que aparece hasta que
+   la persona elige. Van sobre la escena de lapices (z-index 3) y atajan sus toques. */
+
+.idioma,
+.idioma-aviso {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-background);
+  box-shadow: 0 6px 18px rgb(16 16 16 / 0.18);
+  color: var(--ds-accent-dark);
+  font: var(--ds-text-meta);
+}
+
+.idioma {
+  top: calc(var(--ds-space-4) + env(safe-area-inset-top));
+  right: var(--ds-space-5);
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+}
+
+.idioma-op,
+.idioma-invitacion,
+.idioma-cerrar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.idioma-op {
+  min-width: var(--ds-control-field);
+  height: var(--ds-control-field);
+  padding: 0 var(--ds-space-3);
+  border-radius: var(--ds-radius-pill);
+}
+
+.idioma-op[aria-pressed='true'] {
+  background: var(--ds-accent-dark);
+  color: var(--ds-background);
+}
+
+.idioma-aviso {
+  top: calc(var(--ds-space-4) + env(safe-area-inset-top) + var(--ds-control-sm) + var(--ds-space-2));
+  right: var(--ds-space-5);
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+  max-width: calc(100% - var(--ds-space-5) * 2);
+  padding: var(--ds-space-2) var(--ds-space-2) var(--ds-space-2) var(--ds-space-5);
+}
+
+.idioma-aviso[hidden] {
+  display: none;
+}
+
+.idioma-invitacion {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.idioma-cerrar {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-field);
+  height: var(--ds-control-field);
+  border-radius: var(--ds-radius-pill);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.idioma-op:focus-visible,
+.idioma-invitacion:focus-visible,
+.idioma-cerrar:focus-visible {
+  outline: 2px solid var(--ds-accent-dark);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-control);
+}
+
+@media (hover: hover) {
+  .idioma-op:hover:not([aria-pressed='true']),
+  .idioma-cerrar:hover {
+    background: var(--ds-accent-light);
+  }
+}
+
 /* El link de sugerencias dentro del hero es solo de escritorio. */
 .hero-sugerencias {
   display: none;

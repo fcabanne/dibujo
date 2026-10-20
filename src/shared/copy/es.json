@@ -56,7 +56,7 @@
     "squareHint": "Cuadrados exactos desde arriba a la izquierda",
     "none": "Ninguna",
     "noneHint": "Sin grilla",
-    "divisions": "Divisiones",
+    "divisions": "Cantidad",
     "fewer": "Menos",
     "more": "Mas",
     "color": "Color",
@@ -91,7 +91,8 @@
     "insecure": "La camara necesita el sitio publicado: los navegadores no la prestan a un archivo abierto con doble clic.",
     "denied": "La camara esta bloqueada para este sitio. Habilitala desde el candado de la barra de direcciones.",
     "noCamera": "No se encontro ninguna camara.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "fileName": "camara"
   },
 
   "adjust": {
@@ -176,7 +177,8 @@
       "scan": "Escanea este codigo con el celu para abrirla ahi.",
       "qr": "Codigo QR que abre la mesa de luz",
       "link": "O escribi esta direccion:"
-    }
+    },
+    "pageTitle": "Mesa de luz - calca sobre lo que ve la camara"
   },
 
   "marco": {
@@ -224,6 +226,124 @@
     "loadFailed": "No se pudo cargar la imagen",
     "download": "Descargar",
     "downloadFailed": "No se pudo descargar",
-    "fileName": "enmarcado"
+    "fileName": "enmarcado",
+    "pageTitle": "Enmarcado - probador de marcos",
+    "dropHint": "Solta tu dibujo aca",
+    "defaultTitle": "Obra maestra",
+    "measure": {
+      "art": "Obra",
+      "mat": "Passe-partout",
+      "matSide": "{size} por lado",
+      "glass": "Vidrio",
+      "frame": "Marco",
+      "molding": "Moldura",
+      "pair": "{w} x {h}"
+    },
+    "options": {
+      "frameColors": {
+        "blanco": "Blanco",
+        "crudo": "Crudo",
+        "pino": "Pino",
+        "dorado": "Dorado",
+        "roble": "Roble",
+        "plata": "Plata",
+        "caoba": "Caoba",
+        "nogal": "Nogal",
+        "verde": "Verde ingles",
+        "negro": "Negro"
+      },
+      "moldingTypes": {
+        "veteado": "Veteado",
+        "madera-lisa": "Madera lisa",
+        "mate": "Mate",
+        "satinado": "Satinado",
+        "laca": "Laca",
+        "cepillado": "Cepillado",
+        "pulido": "Pulido"
+      },
+      "moldingFamilies": {
+        "madera": "Madera",
+        "pintado": "Pintado",
+        "metal": "Metal"
+      },
+      "matColors": {
+        "blanco": "Blanco puro",
+        "hueso": "Hueso",
+        "crudo": "Crudo",
+        "gris-claro": "Gris claro",
+        "arena": "Arena",
+        "topo": "Topo",
+        "oliva": "Oliva",
+        "borgona": "Bordo",
+        "carbon": "Carbon",
+        "negro": "Negro"
+      },
+      "wallColors": {
+        "blanco-roto": "Blanco roto",
+        "arena": "Arena",
+        "perla": "Gris perla",
+        "salvia": "Verde salvia",
+        "humo": "Azul humo",
+        "terracota": "Terracota",
+        "topo": "Topo",
+        "tinta": "Azul tinta",
+        "carbon": "Carbon"
+      },
+      "wallPatterns": {
+        "plain": "Liso",
+        "plaster": "Yeso",
+        "stucco": "Gotele",
+        "linen": "Lino"
+      },
+      "glass": {
+        "none": {
+          "label": "Sin vidrio",
+          "hint": "obra al aire"
+        },
+        "clear": {
+          "label": "Cristal",
+          "hint": "refleja"
+        },
+        "antireflective": {
+          "label": "Antirreflejo",
+          "hint": "sin brillo"
+        },
+        "matte": {
+          "label": "Mate",
+          "hint": "difumina"
+        }
+      },
+      "profiles": {
+        "flat": "Plana",
+        "bevel": "Biselada",
+        "scoop": "Caveta",
+        "round": "Bombe",
+        "step": "Escalonada"
+      }
+    }
+  },
+
+  "lang": {
+    "label": "Idioma",
+    "dismiss": "Cerrar",
+    "es": "Castellano",
+    "en": "English",
+    "inviteEs": "Ver en castellano",
+    "inviteEn": "View in English"
+  },
+
+  "portada": {
+    "title": "Dibujo - herramientas",
+    "signature": "Facu Cabanne →",
+    "heroA": "Herramientas",
+    "heroB": "para",
+    "heroWord": "artistas",
+    "intro": "Hola artista! Estas herramientas ayudan a acelerar el proceso artistico desde la foto de referencia hasta la obra colgada.",
+    "scroll": "Ver las herramientas",
+    "try": "Probar →",
+    "counter": "{n} de {total}",
+    "referenciaDesc": "Con esta herramienta podes preparar tu foto de referencia agregandole una grilla, la estructura de la cabeza y hasta algunos ajustes de color y efectos. Te ayudara a entender mejor sus estructuras antes de empezar a dibujar.",
+    "mesaDesc": "Usando la camara de tu celular como proyector, podes ver tu imagen de referencia en transparencia. Te facilitara a la hora de trasladar la imagen a tu hoja en blanco, casi como si estuvieras calcandola.",
+    "marcoDesc": "Visualiza tus obras como si estuvieran colgadas en una pared. Proba distintos tipos de marcos, colores, materiales, tipos de acabados y combinaciones. Usa la imagen final para presentar tu obra o para llevar a enmarcar."
   }
 }

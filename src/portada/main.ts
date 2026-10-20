@@ -1,3 +1,4 @@
+import { hasChosenLanguage, keepLanguage, language, setLanguage } from '../shared/copy'
 import { openInstagram } from '../shared/suggestions'
 import { encuadreHero } from './escena/encuadre.js'
 
@@ -10,12 +11,39 @@ import { encuadreHero } from './escena/encuadre.js'
  *    que la escena 3D.
  * 3. El parallax de las fotos de las tarjetas, atado al scroll.
  * 4. Los trazos a mano: se animan (stop motion) solo mientras se ven.
- * 5. La escena de lapices en 3D: se carga despues de que la pagina aparece y solo
+ * 5. El idioma: el selector y el aviso de la primera visita (los textos ya vienen
+ *    en el idioma elegido, `translateDocument`).
+ * 6. La escena de lapices en 3D: se carga despues de que la pagina aparece y solo
  *    dibuja mientras el hero se ve.
  */
 for (const link of document.querySelectorAll<HTMLAnchorElement>('.portada-link')) {
   link.addEventListener('click', (e) => openInstagram(e, link.href))
 }
+
+// --- idioma -----------------------------------------------------------
+// Los textos del HTML ya vienen en el idioma elegido (`translateDocument`, al importar
+// `copy`). Acá van los botones: elegir uno recarga la pagina en ese idioma; elegir el que ya
+// esta puesto, o cerrar el aviso, solo deja asentado que ya se eligio.
+const aviso = document.querySelector<HTMLElement>('#idioma-aviso')
+if (aviso && !hasChosenLanguage) aviso.hidden = false
+
+for (const boton of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
+  const idioma = boton.dataset.lang ?? ''
+  if (boton.classList.contains('idioma-op')) boton.setAttribute('aria-pressed', String(idioma === language))
+  boton.addEventListener('click', () => {
+    if (idioma === language) {
+      keepLanguage()
+      if (aviso) aviso.hidden = true
+    } else {
+      setLanguage(idioma)
+    }
+  })
+}
+
+document.querySelector('#idioma-cerrar')?.addEventListener('click', () => {
+  keepLanguage()
+  if (aviso) aviso.hidden = true
+})
 
 const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches
 if (!reducido) document.documentElement.classList.add('anima')

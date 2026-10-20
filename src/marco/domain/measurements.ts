@@ -1,3 +1,4 @@
+import { copy, fill, formatNumber } from '../../shared/copy'
 import type { AppState, Layout } from '../types'
 
 export interface Measurement {
@@ -5,8 +6,11 @@ export interface Measurement {
   value: string
 }
 
-const cm = (n: number) => `${n.toFixed(1).replace('.', ',')} cm`
-const pair = (w: number, h: number) => `${cm(w)} x ${cm(h)}`
+const cm = (n: number) =>
+  fill(copy.marco.cm, {
+    n: formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }),
+  })
+const pair = (w: number, h: number) => fill(copy.marco.measure.pair, { w: cm(w), h: cm(h) })
 
 /**
  * Las medidas que se le dictan al enmarcador, en el orden en que se arma el cuadro:
@@ -16,17 +20,17 @@ const pair = (w: number, h: number) => `${cm(w)} x ${cm(h)}`
  */
 export function buildMeasurements(state: AppState, layout: Layout): Measurement[] {
   const mat = state.mats[0]
-  const rows: Measurement[] = [{ label: 'Obra', value: pair(layout.art.w, layout.art.h) }]
+  const rows: Measurement[] = [{ label: copy.marco.measure.art, value: pair(layout.art.w, layout.art.h) }]
 
   if (mat?.enabled) {
-    rows.push({ label: 'Passe-partout', value: `${cm(mat.width)} por lado` })
+    rows.push({ label: copy.marco.measure.mat, value: fill(copy.marco.measure.matSide, { size: cm(mat.width) }) })
   }
 
-  rows.push({ label: 'Vidrio', value: pair(layout.glass.w, layout.glass.h) })
+  rows.push({ label: copy.marco.measure.glass, value: pair(layout.glass.w, layout.glass.h) })
 
   if (state.frame.width > 0) {
-    rows.push({ label: 'Marco', value: pair(layout.outer.w, layout.outer.h) })
-    rows.push({ label: 'Moldura', value: `${cm(state.frame.width)} x ${cm(layout.depth)}` })
+    rows.push({ label: copy.marco.measure.frame, value: pair(layout.outer.w, layout.outer.h) })
+    rows.push({ label: copy.marco.measure.molding, value: fill(copy.marco.measure.pair, { w: cm(state.frame.width), h: cm(layout.depth) }) })
   }
 
   return rows

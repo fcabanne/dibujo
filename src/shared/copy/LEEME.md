@@ -48,44 +48,52 @@ alguien no le deja el idioma cambiado.
 
 ## Qué idioma se muestra
 
-**Castellano siempre.** Es el idioma del sitio y no se deduce de nada.
+En este orden:
 
-Hubo dos intentos de deducirlo del navegador y los dos terminaron mostrándole inglés a
-un usuario argentino. `navigator.languages` no dice dónde estás ni qué querés leer:
-dice cómo está configurado el sistema operativo, y un teléfono en inglés no significa
-que su dueño prefiera leer esto en inglés.
+1. **`?lang=`** en la dirección: una mirada de esa visita, no se guarda.
+2. **Lo que la persona eligió** con el selector, guardado para todo el sitio
+   (`localStorage`, clave `dibujo:lang`; las cuatro páginas comparten origen).
+3. **Castellano.**
 
-La traducción al inglés está completa y no se tira — se revisa con `?lang=en`. Lo que
-no hace es aparecer sola. Cuando el cambio de idioma se diseñe de verdad, con algo que
-se pueda elegir y que quede elegido, se conecta acá.
+**El navegador no entra a la cuenta.** Hubo dos intentos de deducir el idioma de
+`navigator.languages` y los dos terminaron mostrándole inglés a un usuario argentino: esa
+lista dice cómo está configurado el sistema operativo, no qué querés leer. Por eso
+quien no tiene el castellano a mano se entera con **un aviso bilingüe fijo** en la
+portada ("Ver en castellano · View in English"), que no depende de ninguna detección: se
+muestra hasta que se elige un idioma o se lo cierra, y después no vuelve.
 
-## Cómo sumar un idioma
+**Dónde se elige:** la portada tiene el selector (`Castellano | English`, arriba a la
+derecha) y el aviso. Las pantallas de inicio de las tres herramientas tienen un link al
+otro idioma (`shared/LanguageSwitch.tsx`), entre volver y "Dejame sugerencias".
 
-1. Copiar `es.json` a `pt.json` y traducir los valores (las llaves no se tocan).
-2. Cambiar `"locale"` por el de ese idioma — `"pt-BR"`. **Los números también son
-   idioma**: de ahí sale si el decimal se escribe con coma o con punto.
-3. En `index.ts`, importarlo y sumarlo a `LOCALES`. Son dos líneas.
+**Cambiar de idioma recarga la página** (`setLanguage`): los textos se leen una vez al
+cargar y `copy` es una constante, así que recargar es lo que hace que todo salga del
+mismo idioma. Las herramientas guardan su sesión, así que no se pierde nada.
 
-## La red de seguridad
+## Los textos de los .html
 
-El tipo de los textos sale del castellano. Los demás idiomas se declaran con ese
-tipo, así que **si a una traducción le falta una clave, el proyecto no compila**. Lo
-mismo si alguien escribe mal una clave en un componente.
+Las páginas no tienen texto escrito: lo marcan y sale de acá.
 
-No hace falta ninguna librería para eso: lo hace TypeScript solo.
+```html
+<h2 data-t="app.name"></h2>
+<a data-t-aria-label="portada.scroll" href="#referencia">…</a>
+<p data-t="portada.counter" data-t-vars='{"n":1,"total":3}'></p>
+```
 
-## Lo que todavía no pasa por acá
+- `data-t="clave"` — el contenido del elemento.
+- `data-t-aria-label="clave"` (también `alt` y `title`) — ese atributo.
+- `data-t-vars` — los valores de las llaves `{n}`.
 
-Referencia y Mesa de luz sí, enteras. **Enmarcado, a medias**: su capa de celular
-(`src/marco/components/mobile/`) lee la sección `marco`, pero la de escritorio todavía
-tiene sus textos adentro de los componentes. Los nombres de los colores, acabados y
-perfiles ("Nogal", "Caveta") tampoco pasan por acá: son vocabulario de taller, viven en
-`src/marco/domain/palettes.ts` y los usan las dos capas. **La portada todavía no.**
-Cuando les toque, se suman con sus propias secciones a estos mismos archivos.
+Al compilar, `scripts/htmlCopy.mjs` los rellena con el castellano (así la página dice algo
+sin JavaScript); en el navegador, `translateDocument` los pone en el idioma elegido.
 
-## Sin tildes, sin eñe
+## Sumar un idioma
 
-La tipografía (Gaegu) no tiene tildes, eñe, `¿` ni `¡`, así que los textos van sin ellos:
-"Solta tu foto aca", "Sin titulo". Los signos de pregunta y de exclamación van solo al
-final. Tampoco tiene `×`, `·`, `—`, `…` ni `→`: se usa `x`, `-` y `...`. Las palabras con
-eñe se evitan buscando otra ("medida" en vez de "tamaño").
+1. Copiar `es.json` a `<id>.json` y traducirlo. Si falta una clave, no compila.
+2. Registrarlo en `LOCALES` de `index.ts` y sumar su nombre (`lang.<id>`) en todos los archivos.
+3. `LanguageSwitch` pasa hoy entre dos idiomas: con tres hay que pasar a un menú.
+
+## Qué no está acá
+
+Los mensajes de desarrollador que nadie lee en pantalla (`console.warn`, el `throw` de un
+shader que no compila, "Falta el nodo #root") se quedan en el código: no se traducen.

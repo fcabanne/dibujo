@@ -105,6 +105,23 @@ En un iPhone con la llave de silencio puesta, el audio de una página no suena.
 En pruebas automáticas, cargar el dibujo con `setInputFiles` no cuenta como gesto:
 sin un clic del mouse no hay sonidos que contar.
 
+## El idioma
+
+Castellano por defecto, inglés elegible. **El navegador no decide**: dos intentos de
+deducirlo de `navigator.languages` le mostraron inglés a usuarios argentinos. Se elige con
+el selector de la portada (arriba a la derecha) o con el link de la pantalla de inicio de
+cada herramienta, y queda guardado en `localStorage` (`dibujo:lang`) para todo el sitio.
+Cambiar recarga la página. `?lang=` mira sin guardar.
+
+Para quien llega sin el castellano a mano, la portada muestra un **aviso bilingüe fijo**
+("Ver en castellano · View in English") hasta que se elige o se cierra. No depende de ninguna
+detección, así que no puede equivocarse. Alemán no existe: quien llega con otro idioma ve
+castellano y el aviso, y elige inglés.
+
+**Al sumar texto:** va a los dos JSON, nunca escrito en un componente ni en un `.html`.
+Los mensajes de desarrollador (`console.*`, `throw` que nadie ve en pantalla) quedan
+en el código.
+
 ## Cómo está armada la portada
 
 Una sola columna de celular (máx. 430 px) y, desde 900 px de ancho, la adaptación de
@@ -175,8 +192,9 @@ se dibuja una vez y queda quieto. Con `prefers-reduced-motion` quedan quietos. P
 dibujar las variantes a mano: reemplazar los `d` de cada `<path>` (el primero es el
 que se ve si no hay animación).
 
-El texto de la portada está en el HTML, como siempre. **Gaegu no trae tildes, ñ ni
-¿ ¡**, así que se escribe sin ellos.
+El texto de la portada vive en `es.json` / `en.json` (sección `portada`) y el HTML lo pide
+con `data-t`. **Gaegu no trae tildes, ñ ni ¿ ¡**, así que el castellano se escribe sin
+ellos.
 
 **Lo que viene de generalito.** `src/portada/escena/` es la página `herramientas` de
 https://github.com/fcabanne/generalito (carpeta `web/herramientas`), copiada acá y
@@ -223,9 +241,13 @@ Lo que ya existe y conviene reusar antes de escribir algo nuevo:
   — y los componentes no traen textos, los reciben por props. Ver
   `src/shared/ui/LEEME.md`.
 - `src/shared/copy/` — **los textos**, un JSON por idioma. Ningún texto visible se
-  escribe adentro de un componente, y los números también salen de ahí (el separador
-  decimal es idioma). Si a una traducción le falta una clave, no compila. Ver
-  `src/shared/copy/LEEME.md`.
+  escribe adentro de un componente ni de un `.html` (estos usan `data-t`), y los números
+  también salen de ahí (el separador decimal es idioma). Si a una traducción le falta una
+  clave, no compila. Incluye los nombres de colores, acabados y perfiles de Enmarcado
+  (`marco.options`). Ver `src/shared/copy/LEEME.md`.
+- `src/shared/LanguageSwitch.tsx` — el link al otro idioma de las pantallas de inicio. El
+  idioma se elige en la portada (selector y aviso) o ahí, y queda guardado para todo el
+  sitio: ver "El idioma".
 
 ## Cómo está armado el probador de enmarcado
 
@@ -594,8 +616,8 @@ de escritorio.
 así que cada cosa que se toca va en su pastilla del fondo claro. Abajo, volver a la
 izquierda y las cinco pestañas a la derecha, con la marca oscura que viaja de pestaña en
 pestaña: **Obra, Marco, Passe-partout, Vidrio, Pared**, el orden en que se decide un
-cuadro. Los nombres de colores, acabados y perfiles salen de `palettes.ts`, los mismos
-del escritorio: son vocabulario de taller, no textos de pantalla.
+cuadro. Los nombres de colores, acabados y perfiles salen de `palettes.ts`, que los toma de
+`copy.marco.options`: son vocabulario de taller, pero también cambian de idioma.
 
 **El cajón mide lo que mide su contenido y el cuadro se acomoda arriba de él.** Al
 revés que en Referencia, donde el cajón tapa la foto sin moverla: acá lo que se está

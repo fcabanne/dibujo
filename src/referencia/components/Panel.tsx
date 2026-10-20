@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { copy, fill, formatNumber } from '../../shared/copy'
 import type { Reference } from '../../shared/referenceImage'
+import { LanguageSwitch } from '../../shared/LanguageSwitch'
 import { openInstagram } from '../../shared/suggestions'
 import {
   BackIcon,
@@ -311,7 +312,7 @@ export function Panel({
 
         {paper.id === 'custom' && (
           <div className="numbers">
-            <span className="unit">
+            <span className="unit" data-unit={copy.paper.unit}>
               <input
                 type="number"
                 inputMode="decimal"
@@ -329,7 +330,7 @@ export function Panel({
               />
             </span>
             <span>x</span>
-            <span className="unit">
+            <span className="unit" data-unit={copy.paper.unit}>
               <input
                 type="number"
                 inputMode="decimal"
@@ -780,6 +781,7 @@ export function Panel({
           </IconButton>
         </nav>
         <h1 className="ds-sr">{copy.app.name}</h1>
+        <LanguageSwitch />
         <a className="ds-link" href={copy.welcome.suggestionsUrl} onClick={openSuggestions}>
           {copy.welcome.suggestions}
         </a>

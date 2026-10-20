@@ -132,7 +132,7 @@ export function CameraCapture({
       (blob) => {
         if (!blob) return
         const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')
-        onCapture(new File([blob], `camara-${stamp}.jpg`, { type: 'image/jpeg' }))
+        onCapture(new File([blob], `${copy.camera.fileName}-${stamp}.jpg`, { type: 'image/jpeg' }))
       },
       'image/jpeg',
       0.92,

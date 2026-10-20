@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { copy } from '../../shared/copy'
+import { copy, fill, formatNumber } from '../../shared/copy'
 import { loadArtworkFile } from '../../shared/imageFile'
 import { openInstagram } from '../../shared/suggestions'
 import { BackIcon, DownloadIcon, SpeakerIcon, SpeakerOffIcon, UploadIcon } from '../../shared/ui'
@@ -77,7 +77,10 @@ interface Fan {
   origin: Point
 }
 
-const cmLabel = (n: number) => n.toFixed(1).replace('.', ',') + ' cm'
+const cmLabel = (n: number) =>
+  fill(copy.marco.cm, {
+    n: formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }),
+  })
 
 /** Cuánto pasa el puntero sobre una burbuja antes de que abra: pasar de largo no abre. */
 const INTENT_MS = 80

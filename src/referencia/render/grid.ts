@@ -1,3 +1,4 @@
+import { copy, formatDecimal } from '../../shared/copy'
 import { columnLabel, type GridLines } from '../domain/grid'
 import type { GridStyle } from '../types'
 
@@ -240,8 +241,7 @@ function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number
 const font = (size: number) =>
   `600 ${size}px 'Inter', system-ui, -apple-system, sans-serif`
 
-const cm = (value: number) =>
-  `${value.toLocaleString('es-AR', { maximumFractionDigits: 1 })} cm`
+const cm = (value: number) => `${formatDecimal(value)} ${copy.paper.unit}`
 
 /** La misma línea de medidas, sobre el papel en blanco del export en hoja. */
 export function drawCaptionOnSheet(

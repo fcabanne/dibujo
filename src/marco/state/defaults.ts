@@ -1,3 +1,4 @@
+import { copy } from '../../shared/copy'
 import { FRAME_DEPTH } from '../domain/geometry'
 import type { AppState } from '../types'
 
@@ -38,7 +39,7 @@ export const PLACEHOLDER_SRC = `data:image/svg+xml;utf8,${encodeURIComponent(PLA
 export const DEFAULT_STATE: AppState = {
   artwork: {
     src: PLACEHOLDER_SRC,
-    title: 'Obra maestra',
+    title: copy.marco.defaultTitle,
     size: { w: 30, h: 40 },
     rotation: 0,
     sizeConfirmed: false,

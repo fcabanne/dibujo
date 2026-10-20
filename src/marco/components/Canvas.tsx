@@ -18,6 +18,7 @@ import {
 } from '../interaction/zones'
 import { useImage } from '../hooks/useImage'
 import { askTiltPermission, useTilt } from '../hooks/useTilt'
+import { copy } from '../../shared/copy'
 import { luminance } from '../render/light'
 import { dragWidth, startDrag, type DragResult, type DragState } from '../interaction/drag'
 import {
@@ -1181,7 +1182,7 @@ export function Canvas({
         onArtworkDropped(src, aspect)
         setError(null)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo cargar la imagen')
+        setError(e instanceof Error ? e.message : copy.marco.loadFailed)
         window.setTimeout(() => setError(null), 3200)
       }
     },
@@ -1215,7 +1216,7 @@ export function Canvas({
       <canvas ref={fadeLayerRef} className="fade-layer" aria-hidden />
       {dragOver && (
         <div className="drop-hint">
-          <span>Solta tu dibujo aca</span>
+          <span>{copy.marco.dropHint}</span>
         </div>
       )}
       {error && <div className="canvas-error">{error}</div>}

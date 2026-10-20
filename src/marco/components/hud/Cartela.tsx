@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { copy } from '../../../shared/copy'
+import { copy, formatNumber } from '../../../shared/copy'
 import { loadArtworkFile } from '../../../shared/imageFile'
 import { clamp, LIMITS } from '../../domain/geometry'
 import { buildMeasurements } from '../../domain/measurements'
@@ -7,6 +7,9 @@ import type { Action } from '../../state/reducer'
 import type { AppState, Layout } from '../../types'
 import { CloseIcon, UploadIcon } from '../../../shared/ui'
 import { LinkIcon, RotateIcon, UnlinkIcon } from './icons'
+
+/** Cómo se escribe una medida en el campo: sin separador de miles, con la coma o el punto del idioma. */
+const SIZE_FORMAT: Intl.NumberFormatOptions = { maximumFractionDigits: 3, useGrouping: false }
 
 interface Props {
   state: AppState
@@ -110,7 +113,7 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
 
       <dl>
         <div>
-          <dt>Obra</dt>
+          <dt>{copy.marco.measure.art}</dt>
           <dd className="cartela-size">
             {editing ? (
               <>
@@ -118,7 +121,7 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
                   className="cartela-field"
                   type="text"
                   inputMode="decimal"
-                  value={String(shown.w).replace('.', ',')}
+                  value={formatNumber(shown.w, SIZE_FORMAT)}
                   aria-label={copy.marco.width}
                   onChange={(e) => typeSize('w', e.target.value)}
                   onBlur={(e) => commitSize('w', e.target.value)}
@@ -128,7 +131,7 @@ export function Cartela({ state, layout, dispatch, wallLuma, editing, focusTitle
                   className="cartela-field"
                   type="text"
                   inputMode="decimal"
-                  value={String(shown.h).replace('.', ',')}
+                  value={formatNumber(shown.h, SIZE_FORMAT)}
                   aria-label={copy.marco.height}
                   onChange={(e) => typeSize('h', e.target.value)}
                   onBlur={(e) => commitSize('h', e.target.value)}

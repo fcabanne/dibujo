@@ -1,3 +1,4 @@
+import { copy } from '../../../shared/copy'
 import { buildMeasurements } from '../../domain/measurements'
 import type { AppState, Layout } from '../../types'
 
@@ -21,7 +22,7 @@ export function WallLabel({ state, layout, wallLuma }: Props) {
 
   return (
     <div className={'wall-label' + (wallLuma < 0.45 ? ' on-dark' : '')}>
-      <h2>{state.artwork.title || 'Sin titulo'}</h2>
+      <h2>{state.artwork.title || copy.marco.titlePlaceholder}</h2>
       <dl>
         {rows.map((row) => (
           <div key={row.label}>
